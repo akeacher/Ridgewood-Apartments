@@ -112,7 +112,7 @@ def main():
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{desc}">
 <meta property="og:url" content="{SITE_URL}/{'' if page == 'index.html' else page}">
-<meta property="og:image" content="{SITE_URL}/assets/img/social.jpg">
+<meta property="og:image" content="{SITE_URL}/assets/img/__SOCIAL__">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#2e482b">
 <link rel="icon" href="assets/img/favicon.png" type="image/png">
@@ -126,9 +126,24 @@ def main():
     mark = os.path.join(ROOT, "assets", "logo-mark.png")
     if os.path.isfile(mark):
         shutil.copy(mark, os.path.join(imgdir, "favicon.png"))
+    # og:image: reuse whichever extracted photo already matches the hero rather
+    # than shipping a second 500 KB copy of it
     hero = os.path.join(ROOT, "photos", "web", "hero.jpg")
+    social = "social.jpg"
     if os.path.isfile(hero):
-        shutil.copy(hero, os.path.join(imgdir, "social.jpg"))
+        want = hashlib.md5(open(hero, "rb").read()).hexdigest()
+        match = next((f for f in sorted(os.listdir(imgdir))
+                      if hashlib.md5(open(os.path.join(imgdir, f), "rb").read()).hexdigest() == want),
+                     None)
+        if match:
+            social = match
+        else:
+            shutil.copy(hero, os.path.join(imgdir, social))
+
+    for page in PAGES:
+        fp = os.path.join(DIST, page)
+        t = open(fp, encoding="utf-8").read().replace("__SOCIAL__", social)
+        open(fp, "w", encoding="utf-8").write(t)
 
     # headers, in the portable _headers format both Netlify and Cloudflare
     # Pages read — so the site is not tied to either one
