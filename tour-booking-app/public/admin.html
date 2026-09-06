@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tour Requests — Ridgewood Admin</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<header class="head">
+  <div class="wrap head-row">
+    <a class="wordmark" href="/admin">
+      <span class="wm-main">Ridgewood</span>
+      <span class="wm-sub">Leasing Console</span>
+    </a>
+    <button class="btn-text" id="logout" type="button" hidden>Sign out</button>
+  </div>
+</header>
+
+<main class="wrap page">
+
+  <section class="panel login" id="login" hidden>
+    <h1>Leasing sign-in</h1>
+    <p class="muted">Enter the office password to review tour requests.</p>
+    <form id="loginForm">
+      <label>Password
+        <input id="password" type="password" autocomplete="current-password" required>
+      </label>
+      <p class="error" id="loginError" hidden></p>
+      <button class="btn" type="submit">Sign In</button>
+    </form>
+  </section>
+
+  <div id="dash" hidden>
+    <div class="page-head left">
+      <span class="label label-gold">Leasing Console</span>
+      <h1>Tour <em>Requests</em></h1>
+    </div>
+
+    <div class="tabs" id="tabs" role="group" aria-label="Filter requests">
+      <button class="tab" data-status="pending" aria-pressed="true">Pending <span class="badge" id="c-pending">0</span></button>
+      <button class="tab" data-status="approved" aria-pressed="false">Approved <span class="badge" id="c-approved">0</span></button>
+      <button class="tab" data-status="declined" aria-pressed="false">Declined <span class="badge" id="c-declined">0</span></button>
+      <button class="tab" data-status="cancelled" aria-pressed="false">Cancelled <span class="badge" id="c-cancelled">0</span></button>
+      <button class="tab" data-status="all" aria-pressed="false">All</button>
+    </div>
+
+    <p class="notice" id="notice" hidden></p>
+    <div id="list" class="req-list"></div>
+  </div>
+
+</main>
+
+<script src="/admin.js"></script>
+</body>
+</html>

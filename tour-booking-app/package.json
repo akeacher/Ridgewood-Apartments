@@ -1,0 +1,23 @@
+{
+  "name": "ridgewood-tours",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tour scheduling and approval system for Ridgewood Apartments",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "init-db": "node -e \"import('./db.js').then(m => { m.init(); console.log('Database ready.'); })\""
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.5.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "express-rate-limit": "^7.4.1",
+    "nodemailer": "^6.9.16"
+  }
+}

@@ -1,0 +1,739 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gallery | Ridgewood Apartments</title>
+<meta name="description" content="Photos of Ridgewood Apartments in Saint Paul — the grounds along Wilson Avenue, the buildings, and the homes inside.">
+<link rel="canonical" href="https://ridgewoodapartmentsmn.com/gallery.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Ridgewood Apartments">
+<meta property="og:title" content="Gallery | Ridgewood Apartments">
+<meta property="og:description" content="Photos of Ridgewood Apartments in Saint Paul — the grounds along Wilson Avenue, the buildings, and the homes inside.">
+<meta property="og:url" content="https://ridgewoodapartmentsmn.com/gallery.html">
+<meta property="og:image" content="https://ridgewoodapartmentsmn.com/assets/img/social.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#2e482b">
+<link rel="icon" href="assets/img/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="assets/img/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #f4f0e6;
+    --cream-deep: #e8e2d3;
+    --white: #fdfbf6;
+    --ink: #222a1f;
+    --ink-soft: #6c6b5e;
+    --line: #dcd5c4;
+    --forest: #2e482b;
+    --forest-deep: #1c2d1a;
+    --forest-ink: #f6f2e8;
+    --gold: #cb9d47;
+    --brandbar: #f4f0e6;
+--shadow: 112 24% 9%;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --cream: #15170f;
+      --cream-deep: #1c1f15;
+      --white: #20241a;
+      --ink: #f0ebdd;
+      --ink-soft: #a5a191;
+      --line: #373a2c;
+      --forest: #1a2a17;
+      --forest-deep: #0e160b;
+      --forest-ink: #f0ebdd;
+      --brandbar: #f4f0e6;
+      --gold: #d8b463;
+    }
+  }
+  :root[data-theme="dark"] {
+    --cream: #15170f;
+    --cream-deep: #1c1f15;
+    --white: #20241a;
+    --ink: #f0ebdd;
+    --ink-soft: #a5a191;
+    --line: #373a2c;
+    --forest: #1a2a17;
+    --forest-deep: #0e160b;
+    --forest-ink: #f0ebdd;
+    --brandbar: #f4f0e6;
+    --gold: #d8b463;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+  body {
+    margin: 0;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: "Jost", ui-sans-serif, system-ui, sans-serif;
+    font-weight: 300;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 300; text-wrap: balance; margin: 0; }
+  p { margin: 0; }
+  a { color: inherit; }
+  img, svg { display: block; max-width: 100%; }
+  button { font: inherit; color: inherit; }
+
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 40px; }
+
+  .label {
+    font-family: "Jost", sans-serif;
+    font-size: 0.68rem; font-weight: 500; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .label-gold { color: var(--gold); }
+  .label-light { color: color-mix(in srgb, var(--forest-ink) 72%, transparent); }
+
+  .reveal { opacity: 0; transform: translateY(20px); transition: opacity .8s cubic-bezier(.22,.7,.2,1), transform .8s cubic-bezier(.22,.7,.2,1); }
+  .reveal.is-visible { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1 !important; transform: none !important; transition: none !important; } }
+
+  .btn {
+    appearance: none; -webkit-appearance: none;
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    font-family: "Jost", sans-serif;
+    font-size: 0.72rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase;
+    text-decoration: none; padding: 17px 34px;
+    border: 1px solid var(--ink); background: var(--ink); color: var(--cream);
+    cursor: pointer; white-space: nowrap;
+    transition: background .3s ease, color .3s ease, border-color .3s ease;
+  }
+  .btn:hover { background: transparent; color: var(--ink); }
+  .btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+  .btn-outline { background: transparent; color: var(--ink); border-color: var(--ink); }
+  .btn-outline:hover { background: var(--ink); color: var(--cream); }
+  .btn-light { background: var(--forest-ink); color: var(--forest); border-color: var(--forest-ink); }
+  .btn-light:hover { background: transparent; color: var(--forest-ink); }
+  .btn-sm { padding: 13px 24px; font-size: 0.66rem; }
+
+  .link-ul {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: "Jost", sans-serif;
+    font-size: 0.72rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase;
+    text-decoration: none; color: var(--ink);
+    padding-bottom: 8px; border: none; border-bottom: 1px solid var(--ink);
+    background: none; cursor: pointer;
+    transition: color .25s ease, border-color .25s ease, gap .25s ease;
+  }
+  .link-ul:hover { color: var(--gold); border-color: var(--gold); gap: 16px; }
+  .link-ul:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+  .link-ul.on-dark { color: var(--forest-ink); border-color: color-mix(in srgb, var(--forest-ink) 55%, transparent); }
+  .link-ul.on-dark:hover { color: var(--gold); border-color: var(--gold); }
+
+  /* ---------- Header ---------- */
+  header.site-head { position: fixed; top: 0; left: 0; right: 0; z-index: 70; }
+  .announce { background: var(--forest-deep); color: var(--forest-ink); overflow: hidden; max-height: 240px; transition: max-height .45s ease, opacity .35s ease; }
+  .announce.is-collapsed { max-height: 0; opacity: 0; }
+  .announce-inner { display: flex; align-items: center; justify-content: center; gap: 14px; min-height: 38px; padding: 8px 46px; position: relative; text-align: center; }
+  .announce-inner p { font-size: 0.62rem; font-weight: 400; letter-spacing: 0.2em; text-transform: uppercase; line-height: 1.4; color: color-mix(in srgb, var(--forest-ink) 88%, transparent); }
+  .announce-close { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--forest-ink); cursor: pointer; padding: 4px 8px; line-height: 1; font-size: 1rem; opacity: .7; }
+  .announce-close:hover { opacity: 1; }
+
+  .head-bar, .menu-top { --ink: #222a1f; --ink-soft: #6c6b5e; --line: #dcd5c4; background: var(--brandbar); color: var(--ink); border-bottom: 1px solid var(--line); }
+  .head-row { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 76px; padding: 14px 0; }
+  .wordmark { display: inline-flex; align-items: center; gap: 13px; text-decoration: none; }
+  .logo-mark { height: 48px; width: auto; }
+  .logo-text { height: 25px; width: auto; }
+  .menu-top .logo-mark { height: 42px; }
+  .menu-top .logo-text { height: 22px; }
+  .foot-brand .wordmark { background: var(--brandbar); padding: 12px 16px; }
+  .foot-brand .logo-mark { height: 54px; }
+  .foot-brand .logo-text { height: 28px; }
+  .head-actions { display: flex; align-items: center; gap: 14px; }
+  .head-phone { font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; text-decoration: none; color: var(--ink); white-space: nowrap; display: none; transition: color .4s ease; }
+  .head-phone:hover { color: var(--gold); }
+  .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; background: transparent; border: 1px solid var(--line); color: var(--ink); cursor: pointer; flex-shrink: 0; transition: border-color .3s ease, color .3s ease; }
+  .icon-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .icon-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .burger { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; width: 44px; height: 44px; padding: 0; background: transparent; border: 1px solid var(--line); cursor: pointer; flex-shrink: 0; transition: border-color .3s ease; }
+  .burger span { display: block; width: 18px; height: 1px; background: var(--ink); transition: background .4s ease; }
+  .burger:hover { border-color: var(--gold); }
+  .burger:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  header.site-head.is-stuck .head-bar { box-shadow: 0 1px 14px hsl(var(--shadow) / 0.09); }
+
+  /* ---------- Menu ---------- */
+  .menu-overlay { position: fixed; inset: 0; z-index: 80; background: var(--forest); color: var(--forest-ink); display: flex; flex-direction: column; overflow-y: auto; }
+  .menu-top { display: flex; align-items: center; justify-content: space-between; padding: 14px 40px; }
+  .menu-top .menu-close { border-color: var(--line); color: var(--ink); }
+  .menu-top .menu-close:hover { border-color: var(--gold); color: var(--gold); }
+  .menu-close { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; background: transparent; border: 1px solid color-mix(in srgb, var(--forest-ink) 42%, transparent); color: var(--forest-ink); cursor: pointer; transition: border-color .3s ease, color .3s ease; }
+  .menu-close:hover { border-color: var(--gold); color: var(--gold); }
+  .menu-body { flex: 1; display: grid; grid-template-columns: 1.3fr 1fr; gap: 60px; padding: 44px 40px 50px; max-width: 1240px; margin: 0 auto; width: 100%; align-items: center; }
+  .menu-links { display: flex; flex-direction: column; }
+  .menu-links a { font-family: "Cormorant Garamond", serif; font-size: clamp(1.6rem, 3.4vw, 2.5rem); font-weight: 300; line-height: 1.25; text-decoration: none; color: var(--forest-ink); padding: 12px 0; display: flex; align-items: baseline; gap: 20px; transition: color .3s ease, padding-left .3s ease; }
+  .menu-links a:hover { color: var(--gold); padding-left: 14px; }
+  .menu-links a[aria-current="page"] { color: var(--gold); }
+  .menu-links a .mnum { font-family: "Jost", sans-serif; font-size: 0.6rem; letter-spacing: 0.2em; color: color-mix(in srgb, var(--forest-ink) 45%, transparent); }
+  .menu-info { display: flex; flex-direction: column; gap: 32px; padding-top: 18px; }
+  .menu-info-block { display: flex; flex-direction: column; gap: 8px; }
+  .menu-info-block .label { color: color-mix(in srgb, var(--forest-ink) 55%, transparent); }
+  .menu-info-block p, .menu-info-block a { font-size: 0.95rem; font-weight: 300; line-height: 1.6; color: var(--forest-ink); text-decoration: none; }
+  .menu-info-block a:hover { color: var(--gold); }
+
+  /* ---------- Page head ---------- */
+  .page-head { background: var(--forest); color: var(--forest-ink); padding: 190px 0 80px; text-align: center; }
+  .page-head h1 { margin-top: 22px; font-size: clamp(2.6rem, 6vw, 4.6rem); line-height: 1.06; color: var(--forest-ink); }
+  .page-head h1 em { font-style: italic; }
+  .page-head p { margin: 26px auto 0; max-width: 52ch; font-size: 1rem; line-height: 1.8; color: color-mix(in srgb, var(--forest-ink) 78%, transparent); }
+  .crumb { display: inline-flex; align-items: center; gap: 10px; font-size: 0.66rem; letter-spacing: 0.2em; text-transform: uppercase; text-decoration: none; color: color-mix(in srgb, var(--forest-ink) 62%, transparent); margin-bottom: 26px; transition: color .25s ease, gap .25s ease; }
+  .crumb:hover { color: var(--gold); gap: 16px; }
+
+  /* ---------- Filters ---------- */
+  .filter-bar { position: sticky; top: 76px; z-index: 40; background: color-mix(in srgb, var(--cream) 94%, transparent); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+  .filter-inner { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; padding: 18px 0; }
+  .filters { display: flex; flex-wrap: wrap; gap: 26px; }
+  .filter {
+    appearance: none; background: none; border: none; cursor: pointer;
+    font-size: 0.66rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--ink-soft); padding: 6px 0; border-bottom: 1px solid transparent;
+    transition: color .25s ease, border-color .25s ease;
+  }
+  .filter:hover { color: var(--ink); }
+  .filter[aria-pressed="true"] { color: var(--ink); border-bottom-color: var(--gold); }
+  .filter:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+  .count { font-size: 0.66rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-soft); }
+
+  /* ---------- Grid ---------- */
+  .gal-section { padding: 60px 0 120px; }
+  .gal-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 20px; }
+  .shot {
+    position: relative; overflow: hidden; cursor: pointer;
+    background: var(--forest-deep); border: none; padding: 0; display: block; width: 100%;
+    grid-column: span 2; aspect-ratio: 4 / 3;
+  }
+  .shot.wide { grid-column: span 4; aspect-ratio: 16 / 9; }
+  .shot.tall { grid-column: span 2; aspect-ratio: 3 / 4; }
+  .shot[hidden] { display: none !important; }
+  .shot img { width: 100%; height: 100%; object-fit: cover; filter: saturate(1.06) contrast(1.04); transition: transform .8s cubic-bezier(.2,.7,.2,1); }
+  .shot:hover img { transform: scale(1.05); }
+  .shot:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+  .shot::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, hsl(var(--shadow) / 0.62), transparent 52%); pointer-events: none; }
+  .shot-cap { position: absolute; left: 20px; bottom: 16px; z-index: 2; display: flex; flex-direction: column; gap: 5px; color: var(--forest-ink); text-align: left; }
+  .shot-cap .sname { font-family: "Cormorant Garamond", serif; font-size: 1.25rem; font-weight: 400; line-height: 1.1; }
+  .shot-cap .scat { font-size: 0.58rem; letter-spacing: 0.2em; text-transform: uppercase; opacity: .78; }
+
+  /* ---------- CTA ---------- */
+  .cta { background: var(--cream-deep); padding: 100px 0; text-align: center; }
+  .cta h2 { margin-top: 20px; font-size: clamp(2rem, 4.2vw, 3rem); line-height: 1.12; }
+  .cta h2 em { font-style: italic; color: var(--gold); }
+  .cta p { margin: 22px auto 0; max-width: 46ch; font-size: 1rem; line-height: 1.8; color: var(--ink-soft); }
+  .cta-actions { display: flex; align-items: center; justify-content: center; gap: 28px; margin-top: 40px; flex-wrap: wrap; }
+
+  /* ---------- Footer ---------- */
+  footer { background: var(--cream); padding: 70px 0 40px; border-top: 1px solid var(--line); }
+  .foot-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 48px; padding-bottom: 48px; }
+  .foot-brand p { margin-top: 18px; max-width: 34ch; font-size: 0.92rem; line-height: 1.75; color: var(--ink-soft); }
+  .foot-col h4 { margin-bottom: 18px; }
+  .foot-col div { display: flex; flex-direction: column; gap: 12px; }
+  .foot-col a, .foot-col span { font-size: 0.92rem; color: var(--ink); text-decoration: none; line-height: 1.5; }
+  .foot-col a:hover { color: var(--gold); }
+  .foot-bottom { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-top: 28px; border-top: 1px solid var(--line); }
+  .foot-bottom span { font-size: 0.72rem; letter-spacing: 0.08em; color: var(--ink-soft); }
+
+  /* ---------- Modal / Lightbox ---------- */
+  .ov { position: fixed; inset: 0; z-index: 90; background: color-mix(in srgb, var(--forest-deep) 78%, transparent); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .sheet { background: var(--white); border: 1px solid var(--line); width: 100%; max-width: 560px; max-height: 88vh; overflow-y: auto; }
+  .sheet-head { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 24px 28px; background: var(--white); border-bottom: 1px solid var(--line); }
+  .sheet-head h3 { font-size: 1.6rem; font-weight: 400; }
+  .sheet-close { appearance: none; background: none; border: 1px solid var(--line); width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; color: var(--ink-soft); cursor: pointer; flex-shrink: 0; transition: border-color .25s ease, color .25s ease; }
+  .sheet-close:hover { border-color: var(--gold); color: var(--gold); }
+  .sheet-body { padding: 26px 28px 30px; display: flex; flex-direction: column; gap: 20px; }
+  .calendly-inline-widget { border: 1px solid var(--line); }
+  .fallback { background: var(--cream-deep); border: 1px solid var(--line); padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+  .fallback p { font-size: 0.9rem; line-height: 1.7; color: var(--ink-soft); }
+  .fallback-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+  .sheet-note { font-size: 0.85rem; color: var(--ink-soft); text-align: center; line-height: 1.6; }
+  .sheet-note a { color: var(--gold); text-decoration: none; }
+
+  .lb { position: fixed; inset: 0; z-index: 95; background: color-mix(in srgb, var(--forest-deep) 95%, transparent); display: flex; flex-direction: column; }
+  .lb-top { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px 32px; color: var(--forest-ink); }
+  .lb-meta { display: flex; flex-direction: column; gap: 5px; }
+  .lb-title { font-family: "Cormorant Garamond", serif; font-size: 1.45rem; font-weight: 400; }
+  .lb-sub { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; opacity: .7; }
+  .lb-stage { flex: 1; display: flex; align-items: center; justify-content: center; gap: 22px; padding: 0 24px 36px; min-height: 0; }
+  .lb-figure { max-width: 1020px; width: 100%; border: 1px solid color-mix(in srgb, var(--forest-ink) 22%, transparent); }
+  .lb-figure img { width: 100%; height: auto; display: block; }
+  .lb-nav { appearance: none; width: 52px; height: 52px; flex-shrink: 0; background: transparent; border: 1px solid color-mix(in srgb, var(--forest-ink) 40%, transparent); color: var(--forest-ink); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: border-color .25s ease, color .25s ease; }
+  .lb-nav:hover { border-color: var(--gold); color: var(--gold); }
+  .lb-nav:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .ov, .lb, .menu-overlay { animation: fade-in .22s ease; }
+    .sheet { animation: pop-in .28s cubic-bezier(.2,.8,.2,1); }
+  }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pop-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+  .m-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 65; display: none; gap: 12px; align-items: center; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--cream) 96%, transparent); backdrop-filter: blur(12px); border-top: 1px solid var(--line); }
+  .m-bar .btn { flex: 1; }
+  .m-bar .btn-outline { flex: 0 0 auto; }
+
+  @media (min-width: 700px) { .head-phone { display: inline-block; } }
+  @media (max-width: 1024px) {
+    .gal-grid { grid-template-columns: repeat(4, 1fr); }
+    .shot.wide { grid-column: span 4; }
+    .menu-body { grid-template-columns: 1fr; gap: 44px; padding-top: 50px; }
+    .foot-grid { grid-template-columns: 1fr 1fr; gap: 40px; }
+  }
+  @media (max-width: 760px) {
+    .wrap { padding: 0 22px; }
+    .menu-top { padding: 20px 22px; }
+    .menu-body { padding: 44px 22px 50px; }
+    .page-head { padding: 160px 0 64px; }
+    .gal-grid { grid-template-columns: 1fr; gap: 14px; }
+    .shot, .shot.wide, .shot.tall { grid-column: span 1; aspect-ratio: 4 / 3; }
+    .foot-grid { grid-template-columns: 1fr; gap: 34px; }
+    .m-bar { display: flex; }
+    footer { padding-bottom: 100px; }
+    .filter-bar { top: 70px; }
+    .lb-stage { flex-direction: column; gap: 16px; }
+    .lb-nav { width: 44px; height: 44px; }
+  }
+
+  /* ---------- Green-led palette ---------- */
+  :root { --accent: var(--forest); --accent-ink: #f6f2e8; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --accent: #f0ebdd; --accent-ink: #1c2d1a; }
+  }
+  :root[data-theme="dark"] { --accent: #f0ebdd; --accent-ink: #1c2d1a; }
+
+  /* on green grounds the accent flips so buttons and links stay legible */
+  .band-forest, .band-forest-deep, .cta, .page-head, .page-hero, footer, .map-cap {
+    --accent: var(--forest-ink); --accent-ink: var(--forest);
+  }
+
+  .btn { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn:hover { background: transparent; color: var(--accent); }
+  .btn-outline { background: transparent; color: var(--accent); border-color: var(--accent); }
+  .btn-outline:hover { background: var(--accent); color: var(--accent-ink); }
+  .btn-light { background: var(--forest-ink); color: var(--forest); border-color: var(--forest-ink); }
+  .btn-light:hover { background: transparent; color: var(--forest-ink); }
+
+  /* a second, deeper green band so stacked green sections still read apart */
+  .band-forest-deep { background: var(--forest-deep); color: var(--forest-ink); }
+  .band-forest-deep h2, .band-forest-deep h3, .band-forest-deep h4 { color: var(--forest-ink); }
+  .band-forest .label, .band-forest-deep .label { color: color-mix(in srgb, var(--forest-ink) 70%, transparent); }
+  .band-forest .rule, .band-forest-deep .rule, .cta .rule, footer .rule {
+    background: color-mix(in srgb, var(--forest-ink) 24%, transparent);
+  }
+
+  /* closing call to action carries the green through every page */
+  .cta {
+    background: var(--forest); color: var(--forest-ink);
+    --ink: var(--forest-ink);
+    --ink-soft: color-mix(in srgb, var(--forest-ink) 76%, transparent);
+    --line: color-mix(in srgb, var(--forest-ink) 22%, transparent);
+  }
+  .cta h2 { color: var(--forest-ink); }
+
+  footer {
+    background: var(--forest-deep); color: var(--forest-ink); border-top: none;
+    --ink: var(--forest-ink);
+    --ink-soft: color-mix(in srgb, var(--forest-ink) 66%, transparent);
+    --line: color-mix(in srgb, var(--forest-ink) 20%, transparent);
+  }
+  footer h4, footer h3 { color: var(--forest-ink); }
+  .foot-col a:hover { color: var(--gold); }
+
+  /* amenity tiles on a green ground */
+  .band-forest .amen-grid, .band-forest-deep .amen-grid {
+    background: color-mix(in srgb, var(--forest-ink) 15%, transparent);
+    border-top-color: color-mix(in srgb, var(--forest-ink) 15%, transparent);
+    border-left-color: color-mix(in srgb, var(--forest-ink) 15%, transparent);
+  }
+  .band-forest .amen { background: var(--forest); color: var(--forest-ink); }
+  .band-forest .amen:hover { background: color-mix(in srgb, var(--forest-ink) 7%, var(--forest)); }
+  .band-forest .amen h3 { color: var(--forest-ink); }
+  .band-forest .amen p { color: color-mix(in srgb, var(--forest-ink) 74%, transparent); }
+
+  /* the plan sheet needs to sit lighter than the rooms drawn on it */
+  .plan-sheet-fig { background: var(--white); }
+
+  /* headings carry the logo green on light grounds; in dark mode they read cream */
+  :root { --head: #2e482b; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --head: #f0ebdd; } }
+  :root[data-theme="dark"] { --head: #f0ebdd; }
+  h1, h2, h3, h4 { color: var(--head); }
+  .menu-overlay h1, .menu-overlay h2, .menu-overlay h3, .menu-overlay h4 { color: var(--forest-ink); }
+  .hero h1, .page-head h1, .page-hero h1 { color: var(--forest-ink); }
+</style>
+
+<header class="site-head" id="siteHead">
+  <div class="announce" id="announce">
+    <div class="announce-inner">
+      <p>Now leasing &mdash; one, two &amp; three bedroom homes. Call 651-578-0498 for details.</p>
+      <button class="announce-close" id="announceClose" type="button" aria-label="Dismiss announcement">&times;</button>
+    </div>
+  </div>
+  <div class="head-bar">
+    <div class="wrap head-row">
+      <a class="wordmark" href="index.html">
+        <img class="logo-mark" src="assets/img/eac9b379aa07.png" alt="">
+      <img class="logo-text" src="assets/img/347a84b8b28c.png" alt="Ridgewood Apartments">
+      </a>
+      <div class="head-actions">
+        <a class="head-phone" href="tel:16515780498">651&middot;578&middot;0498</a>
+        <button class="icon-btn js-open-tour" type="button" aria-label="Schedule a tour">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3.5" y="4.5" width="17" height="16"/><path d="M3.5 9.5h17M8 3v3M16 3v3"/></svg>
+        </button>
+        <button class="burger" id="menuOpen" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="menuOverlay">
+          <span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="menu-overlay" id="menuOverlay" hidden>
+  <div class="menu-top">
+    <a class="wordmark" href="index.html">
+      <img class="logo-mark" src="assets/img/eac9b379aa07.png" alt="">
+      <img class="logo-text" src="assets/img/347a84b8b28c.png" alt="Ridgewood Apartments">
+    </a>
+    <button class="menu-close" id="menuClose" type="button" aria-label="Close menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M5 5l14 14M19 5L5 19"/></svg>
+    </button>
+  </div>
+  <div class="menu-body">
+    <nav class="menu-links" aria-label="Main">
+      <a href="index.html"><span class="mnum">01</span>Home</a>
+      <a href="index.html#residences"><span class="mnum">02</span>Residences</a>
+      <a href="index.html#amenities"><span class="mnum">03</span>Amenities</a>
+      <a href="#top" aria-current="page" data-menu-close><span class="mnum">04</span>Gallery</a>
+      <a href="neighborhood.html"><span class="mnum">05</span>Neighborhood</a>
+      <a href="questions.html"><span class="mnum">06</span>Questions</a>
+      <a href="index.html#contact"><span class="mnum">06</span>Contact</a>
+    </nav>
+    <div class="menu-info">
+      <div class="menu-info-block">
+        <span class="label">Visit</span>
+        <a href="https://maps.google.com/?q=1871+Wilson+Ave,+Saint+Paul,+MN+55119" target="_blank" rel="noopener">1871 &amp; 1885 Wilson Ave<br>Saint Paul, MN 55119</a>
+      </div>
+      <div class="menu-info-block">
+        <span class="label">Leasing Office</span>
+        <a href="tel:16515780498">651-578-0498</a>
+      </div>
+      <div class="menu-info-block">
+        <span class="label">Office Hours</span>
+        <p>Monday &ndash; Friday, 1pm &ndash; 5pm<br>Saturday &amp; Sunday, closed</p>
+      </div>
+      <button class="btn btn-light js-open-tour" type="button" style="align-self:flex-start;">Schedule a Tour</button>
+    </div>
+  </div>
+</div>
+
+<main id="top">
+  <section class="page-head">
+    <div class="wrap">
+      <a class="crumb" href="index.html">&larr; Back to Ridgewood</a>
+      <span class="label label-light" style="display:block;">A Closer Look</span>
+      <h1>The <em>Gallery</em></h1>
+      <p>Nine views of the property &mdash; the grounds along Wilson Avenue, the homes themselves, and the everyday spaces in between. Select any frame to enlarge.</p>
+    </div>
+  </section>
+
+  <div class="filter-bar">
+    <div class="wrap filter-inner">
+      <div class="filters" id="filters" role="group" aria-label="Filter gallery by category">
+        <button class="filter" type="button" data-filter="all" aria-pressed="true">All</button>
+        <button class="filter" type="button" data-filter="exterior" aria-pressed="false">Exterior</button>
+        <button class="filter" type="button" data-filter="interiors" aria-pressed="false">Interiors</button>
+        <button class="filter" type="button" data-filter="grounds" aria-pressed="false">Grounds</button>
+      </div>
+      <span class="count" id="count">9 Views</span>
+    </div>
+  </div>
+
+  <section class="gal-section">
+    <div class="wrap">
+      <div class="gal-grid reveal" id="galGrid">
+
+        <button class="shot wide" type="button" data-cat="exterior" data-name="Ridgewood Apartments" aria-label="Enlarge: Ridgewood Apartments">
+          <img src="assets/img/9bf9ef28bf18.jpg" alt="" loading="lazy">
+          <span class="shot-cap"><span class="sname">Ridgewood Apartments</span><span class="scat">Exterior</span></span>
+        </button>
+
+        <button class="shot" type="button" data-cat="interiors" data-name="Kitchen" aria-label="Enlarge: Kitchen">
+          <img src="assets/img/6f018fa9fe57.jpg" alt="" loading="lazy">
+          <span class="shot-cap"><span class="sname">Kitchen</span><span class="scat">Interiors</span></span>
+        </button>
+
+        <button class="shot" type="button" data-cat="interiors" data-name="Living Room" aria-label="Enlarge: Living Room">
+          <img src="assets/img/6a54f510469a.jpg" alt="" loading="lazy">
+          <span class="shot-cap"><span class="sname">Living Room</span><span class="scat">Interiors</span></span>
+        </button>
+
+        <button class="shot tall" type="button" data-cat="interiors" data-name="Bathroom" aria-label="Enlarge: Bathroom">
+          <img src="assets/img/145a3805e90b.jpg" alt="" loading="lazy">
+          <span class="shot-cap"><span class="sname">Bathroom</span><span class="scat">Interiors</span></span>
+        </button>
+
+        <button class="shot" type="button" data-cat="interiors" data-name="Bedroom" aria-label="Enlarge: Bedroom">
+          <img src="assets/img/0c81ce54a146.jpg" alt="" loading="lazy">
+          <span class="shot-cap"><span class="sname">Bedroom</span><span class="scat">Interiors</span></span>
+        </button>
+
+        <button class="shot" type="button" data-cat="exterior" data-name="Wilson Avenue" aria-label="Enlarge: Wilson Avenue">
+          <img src="assets/img/f1b78afdac5f.jpg" alt="" loading="lazy">
+          <span class="shot-cap"><span class="sname">Wilson Avenue</span><span class="scat">Exterior</span></span>
+        </button>
+
+        <button class="shot" type="button" data-cat="grounds" data-name="The Green" aria-label="Enlarge: The Green">
+          <img src="assets/img/e5bab127984a.jpg" alt="" loading="lazy">
+          <span class="shot-cap"><span class="sname">The Green</span><span class="scat">Grounds</span></span>
+        </button>
+
+        <button class="shot" type="button" data-cat="grounds" data-name="Entrance Sign" aria-label="Enlarge: Entrance Sign">
+          <img src="assets/img/3b892115f8d2.jpg" alt="" loading="lazy">
+          <span class="shot-cap"><span class="sname">Entrance Sign</span><span class="scat">Grounds</span></span>
+        </button>
+
+        <button class="shot wide" type="button" data-cat="grounds" data-name="The Grounds" aria-label="Enlarge: The Grounds">
+          <img src="assets/img/19a79e2356f5.jpg" alt="" loading="lazy">
+          <span class="shot-cap"><span class="sname">The Grounds</span><span class="scat">Grounds</span></span>
+        </button>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="wrap">
+      <span class="label label-gold">Come See It In Person</span>
+      <h2>Photographs Only Go <em>So Far</em></h2>
+      <p>Our leasing team is on site every weekday afternoon and would be glad to walk you through a home.</p>
+      <div class="cta-actions">
+        <button class="btn js-open-tour" type="button">Schedule a Tour</button>
+        <a class="link-ul" href="tel:16515780498">651-578-0498</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a class="wordmark" href="index.html">
+          <img class="logo-mark" src="assets/img/eac9b379aa07.png" alt="">
+      <img class="logo-text" src="assets/img/347a84b8b28c.png" alt="Ridgewood Apartments">
+        </a>
+        <p>An oak-shaded courtyard community on Saint Paul's east side &mdash; leasing one, two, and three bedroom homes.</p>
+      </div>
+      <div class="foot-col">
+        <h4 class="label">Explore</h4>
+        <div>
+          <a href="index.html">Home</a>
+          <a href="index.html#residences">Residences</a>
+          <a href="index.html#amenities">Amenities</a>
+          <a href="neighborhood.html">Neighborhood</a>
+            <a href="questions.html">Questions</a>
+        </div>
+      </div>
+      <div class="foot-col">
+        <h4 class="label">Visit</h4>
+        <div>
+          <a href="https://maps.google.com/?q=1871+Wilson+Ave,+Saint+Paul,+MN+55119" target="_blank" rel="noopener">1871 &amp; 1885 Wilson Ave</a>
+          <a href="https://maps.google.com/?q=1871+Wilson+Ave,+Saint+Paul,+MN+55119" target="_blank" rel="noopener">Saint Paul, MN 55119</a>
+          <a href="tel:16515780498">651-578-0498</a>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>&copy; 2026 Ridgewood Apartments</span>
+      <span>Equal Housing Opportunity</span>
+    </div>
+  </div>
+</footer>
+
+<div class="ov" id="tourOverlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="tourTitle">
+    <div class="sheet-head">
+      <h3 id="tourTitle">Schedule a Tour</h3>
+      <button class="sheet-close" id="tourClose" type="button" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M5 5l14 14M19 5L5 19"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <!-- Replace data-url with your real Calendly event link -->
+      <div class="calendly-inline-widget" id="calendlyWidget" data-url="https://calendly.com/ridgewood-apartments/property-tour?hide_gdpr_banner=1" style="min-width:280px; height:640px;"></div>
+      <div class="fallback" id="tourFallback" hidden>
+        <p>The live scheduler isn't reachable from this preview. Open it in a new tab, or call the leasing office to book your tour.</p>
+        <div class="fallback-actions">
+          <a class="btn btn-sm" href="https://calendly.com/ridgewood-apartments/property-tour" target="_blank" rel="noopener">Open Scheduler</a>
+          <a class="btn btn-outline btn-sm" href="tel:16515780498">Call 651-578-0498</a>
+        </div>
+      </div>
+      <p class="sheet-note">Prefer to talk it through? Call the leasing office at <a href="tel:16515780498">651-578-0498</a>.</p>
+    </div>
+  </div>
+</div>
+
+<div class="lb" id="lightbox" hidden>
+  <div class="lb-top">
+    <div class="lb-meta">
+      <span class="lb-title" id="lbTitle">Gallery</span>
+      <span class="lb-sub" id="lbSub">Exterior</span>
+    </div>
+    <button class="menu-close" id="lbClose" type="button" aria-label="Close gallery">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M5 5l14 14M19 5L5 19"/></svg>
+    </button>
+  </div>
+  <div class="lb-stage">
+    <button class="lb-nav" id="lbPrev" type="button" aria-label="Previous image">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <figure class="lb-figure" id="lbFigure"></figure>
+    <button class="lb-nav" id="lbNext" type="button" aria-label="Next image">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="m-bar" id="mBar">
+  <a class="btn btn-outline btn-sm" href="tel:16515780498">Call</a>
+  <button class="btn btn-sm js-open-tour" type="button">Schedule a Tour</button>
+</div>
+
+<script src="https://assets.calendly.com/assets/external/widget.js" async></script>
+<script>
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var head = document.getElementById('siteHead');
+    var announce = document.getElementById('announce');
+
+    function onScroll() {
+      var y = window.scrollY;
+      head.classList.toggle('is-stuck', y > 30);
+      if (y > 140) announce.classList.add('is-collapsed');
+      revealInView();
+    }
+    document.getElementById('announceClose').addEventListener('click', function () {
+      announce.classList.add('is-collapsed');
+    });
+
+    /* ---- Menu ---- */
+    var menu = document.getElementById('menuOverlay');
+    var menuOpen = document.getElementById('menuOpen');
+    var menuClose = document.getElementById('menuClose');
+    function openMenu() { menu.hidden = false; menuOpen.setAttribute('aria-expanded', 'true'); document.body.style.overflow = 'hidden'; menuClose.focus(); }
+    function closeMenu() { menu.hidden = true; menuOpen.setAttribute('aria-expanded', 'false'); document.body.style.overflow = ''; menuOpen.focus(); }
+    menuOpen.addEventListener('click', openMenu);
+    menuClose.addEventListener('click', closeMenu);
+    menu.querySelectorAll('[data-menu-close]').forEach(function (el) {
+      el.addEventListener('click', function () { menu.hidden = true; menuOpen.setAttribute('aria-expanded', 'false'); document.body.style.overflow = ''; });
+    });
+
+    /* ---- Reveal ---- */
+    var reveals = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
+    function revealInView() {
+      for (var i = reveals.length - 1; i >= 0; i--) {
+        if (reveals[i].getBoundingClientRect().top < window.innerHeight) {
+          reveals[i].classList.add('is-visible');
+          reveals.splice(i, 1);
+        }
+      }
+    }
+    if (reduce) { reveals.forEach(function (el) { el.classList.add('is-visible'); }); reveals.length = 0; }
+    revealInView();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    window.addEventListener('load', revealInView);
+    onScroll();
+
+    /* ---- Tour modal ---- */
+    var tourOv = document.getElementById('tourOverlay');
+    var tourClose = document.getElementById('tourClose');
+    var fallback = document.getElementById('tourFallback');
+    var widget = document.getElementById('calendlyWidget');
+    var lastFocus = null;
+    function openTour() {
+      if (!menu.hidden) closeMenu();
+      lastFocus = document.activeElement;
+      tourOv.hidden = false;
+      document.body.style.overflow = 'hidden';
+      tourClose.focus();
+      setTimeout(function () {
+        if (!widget.querySelector('iframe')) { widget.hidden = true; fallback.hidden = false; }
+      }, 1800);
+    }
+    function closeTour() { tourOv.hidden = true; document.body.style.overflow = ''; if (lastFocus) lastFocus.focus(); }
+    document.querySelectorAll('.js-open-tour').forEach(function (b) { b.addEventListener('click', openTour); });
+    tourClose.addEventListener('click', closeTour);
+    tourOv.addEventListener('click', function (e) { if (e.target === tourOv) closeTour(); });
+
+    /* ---- Filters ---- */
+    var shots = Array.prototype.slice.call(document.querySelectorAll('.shot'));
+    var filters = document.getElementById('filters');
+    var countEl = document.getElementById('count');
+    var activeShots = shots.slice();
+    filters.addEventListener('click', function (e) {
+      var btn = e.target.closest('.filter');
+      if (!btn) return;
+      filters.querySelectorAll('.filter').forEach(function (t) { t.setAttribute('aria-pressed', 'false'); });
+      btn.setAttribute('aria-pressed', 'true');
+      var f = btn.getAttribute('data-filter');
+      activeShots = [];
+      shots.forEach(function (s) {
+        var match = f === 'all' || s.getAttribute('data-cat') === f;
+        s.hidden = !match;
+        if (match) activeShots.push(s);
+      });
+      countEl.textContent = activeShots.length + (activeShots.length === 1 ? ' View' : ' Views');
+    });
+
+    /* ---- Lightbox ---- */
+    var lb = document.getElementById('lightbox');
+    var lbFigure = document.getElementById('lbFigure');
+    var lbTitle = document.getElementById('lbTitle');
+    var lbSub = document.getElementById('lbSub');
+    var lbClose = document.getElementById('lbClose');
+    var idx = 0;
+    function show(i) {
+      if (!activeShots.length) return;
+      idx = (i + activeShots.length) % activeShots.length;
+      var src = activeShots[idx];
+      var photo = src.querySelector('img').cloneNode(true);
+      photo.removeAttribute('loading');
+      lbFigure.innerHTML = '';
+      lbFigure.appendChild(photo);
+      lbTitle.textContent = src.getAttribute('data-name');
+      lbSub.textContent = src.querySelector('.scat').textContent + ' \u00B7 ' + (idx + 1) + ' of ' + activeShots.length;
+    }
+    function openLb(el) {
+      lastFocus = document.activeElement;
+      show(activeShots.indexOf(el));
+      lb.hidden = false;
+      document.body.style.overflow = 'hidden';
+      lbClose.focus();
+    }
+    function closeLb() { lb.hidden = true; document.body.style.overflow = ''; if (lastFocus) lastFocus.focus(); }
+    shots.forEach(function (el) { el.addEventListener('click', function () { openLb(el); }); });
+    lbClose.addEventListener('click', closeLb);
+    document.getElementById('lbPrev').addEventListener('click', function () { show(idx - 1); });
+    document.getElementById('lbNext').addEventListener('click', function () { show(idx + 1); });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        if (!lb.hidden) closeLb();
+        else if (!tourOv.hidden) closeTour();
+        else if (!menu.hidden) closeMenu();
+      }
+      if (!lb.hidden) {
+        if (e.key === 'ArrowLeft') show(idx - 1);
+        if (e.key === 'ArrowRight') show(idx + 1);
+      }
+    });
+  })();
+</script>
+
+</body>
+</html>

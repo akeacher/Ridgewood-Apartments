@@ -1,0 +1,1864 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ridgewood Apartments | Saint Paul, MN</title>
+<meta name="description" content="One, two, and three bedroom apartments on Saint Paul's east side. Heat, water, trash and sewer included. On-site parking with garages available. Call 651-578-0498.">
+<link rel="canonical" href="https://ridgewoodapartmentsmn.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Ridgewood Apartments">
+<meta property="og:title" content="Ridgewood Apartments | Saint Paul, MN">
+<meta property="og:description" content="One, two, and three bedroom apartments on Saint Paul's east side. Heat, water, trash and sewer included. On-site parking with garages available. Call 651-578-0498.">
+<meta property="og:url" content="https://ridgewoodapartmentsmn.com/">
+<meta property="og:image" content="https://ridgewoodapartmentsmn.com/assets/img/social.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#2e482b">
+<link rel="icon" href="assets/img/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="assets/img/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #f4f0e6;
+    --cream-deep: #e8e2d3;
+    --white: #fdfbf6;
+    --ink: #222a1f;
+    --ink-soft: #6c6b5e;
+    --line: #dcd5c4;
+    --forest: #2e482b;
+    --forest-deep: #1c2d1a;
+    --forest-ink: #f6f2e8;
+    --gold: #cb9d47;
+    --brandbar: #f4f0e6;
+--shadow: 112 24% 9%;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --cream: #15170f;
+      --cream-deep: #1c1f15;
+      --white: #20241a;
+      --ink: #f0ebdd;
+      --ink-soft: #a5a191;
+      --line: #373a2c;
+      --forest: #1a2a17;
+      --forest-deep: #0e160b;
+      --forest-ink: #f0ebdd;
+      --brandbar: #f4f0e6;
+      --gold: #d8b463;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --cream: #15170f;
+    --cream-deep: #1c1f15;
+    --white: #20241a;
+    --ink: #f0ebdd;
+    --ink-soft: #a5a191;
+    --line: #373a2c;
+    --forest: #1a2a17;
+    --forest-deep: #0e160b;
+    --forest-ink: #f0ebdd;
+    --brandbar: #f4f0e6;
+    --gold: #d8b463;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+  body {
+    margin: 0;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: "Jost", ui-sans-serif, system-ui, sans-serif;
+    font-weight: 300;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-weight: 300;
+    text-wrap: balance;
+    margin: 0;
+    letter-spacing: 0.005em;
+  }
+  p { margin: 0; }
+  a { color: inherit; }
+  img, svg { display: block; max-width: 100%; }
+  button { font: inherit; color: inherit; }
+
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 40px; }
+  .wrap-narrow { max-width: 760px; margin: 0 auto; padding: 0 40px; }
+
+  .label {
+    font-family: "Jost", sans-serif;
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .label-gold { color: var(--gold); }
+  .label-light { color: color-mix(in srgb, var(--forest-ink) 72%, transparent); }
+
+  .rule { height: 1px; background: var(--line); border: none; margin: 0; }
+
+  /* ---------- Reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .9s cubic-bezier(.22,.7,.2,1), transform .9s cubic-bezier(.22,.7,.2,1); }
+  .reveal.is-visible { opacity: 1; transform: none; }
+  .reveal-d1 { transition-delay: .1s; }
+  .reveal-d2 { transition-delay: .2s; }
+  .reveal-d3 { transition-delay: .3s; }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    appearance: none; -webkit-appearance: none;
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    font-family: "Jost", sans-serif;
+    font-size: 0.72rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase;
+    text-decoration: none;
+    padding: 17px 34px;
+    border: 1px solid var(--ink);
+    background: var(--ink); color: var(--cream);
+    cursor: pointer; white-space: nowrap;
+    transition: background .3s ease, color .3s ease, border-color .3s ease;
+  }
+  .btn:hover { background: transparent; color: var(--ink); }
+  .btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+  .btn-outline { background: transparent; color: var(--ink); border-color: var(--ink); }
+  .btn-outline:hover { background: var(--ink); color: var(--cream); }
+  .btn-light { background: var(--forest-ink); color: var(--forest); border-color: var(--forest-ink); }
+  .btn-light:hover { background: transparent; color: var(--forest-ink); }
+  .btn-sm { padding: 13px 24px; font-size: 0.66rem; }
+
+  .link-ul {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: "Jost", sans-serif;
+    font-size: 0.72rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase;
+    text-decoration: none; color: var(--ink);
+    padding-bottom: 8px;
+    border: none; border-bottom: 1px solid var(--ink);
+    background: none; cursor: pointer;
+    transition: color .25s ease, border-color .25s ease, gap .25s ease;
+  }
+  .link-ul:hover { color: var(--gold); border-color: var(--gold); gap: 16px; }
+  .link-ul:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+  .link-ul.on-dark { color: var(--forest-ink); border-color: color-mix(in srgb, var(--forest-ink) 55%, transparent); }
+  .link-ul.on-dark:hover { color: var(--gold); border-color: var(--gold); }
+
+  /* ---------- Header ---------- */
+  header.site-head {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 70;
+  }
+  .announce {
+    background: var(--forest-deep);
+    color: var(--forest-ink);
+    overflow: hidden;
+    /* generous cap so wrapped promo text is never clipped; collapse animates to 0 */
+    max-height: 240px;
+    transition: max-height .45s ease, opacity .35s ease;
+  }
+  .announce.is-collapsed { max-height: 0; opacity: 0; }
+  .announce-inner {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    min-height: 38px;
+    padding: 8px 46px; position: relative;
+    text-align: center;
+  }
+  .announce-inner p {
+    font-size: 0.62rem; font-weight: 400; letter-spacing: 0.2em; text-transform: uppercase;
+    line-height: 1.4;
+    color: color-mix(in srgb, var(--forest-ink) 88%, transparent);
+  }
+  .announce-close {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: var(--forest-ink);
+    cursor: pointer; padding: 4px 8px; line-height: 1; font-size: 1rem; opacity: .7;
+  }
+  .announce-close:hover { opacity: 1; }
+  .announce-close:focus-visible { outline: 1px solid var(--forest-ink); outline-offset: 2px; }
+
+  /* The logo is a fixed-colour illustration drawn for a light ground: it cannot
+     knock out to white, and in dark mode --cream goes near-black. So the brand
+     bar keeps its own light ground in both themes and re-scopes the ink tokens,
+     which lets every child (phone, icons, burger) inherit the right colours. */
+  .head-bar, .menu-top {
+    --ink: #222a1f;
+    --ink-soft: #6c6b5e;
+    --line: #dcd5c4;
+    background: var(--brandbar);
+    color: var(--ink);
+    border-bottom: 1px solid var(--line);
+  }
+  .head-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 24px;
+    min-height: 76px;
+    padding: 12px 0;
+  }
+  .wordmark { display: inline-flex; align-items: center; gap: 13px; text-decoration: none; }
+  .logo-mark { height: 48px; width: auto; }
+  .logo-text { height: 25px; width: auto; }
+  .menu-top .logo-mark { height: 42px; }
+  .menu-top .logo-text { height: 22px; }
+  .foot-brand .wordmark { background: var(--brandbar); padding: 12px 16px; }
+  .foot-brand .logo-mark { height: 54px; }
+  .foot-brand .logo-text { height: 28px; }
+  .head-actions { display: flex; align-items: center; gap: 14px; }
+  .head-phone {
+    font-size: 0.68rem; font-weight: 400; letter-spacing: 0.18em; text-transform: uppercase;
+    text-decoration: none; color: var(--ink); white-space: nowrap; display: none;
+    transition: color .4s ease;
+  }
+  .head-phone:hover { color: var(--gold); }
+  .icon-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px; padding: 0;
+    background: transparent; border: 1px solid var(--line); border-radius: 0;
+    color: var(--ink); cursor: pointer; flex-shrink: 0;
+    transition: border-color .3s ease, color .3s ease, background .3s ease;
+  }
+  .icon-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .icon-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  .burger {
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+    width: 44px; height: 44px; padding: 0;
+    background: transparent; border: 1px solid var(--line);
+    cursor: pointer; flex-shrink: 0;
+    transition: border-color .3s ease;
+  }
+  .burger span { display: block; width: 18px; height: 1px; background: var(--ink); transition: transform .3s ease, opacity .3s ease, background .4s ease; }
+  .burger:hover { border-color: var(--gold); }
+  .burger:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  header.site-head.is-stuck .head-bar { box-shadow: 0 1px 14px hsl(var(--shadow) / 0.09); }
+
+  /* ---------- Full-screen menu ---------- */
+  .menu-overlay {
+    position: fixed; inset: 0; z-index: 80;
+    background: var(--forest);
+    color: var(--forest-ink);
+    display: flex; flex-direction: column;
+    overflow-y: auto;
+  }
+  /* background and ink come from the shared .head-bar, .menu-top rule above */
+  .menu-top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 40px;
+  }
+  .menu-top .menu-close { border-color: var(--line); color: var(--ink); }
+  .menu-top .menu-close:hover { border-color: var(--gold); color: var(--gold); }
+  .menu-close {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px;
+    background: transparent; border: 1px solid color-mix(in srgb, var(--forest-ink) 42%, transparent);
+    color: var(--forest-ink); cursor: pointer;
+    transition: border-color .3s ease, color .3s ease;
+  }
+  .menu-close:hover { border-color: var(--gold); color: var(--gold); }
+  .menu-close:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .menu-body {
+    flex: 1;
+    display: grid; grid-template-columns: 1.3fr 1fr; gap: 60px;
+    padding: 44px 40px 50px;
+    max-width: 1240px; margin: 0 auto; width: 100%;
+    align-items: center;
+  }
+  .menu-links { display: flex; flex-direction: column; }
+  .menu-links a {
+    font-family: "Cormorant Garamond", serif;
+    font-size: clamp(1.6rem, 3.4vw, 2.5rem);
+    font-weight: 300; line-height: 1.25;
+    text-decoration: none; color: var(--forest-ink);
+    padding: 9px 0;
+    display: flex; align-items: baseline; gap: 18px;
+    transition: color .3s ease, padding-left .3s ease;
+  }
+  .menu-links a:hover { color: var(--gold); padding-left: 14px; }
+  .menu-links a .mnum {
+    font-family: "Jost", sans-serif; font-size: 0.6rem; letter-spacing: 0.2em;
+    color: color-mix(in srgb, var(--forest-ink) 45%, transparent);
+  }
+  .menu-info { display: flex; flex-direction: column; gap: 32px; padding-top: 18px; }
+  .menu-info-block { display: flex; flex-direction: column; gap: 8px; }
+  .menu-info-block .label { color: color-mix(in srgb, var(--forest-ink) 55%, transparent); }
+  .menu-info-block p, .menu-info-block a {
+    font-size: 0.95rem; font-weight: 300; line-height: 1.6; color: var(--forest-ink);
+    text-decoration: none;
+  }
+  .menu-info-block a:hover { color: var(--gold); }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    position: relative;
+    min-height: clamp(620px, 90vh, 900px);
+    display: flex; align-items: center;
+    overflow: hidden;
+    background: var(--forest-deep);
+  }
+  .hero-bg { position: absolute; inset: 0; }
+  .hero-bg svg { width: 100%; height: 100%; }
+  /* 2006-era frames are flat; a light grade lifts them without looking processed */
+  .hero-photo { width: 100%; height: 100%; object-fit: cover; object-position: 50% 62%; filter: brightness(0.62) saturate(1.1) contrast(1.03); }
+  /* Weighted to the left: the monument sign carries its own lettering on the
+     right of the frame, so the headline gets the quieter building side. */
+  .hero-scrim {
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(95deg, hsl(var(--shadow) / 0.92) 0%, hsl(var(--shadow) / 0.78) 38%, hsl(var(--shadow) / 0.40) 68%, hsl(var(--shadow) / 0.46) 100%),
+      linear-gradient(180deg, hsl(var(--shadow) / 0.50) 0%, hsl(var(--shadow) / 0.22) 32%, hsl(var(--shadow) / 0.40) 74%, hsl(var(--shadow) / 0.70) 100%);
+  }
+  .hero-inner {
+    position: relative; z-index: 2; width: 100%;
+    padding: 150px 0 96px;
+    text-align: left;
+    color: var(--forest-ink);
+  }
+  .hero-inner .wrap { max-width: 1240px; }
+  .hero-inner .label { display: block; }
+  .hero .label { color: color-mix(in srgb, var(--forest-ink) 78%, transparent); }
+  .hero h1 {
+    margin-top: 26px;
+    font-size: clamp(2.2rem, 4.5vw, 3.9rem);
+    font-weight: 300;
+    line-height: 1.04;
+    letter-spacing: 0.01em;
+    color: var(--forest-ink);
+  }
+  .hero h1 em { font-style: italic; font-weight: 300; }
+  .hero-sub {
+    margin: 28px 0 0;
+    max-width: 40ch;
+    font-size: 1.02rem; font-weight: 300; line-height: 1.7;
+    color: color-mix(in srgb, var(--forest-ink) 86%, transparent);
+  }
+  .hero-actions { display: flex; align-items: center; justify-content: flex-start; gap: 28px; margin-top: 44px; flex-wrap: wrap; }
+  .hero-scroll {
+    position: absolute; bottom: 34px; left: 50%; transform: translateX(-50%);
+    z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 10px;
+    color: color-mix(in srgb, var(--forest-ink) 70%, transparent);
+  }
+  .hero-scroll .line { width: 1px; height: 42px; background: currentColor; opacity: .6; }
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-scroll .line { animation: scroll-pulse 2.4s ease-in-out infinite; transform-origin: top; }
+  }
+  @keyframes scroll-pulse { 0%, 100% { transform: scaleY(.4); opacity: .3; } 50% { transform: scaleY(1); opacity: .8; } }
+
+  /* ---------- Marquee ---------- */
+  .marquee {
+    background: var(--forest);
+    border-top: 1px solid color-mix(in srgb, var(--forest-ink) 14%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--forest-ink) 14%, transparent);
+    overflow: hidden;
+    padding: 16px 0;
+  }
+  .marquee-track { display: flex; width: max-content; }
+  @media (prefers-reduced-motion: no-preference) {
+    .marquee-track { animation: marquee 46s linear infinite; }
+  }
+  @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .marquee-track span {
+    font-size: 0.68rem; font-weight: 400; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--forest-ink); white-space: nowrap; padding: 0 26px;
+    display: inline-flex; align-items: center; gap: 26px;
+  }
+  .marquee-track span::after { content: ""; width: 4px; height: 4px; border-radius: 50%; background: var(--gold); }
+
+  /* ---------- Sections ---------- */
+  .band { padding: clamp(80px, 11vw, 150px) 0; }
+  .band-cream { background: var(--cream); }
+  .band-deep { background: var(--cream-deep); }
+  .band-forest { background: var(--forest); color: var(--forest-ink); }
+  .band-forest h2, .band-forest h3 { color: var(--forest-ink); }
+
+  .center-head { text-align: center; max-width: 760px; margin: 0 auto; }
+  .center-head h2 {
+    margin-top: 22px;
+    font-size: clamp(2.1rem, 4.4vw, 3.4rem);
+    line-height: 1.12;
+  }
+  .center-head h2 em { font-style: italic; color: var(--gold); }
+  .center-head p {
+    margin-top: 26px;
+    font-size: 1.02rem; font-weight: 300; line-height: 1.8;
+    color: var(--ink-soft);
+  }
+  .band-forest .center-head p { color: color-mix(in srgb, var(--forest-ink) 78%, transparent); }
+  .center-head .link-ul { margin-top: 38px; }
+
+  .split-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 40px; flex-wrap: wrap; margin-bottom: 60px; }
+  .split-head h2 { margin-top: 20px; font-size: clamp(1.9rem, 3.6vw, 2.9rem); line-height: 1.14; }
+  .split-head p { max-width: 42ch; font-size: 0.98rem; font-weight: 300; line-height: 1.75; color: var(--ink-soft); }
+
+  /* ---------- Amenities ---------- */
+  .amen-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+  .amen {
+    background: var(--cream-deep);
+    padding: 46px 32px 40px;
+    display: flex; flex-direction: column; gap: 20px;
+    transition: background .4s ease;
+  }
+  .amen:hover { background: var(--white); }
+  .amen-motif { color: var(--gold); }
+  .amen-motif svg { width: 38px; height: 38px; }
+  .amen h3 { font-size: 1.45rem; line-height: 1.25; font-weight: 400; }
+  .amen .rule { width: 100%; }
+  .amen p { font-size: 0.9rem; font-weight: 300; line-height: 1.72; color: var(--ink-soft); }
+
+  /* ---------- Gallery ---------- */
+  .gal-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 20px; }
+  .gal-item {
+    position: relative; overflow: hidden; cursor: pointer;
+    background: var(--forest-deep); border: none; padding: 0; display: block; width: 100%;
+  }
+  .gal-item img { width: 100%; height: 100%; object-fit: cover; filter: saturate(1.06) contrast(1.04); transition: transform .8s cubic-bezier(.2,.7,.2,1); }
+  .gal-item:hover img { transform: scale(1.05); }
+  .gal-item:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+  .gal-item::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(0deg, hsl(var(--shadow) / 0.6), transparent 55%);
+    pointer-events: none;
+  }
+  .gal-cap {
+    position: absolute; left: 22px; bottom: 18px; z-index: 2;
+    display: flex; align-items: baseline; gap: 12px;
+    color: var(--forest-ink); text-align: left;
+  }
+  .gal-cap .gname { font-family: "Cormorant Garamond", serif; font-size: 1.2rem; font-weight: 400; }
+  .gal-cap .gnum { font-size: 0.6rem; letter-spacing: 0.2em; opacity: .75; }
+  .gal-a { grid-column: span 7; aspect-ratio: 16 / 10; }
+  .gal-b { grid-column: span 5; aspect-ratio: 4 / 3.2; }
+  .gal-c { grid-column: span 4; aspect-ratio: 4 / 3.4; }
+  .gal-d { grid-column: span 4; aspect-ratio: 4 / 3.4; }
+  .gal-e { grid-column: span 4; aspect-ratio: 4 / 3.4; }
+
+  /* ---------- Floor plans ---------- */
+  .plan-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+  .plan {
+    background: var(--white); border: 1px solid var(--line);
+    display: flex; flex-direction: column;
+    transition: box-shadow .4s ease, transform .4s ease;
+  }
+  .plan:hover { box-shadow: 0 26px 50px hsl(var(--shadow) / 0.12); transform: translateY(-4px); }
+  .plan-fig {
+    background: var(--cream-deep);
+    border-bottom: 1px solid var(--line);
+    padding: 26px;
+  }
+  .plan-inner { padding: 30px 30px 34px; display: flex; flex-direction: column; gap: 18px; flex: 1; }
+  .plan h3 { font-size: 1.7rem; font-weight: 400; line-height: 1.1; }
+  .plan-meta { font-size: 0.66rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-soft); }
+  .plan-sf { font-family: "Cormorant Garamond", serif; font-size: 1.15rem; font-style: italic; color: var(--gold); }
+  .plan p { font-size: 0.9rem; font-weight: 300; line-height: 1.72; color: var(--ink-soft); flex: 1; }
+  .plan-foot { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+
+  /* ---------- Isometric floor plan ---------- */
+  svg.plan { width:100%; height:auto; display:block; }
+  svg.plan .rm { fill:var(--cream-deep); transition:fill .25s ease; }
+  svg.plan .rm.wet { fill:var(--line); }
+  svg.plan .wall { stroke:var(--ink); fill:none; stroke-linecap:square; }
+  svg.plan .fx { stroke:var(--ink-soft); fill:none; stroke-width:1; }
+  svg.plan .glz { stroke:var(--ink); stroke-width:1.1; }
+  svg.plan .swing { stroke:var(--ink-soft); fill:none; stroke-width:.8; stroke-dasharray:2.5 2; }
+  svg.plan .leaf { stroke:var(--ink); stroke-width:1.6; }
+  svg.plan .bal { stroke:var(--gold); fill:none; stroke-width:1.8; }
+  svg.plan .lbl { fill:var(--ink-soft); font-family:"Jost",sans-serif; text-anchor:middle; }
+  svg.plan .lbl.bal-t { fill:var(--gold); }
+  svg.plan .lbl.dm { opacity:.82; }
+  svg.plan .dim line { stroke:var(--ink-soft); stroke-width:.8; opacity:.65; }
+  svg.plan .dim text { fill:var(--ink-soft); font-family:"Jost",sans-serif; text-anchor:middle; opacity:.85; }
+  .plan-fig { display:flex; align-items:center; justify-content:center; }
+  .plan-sheet-fig svg.plan .rm { cursor:pointer; }
+  .plan-sheet-fig svg.plan .rm:hover,
+  .plan-sheet-fig svg.plan .rm.on { fill:color-mix(in srgb, var(--gold) 34%, var(--cream-deep)); }
+  .plan-readout { display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; min-height:30px; }
+  .plan-readout .rn { font-family:"Cormorant Garamond",serif; font-size:1.35rem; color:var(--ink); }
+  .plan-readout .rd { font-size:.64rem; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-soft); }
+
+  /* ---------- Neighborhood ---------- */
+  .hood-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; }
+  .map-frame { border: 1px solid var(--line); background: var(--white); }
+  .map-img { position: relative; line-height: 0; }
+  .map-img img { width: 100%; height: auto; filter: saturate(.72) contrast(1.03); }
+  .map-pin { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -100%); filter: drop-shadow(0 4px 8px hsl(var(--shadow) / .4)); }
+  .map-cap { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 16px 20px; background: var(--forest); color: var(--forest-ink); }
+  .map-cap .coords { font-size: 0.62rem; letter-spacing: 0.16em; opacity: .7; }
+
+  .tabs { display: flex; flex-wrap: wrap; gap: 26px; margin: 28px 0 8px; border-bottom: 1px solid var(--line); }
+  .tab {
+    appearance: none; background: none; border: none; cursor: pointer;
+    font-size: 0.66rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--ink-soft); padding: 0 0 14px; margin-bottom: -1px;
+    border-bottom: 1px solid transparent;
+    transition: color .25s ease, border-color .25s ease;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-pressed="true"] { color: var(--ink); border-bottom-color: var(--gold); }
+  .tab:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+  .hood-list { display: flex; flex-direction: column; }
+  .hood-item {
+    display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: baseline;
+    padding: 22px 0; border-bottom: 1px solid var(--line);
+  }
+  .hood-item[hidden] { display: none; }
+  .hood-item h3 { font-size: 1.35rem; font-weight: 400; }
+  .hood-item .hcat { display: block; margin-bottom: 7px; }
+  .hood-item .hdesc { font-size: 0.88rem; font-weight: 300; line-height: 1.6; color: var(--ink-soft); margin-top: 6px; }
+  .hood-item .htime { font-size: 0.68rem; font-weight: 400; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft); white-space: nowrap; }
+
+  /* ---------- Closing CTA ---------- */
+  .cta-band { text-align: center; }
+  .cta-band h2 { font-size: clamp(2.2rem, 5vw, 3.8rem); line-height: 1.1; margin-top: 24px; }
+  .cta-band h2 em { font-style: italic; }
+  .cta-band p { margin: 26px auto 0; max-width: 48ch; font-size: 1rem; font-weight: 300; line-height: 1.8; color: color-mix(in srgb, var(--forest-ink) 78%, transparent); }
+  .cta-actions { display: flex; align-items: center; justify-content: center; gap: 28px; margin-top: 44px; flex-wrap: wrap; }
+
+  /* ---------- Footer ---------- */
+  footer { background: var(--cream); padding: 80px 0 40px; border-top: 1px solid var(--line); }
+  .foot-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 48px; padding-bottom: 54px; }
+  .foot-brand p { margin-top: 20px; max-width: 34ch; font-size: 0.92rem; font-weight: 300; line-height: 1.75; color: var(--ink-soft); }
+  .foot-col h4 { margin-bottom: 20px; }
+  .foot-col div { display: flex; flex-direction: column; gap: 12px; }
+  .foot-col a, .foot-col span { font-size: 0.92rem; font-weight: 300; color: var(--ink); text-decoration: none; line-height: 1.5; }
+  .foot-col a:hover { color: var(--gold); }
+  .foot-bottom { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-top: 30px; border-top: 1px solid var(--line); }
+  .foot-bottom span { font-size: 0.72rem; font-weight: 300; letter-spacing: 0.08em; color: var(--ink-soft); }
+
+  /* ---------- Modals ---------- */
+  .ov {
+    position: fixed; inset: 0; z-index: 90;
+    background: color-mix(in srgb, var(--forest-deep) 78%, transparent);
+    backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .sheet {
+    background: var(--white); border: 1px solid var(--line);
+    width: 100%; max-height: 88vh; overflow-y: auto;
+  }
+  .sheet--tour { max-width: 560px; }
+  .sheet--plan { max-width: 660px; }
+  .sheet-head {
+    position: sticky; top: 0; z-index: 2;
+    display: flex; align-items: center; justify-content: space-between; gap: 18px;
+    padding: 24px 28px; background: var(--white); border-bottom: 1px solid var(--line);
+  }
+  .sheet-head h3 { font-size: 1.6rem; font-weight: 400; }
+  .sheet-close {
+    appearance: none; background: none; border: 1px solid var(--line);
+    width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;
+    color: var(--ink-soft); cursor: pointer; flex-shrink: 0;
+    transition: border-color .25s ease, color .25s ease;
+  }
+  .sheet-close:hover { border-color: var(--gold); color: var(--gold); }
+  .sheet-close:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .sheet-body { padding: 26px 28px 30px; display: flex; flex-direction: column; gap: 20px; }
+  .calendly-inline-widget { border: 1px solid var(--line); }
+  .fallback { background: var(--cream-deep); border: 1px solid var(--line); padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+  .fallback p { font-size: 0.9rem; font-weight: 300; line-height: 1.7; color: var(--ink-soft); }
+  .fallback-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+  .sheet-note { font-size: 0.85rem; font-weight: 300; color: var(--ink-soft); text-align: center; line-height: 1.6; }
+  .sheet-note a { color: var(--gold); text-decoration: none; }
+
+  .plan-sheet-fig { background: var(--cream-deep); border: 1px solid var(--line); padding: 26px; }
+  .plan-sheet-specs { display: flex; flex-wrap: wrap; gap: 34px; padding: 20px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .plan-sheet-specs div { display: flex; flex-direction: column; gap: 5px; }
+  .plan-sheet-specs strong { font-family: "Cormorant Garamond", serif; font-size: 1.7rem; font-weight: 400; color: var(--ink); line-height: 1; }
+  .plan-sheet-desc { font-size: 0.96rem; font-weight: 300; line-height: 1.8; color: var(--ink-soft); }
+
+  /* ---------- Lightbox ---------- */
+  .lb { position: fixed; inset: 0; z-index: 95; background: color-mix(in srgb, var(--forest-deep) 94%, transparent); display: flex; flex-direction: column; }
+  .lb-top { display: flex; align-items: center; justify-content: space-between; padding: 22px 32px; color: var(--forest-ink); }
+  .lb-title { font-family: "Cormorant Garamond", serif; font-size: 1.4rem; font-weight: 400; }
+  .lb-stage { flex: 1; display: flex; align-items: center; justify-content: center; gap: 22px; padding: 0 24px 40px; min-height: 0; }
+  .lb-figure { max-width: 1000px; width: 100%; border: 1px solid color-mix(in srgb, var(--forest-ink) 22%, transparent); }
+  .lb-figure svg { width: 100%; height: auto; }
+  .lb-nav {
+    appearance: none; width: 52px; height: 52px; flex-shrink: 0;
+    background: transparent; border: 1px solid color-mix(in srgb, var(--forest-ink) 40%, transparent);
+    color: var(--forest-ink); cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: border-color .25s ease, color .25s ease;
+  }
+  .lb-nav:hover { border-color: var(--gold); color: var(--gold); }
+  .lb-nav:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .ov, .lb { animation: fade-in .22s ease; }
+    .sheet { animation: pop-in .28s cubic-bezier(.2,.8,.2,1); }
+    .menu-overlay { animation: fade-in .3s ease; }
+  }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pop-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+  /* ---------- Sticky mobile bar ---------- */
+  .m-bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 65;
+    display: none; gap: 12px; align-items: center;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--cream) 96%, transparent);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--line);
+    transform: translateY(100%); transition: transform .35s ease;
+  }
+  .m-bar.is-visible { transform: translateY(0); }
+  .m-bar .btn { flex: 1; }
+  .m-bar .btn-outline { flex: 0 0 auto; }
+
+  /* ---------- Responsive ---------- */
+  @media (min-width: 700px) { .head-phone { display: inline-block; } }
+
+  @media (max-width: 1024px) {
+    .amen-grid { grid-template-columns: repeat(2, 1fr); }
+    .plan-grid { grid-template-columns: 1fr; max-width: 560px; margin: 0 auto; }
+    .hood-grid { grid-template-columns: 1fr; gap: 44px; }
+    .foot-grid { grid-template-columns: 1fr 1fr; gap: 40px; }
+    .menu-body { grid-template-columns: 1fr; gap: 44px; padding-top: 50px; }
+  }
+  @media (max-width: 760px) {
+    .wrap, .wrap-narrow { padding: 0 22px; }
+    .menu-top { padding: 20px 22px; }
+    .menu-body { padding: 44px 22px 50px; }
+    .gal-grid { grid-template-columns: 1fr; gap: 14px; }
+    .gal-a, .gal-b, .gal-c, .gal-d, .gal-e { grid-column: span 1; aspect-ratio: 4 / 3; }
+    .amen-grid { grid-template-columns: 1fr; }
+    .foot-grid { grid-template-columns: 1fr; gap: 34px; }
+    .m-bar { display: flex; }
+    footer { padding-bottom: 100px; }
+    .lb-stage { flex-direction: column; gap: 16px; }
+    .lb-nav { width: 44px; height: 44px; }
+  }
+
+  /* ---------- Green-led palette ---------- */
+  :root { --accent: var(--forest); --accent-ink: #f6f2e8; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --accent: #f0ebdd; --accent-ink: #1c2d1a; }
+  }
+  :root[data-theme="dark"] { --accent: #f0ebdd; --accent-ink: #1c2d1a; }
+
+  /* on green grounds the accent flips so buttons and links stay legible */
+  .band-forest, .band-forest-deep, .cta, .page-head, .page-hero, footer, .map-cap {
+    --accent: var(--forest-ink); --accent-ink: var(--forest);
+  }
+
+  .btn { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn:hover { background: transparent; color: var(--accent); }
+  .btn-outline { background: transparent; color: var(--accent); border-color: var(--accent); }
+  .btn-outline:hover { background: var(--accent); color: var(--accent-ink); }
+  .btn-light { background: var(--forest-ink); color: var(--forest); border-color: var(--forest-ink); }
+  .btn-light:hover { background: transparent; color: var(--forest-ink); }
+
+  /* a second, deeper green band so stacked green sections still read apart */
+  .band-forest-deep { background: var(--forest-deep); color: var(--forest-ink); }
+  .band-forest-deep h2, .band-forest-deep h3, .band-forest-deep h4 { color: var(--forest-ink); }
+  .band-forest .label, .band-forest-deep .label { color: color-mix(in srgb, var(--forest-ink) 70%, transparent); }
+  .band-forest .rule, .band-forest-deep .rule, .cta .rule, footer .rule {
+    background: color-mix(in srgb, var(--forest-ink) 24%, transparent);
+  }
+
+  /* closing call to action carries the green through every page */
+  .cta {
+    background: var(--forest); color: var(--forest-ink);
+    --ink: var(--forest-ink);
+    --ink-soft: color-mix(in srgb, var(--forest-ink) 76%, transparent);
+    --line: color-mix(in srgb, var(--forest-ink) 22%, transparent);
+  }
+  .cta h2 { color: var(--forest-ink); }
+
+  footer {
+    background: var(--forest-deep); color: var(--forest-ink); border-top: none;
+    --ink: var(--forest-ink);
+    --ink-soft: color-mix(in srgb, var(--forest-ink) 66%, transparent);
+    --line: color-mix(in srgb, var(--forest-ink) 20%, transparent);
+  }
+  footer h4, footer h3 { color: var(--forest-ink); }
+  .foot-col a:hover { color: var(--gold); }
+
+  /* amenity tiles on a green ground */
+  .band-forest .amen-grid, .band-forest-deep .amen-grid {
+    background: color-mix(in srgb, var(--forest-ink) 15%, transparent);
+    border-top-color: color-mix(in srgb, var(--forest-ink) 15%, transparent);
+    border-left-color: color-mix(in srgb, var(--forest-ink) 15%, transparent);
+  }
+  .band-forest .amen { background: var(--forest); color: var(--forest-ink); }
+  .band-forest .amen:hover { background: color-mix(in srgb, var(--forest-ink) 7%, var(--forest)); }
+  .band-forest .amen h3 { color: var(--forest-ink); }
+  .band-forest .amen p { color: color-mix(in srgb, var(--forest-ink) 74%, transparent); }
+
+  /* the plan sheet needs to sit lighter than the rooms drawn on it */
+  .plan-sheet-fig { background: var(--white); }
+
+  /* headings carry the logo green on light grounds; in dark mode they read cream */
+  :root { --head: #2e482b; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --head: #f0ebdd; } }
+  :root[data-theme="dark"] { --head: #f0ebdd; }
+  h1, h2, h3, h4 { color: var(--head); }
+  .menu-overlay h1, .menu-overlay h2, .menu-overlay h3, .menu-overlay h4 { color: var(--forest-ink); }
+  .hero h1, .page-head h1, .page-hero h1 { color: var(--forest-ink); }
+</style>
+
+<header class="site-head" id="siteHead">
+  <div class="announce" id="announce">
+    <div class="announce-inner">
+      <p>Now leasing &mdash; one, two &amp; three bedroom homes. Call 651-578-0498 for details.</p>
+      <button class="announce-close" id="announceClose" type="button" aria-label="Dismiss announcement">&times;</button>
+    </div>
+  </div>
+  <div class="head-bar">
+    <div class="wrap head-row">
+      <a class="wordmark" href="#top">
+        <img class="logo-mark" src="assets/img/eac9b379aa07.png" alt="">
+      <img class="logo-text" src="assets/img/347a84b8b28c.png" alt="Ridgewood Apartments">
+      </a>
+      <div class="head-actions">
+        <a class="head-phone" href="tel:16515780498">651&middot;578&middot;0498</a>
+        <button class="icon-btn js-open-tour" type="button" aria-label="Schedule a tour">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3.5" y="4.5" width="17" height="16"/><path d="M3.5 9.5h17M8 3v3M16 3v3"/></svg>
+        </button>
+        <button class="burger" id="menuOpen" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="menuOverlay">
+          <span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="menu-overlay" id="menuOverlay" hidden>
+  <div class="menu-top">
+    <a class="wordmark" href="#top" data-menu-close>
+      <img class="logo-mark" src="assets/img/eac9b379aa07.png" alt="">
+      <img class="logo-text" src="assets/img/347a84b8b28c.png" alt="Ridgewood Apartments">
+    </a>
+    <button class="menu-close" id="menuClose" type="button" aria-label="Close menu">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M5 5l14 14M19 5L5 19"/></svg>
+    </button>
+  </div>
+  <div class="menu-body">
+    <nav class="menu-links" aria-label="Main">
+      <a href="#residences" data-menu-close><span class="mnum">01</span>Residences</a>
+      <a href="#amenities" data-menu-close><span class="mnum">02</span>Amenities</a>
+      <a href="gallery.html" target="_blank" rel="noopener"><span class="mnum">03</span>Gallery</a>
+      <a href="neighborhood.html" target="_blank" rel="noopener"><span class="mnum">04</span>Neighborhood</a>
+      <a href="questions.html" target="_blank" rel="noopener"><span class="mnum">05</span>Questions</a>
+      <a href="#contact" data-menu-close><span class="mnum">06</span>Contact</a>
+    </nav>
+    <div class="menu-info">
+      <div class="menu-info-block">
+        <span class="label">Visit</span>
+        <a href="https://maps.google.com/?q=1871+Wilson+Ave,+Saint+Paul,+MN+55119" target="_blank" rel="noopener">1871 &amp; 1885 Wilson Ave<br>Saint Paul, MN 55119</a>
+      </div>
+      <div class="menu-info-block">
+        <span class="label">Leasing Office</span>
+        <a href="tel:16515780498">651-578-0498</a>
+      </div>
+      <div class="menu-info-block">
+        <span class="label">Office Hours</span>
+        <p>Monday &ndash; Friday, 1pm &ndash; 5pm<br>Saturday &amp; Sunday, closed</p>
+      </div>
+      <button class="btn btn-light js-open-tour" type="button" style="align-self:flex-start;">Schedule a Tour</button>
+    </div>
+  </div>
+</div>
+
+<main id="top">
+  <section class="hero" id="hero">
+    <div class="hero-bg" aria-hidden="true">
+      <img class="hero-photo" src="assets/img/ece7fe7b6a6e.jpg" alt="">
+    </div>
+    <div class="hero-scrim" aria-hidden="true"></div>
+    <div class="hero-inner">
+      <div class="wrap">
+        <span class="label">Timeless, Everyday Living &mdash; Saint Paul, MN</span>
+        <h1>Where Home Is<br><em>Life&rsquo;s Greatest Luxury</em></h1>
+        <p class="hero-sub">A tree-shaded courtyard community on Saint Paul's east side, offering one, two, and three bedroom homes minutes from Battle Creek Park and downtown.</p>
+        <div class="hero-actions">
+          <button class="btn btn-light js-open-tour" type="button">Schedule a Tour</button>
+          <a class="link-ul on-dark" href="#residences">Find Your Home</a>
+        </div>
+      </div>
+    </div>
+    <div class="hero-scroll" aria-hidden="true">
+      <span class="label label-light">Scroll</span>
+      <span class="line"></span>
+    </div>
+  </section>
+
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee-track">
+      <span>Now Leasing</span><span>Utilities Included</span><span>Wilson Avenue</span><span>One, Two &amp; Three Bedrooms</span><span>Private Balconies</span><span>Oak Courtyards</span><span>On-Site Management</span><span>Saint Paul, MN</span>
+      <span>Now Leasing</span><span>Utilities Included</span><span>Wilson Avenue</span><span>One, Two &amp; Three Bedrooms</span><span>Private Balconies</span><span>Oak Courtyards</span><span>On-Site Management</span><span>Saint Paul, MN</span>
+    </div>
+  </div>
+
+  <section class="band band-cream">
+    <div class="wrap-narrow center-head reveal">
+      <span class="label label-gold">Tradition, Thoughtfully Kept</span>
+      <h2>Built in a gentler era, and <em>cared for ever since</em></h2>
+      <p>Ridgewood was designed around its courtyards rather than its parking lot &mdash; low brick buildings, mature oaks, and balconies that look out over open lawn. Inside, warm wood cabinetry and generous windows carry the character of the era, kept up by a leasing team that works on site every weekday.</p>
+      <a class="link-ul" href="#amenities">Explore Ridgewood</a>
+    </div>
+  </section>
+
+  <!-- ================= RESIDENCES ================= -->
+  <section class="band band-deep" id="residences">
+    <div class="wrap">
+      <div class="split-head reveal">
+        <div>
+          <span class="label label-gold">Residences</span>
+          <h2>Find Your Floor Plan</h2>
+        </div>
+        <p>One, two, and three bedroom homes across two buildings on Wilson Avenue. Heat, water, trash, and sewer are included in every one &mdash; contact the leasing office for current availability and pricing.</p>
+      </div>
+
+      <div class="plan-grid">
+        <article class="plan reveal">
+          <div class="plan-fig">
+            <svg class="plan" viewBox="0 0 424 391" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Floor plan of The Wilson, a one bedroom apartment of about 800 square feet">
+<rect class="rm" x="26.0" y="87.0" width="132.0" height="165.0" data-room="Living Room" data-dim="12&prime; &times; 15&prime;" data-area="234 sq ft" id="rm-living-room"/>
+<rect class="rm" x="26.0" y="252.0" width="66.0" height="99.0" data-room="Living Room" data-dim="12&prime; &times; 15&prime;" data-area="234 sq ft" id="rm-living-room-2"/>
+<rect class="rm wet" x="158.0" y="87.0" width="110.0" height="66.0" data-room="Dining Area" data-dim="10&prime; &times; 6&prime;" data-area="60 sq ft" id="rm-dining-area"/>
+<rect class="rm wet" x="158.0" y="153.0" width="110.0" height="99.0" data-room="Kitchen" data-dim="10&prime; &times; 9&prime;" data-area="90 sq ft" id="rm-kitchen"/>
+<rect class="rm" x="92.0" y="252.0" width="176.0" height="33.0" data-room="Hall" data-dim="16&prime; &times; 3&prime;" data-area="48 sq ft" id="rm-hall"/>
+<rect class="rm" x="92.0" y="285.0" width="99.0" height="66.0" data-room="Walk-in Closet" data-dim="9&prime; &times; 6&prime;" data-area="54 sq ft" id="rm-walk-in-closet"/>
+<rect class="rm wet" x="191.0" y="285.0" width="93.5" height="66.0" data-room="Bath" data-dim="8&prime;6&Prime; &times; 6&prime;" data-area="51 sq ft" id="rm-bath"/>
+<rect class="rm" x="268.0" y="87.0" width="121.0" height="198.0" data-room="Bedroom" data-dim="11&prime; &times; 18&prime;" data-area="231 sq ft" id="rm-bedroom"/>
+<rect class="rm" x="284.5" y="285.0" width="104.5" height="38.5" data-room="Bedroom" data-dim="11&prime; &times; 18&prime;" data-area="231 sq ft" id="rm-bedroom-2"/>
+<rect class="rm" x="284.5" y="323.5" width="104.5" height="27.5" data-room="Closet" data-dim="9&prime;6&Prime; &times; 2&prime;6&Prime;" data-area="24 sq ft" id="rm-closet"/>
+<rect class="fx" x="158.0" y="155.2" width="22.0" height="58.3"/>
+<rect class="fx" x="246.0" y="155.2" width="22.0" height="94.6"/>
+<rect class="fx" x="159.7" y="175.0" width="18.7" height="26.4"/>
+<circle class="fx" cx="164.6" cy="181.6" r="3.0"/>
+<circle class="fx" cx="173.4" cy="181.6" r="3.0"/>
+<circle class="fx" cx="164.6" cy="194.8" r="3.0"/>
+<circle class="fx" cx="173.4" cy="194.8" r="3.0"/>
+<rect class="fx" x="247.1" y="222.3" width="19.8" height="25.8"/>
+<line class="fx" x1="247.1" y1="228.9" x2="266.9" y2="228.9"/>
+<rect class="fx" x="248.2" y="180.5" width="17.6" height="26.4"/>
+<line class="fx" x1="248.2" y1="193.7" x2="265.8" y2="193.7"/>
+<circle class="fx" cx="257.0" cy="176.7" r="2.4"/>
+<rect class="fx" x="219.6" y="325.7" width="62.7" height="23.1" rx="3"/>
+<rect class="fx" x="224.0" y="329.0" width="53.9" height="16.5" rx="2"/>
+<circle class="fx" cx="227.9" cy="337.2" r="2.4"/>
+<rect class="fx" x="193.2" y="288.3" width="17.6" height="33.0"/>
+<circle class="fx" cx="202.0" cy="304.8" r="5.7"/>
+<rect class="fx" x="266.4" y="287.8" width="14.3" height="7.1"/>
+<ellipse class="fx" cx="273.5" cy="302.1" rx="6.1" ry="7.9"/>
+<rect class="fx" x="92.0" y="287.8" width="13.2" height="60.5"/>
+<line class="fx" x1="98.6" y1="289.4" x2="98.6" y2="346.6" stroke-dasharray="2 2"/>
+<rect class="fx" x="105.2" y="338.4" width="83.0" height="10.2"/>
+<line class="fx" x1="106.9" y1="343.5" x2="186.6" y2="343.5" stroke-dasharray="2 2"/>
+<rect class="fx" x="287.2" y="340.6" width="99.0" height="8.0"/>
+<line class="fx" x1="288.9" y1="344.6" x2="384.6" y2="344.6" stroke-dasharray="2 2"/>
+<rect class="fx" x="29.9" y="144.2" width="24.8" height="61.6"/>
+<rect class="fx" x="36.5" y="148.6" width="17.6" height="52.8"/>
+<rect class="fx" x="72.2" y="161.8" width="26.4" height="26.4"/>
+<rect class="fx" x="74.4" y="213.5" width="22.0" height="22.0"/>
+<rect class="fx" x="78.2" y="216.8" width="17.6" height="15.4"/>
+<rect class="fx" x="141.5" y="157.4" width="14.8" height="35.2"/>
+<rect class="fx" x="30.4" y="216.8" width="15.4" height="15.4"/>
+<circle class="fx" cx="213.0" cy="129.3" r="12.6"/>
+<rect class="fx" x="206.9" y="104.0" width="12.1" height="11.0"/>
+<line class="fx" x1="206.9" y1="104.0" x2="219.1" y2="104.0" stroke-width="1.5"/>
+<rect class="fx" x="206.9" y="143.7" width="12.1" height="8.8"/>
+<line class="fx" x1="206.9" y1="152.4" x2="219.1" y2="152.4" stroke-width="1.5"/>
+<rect class="fx" x="186.6" y="123.3" width="12.1" height="12.1"/>
+<line class="fx" x1="186.6" y1="123.3" x2="186.6" y2="135.4" stroke-width="1.5"/>
+<rect class="fx" x="227.3" y="123.3" width="12.1" height="12.1"/>
+<line class="fx" x1="239.4" y1="123.3" x2="239.4" y2="135.4" stroke-width="1.5"/>
+<rect class="fx" x="326.3" y="151.9" width="60.5" height="55.0"/>
+<rect class="fx" x="372.5" y="155.8" width="12.1" height="22.0"/>
+<rect class="fx" x="372.5" y="181.1" width="12.1" height="22.0"/>
+<line class="fx" x1="349.4" y1="151.9" x2="349.4" y2="206.9"/>
+<rect class="fx" x="371.4" y="134.3" width="15.4" height="14.9"/>
+<rect class="fx" x="371.4" y="209.7" width="15.4" height="14.8"/>
+<rect class="fx" x="270.2" y="115.6" width="16.5" height="46.2"/>
+<rect class="fx" x="294.4" y="100.2" width="22.0" height="22.0"/>
+<line class="wall" x1="26.0" y1="87.0" x2="59.0" y2="87.0" stroke-width="3.4"/>
+<line class="wall" x1="119.5" y1="87.0" x2="174.5" y2="87.0" stroke-width="3.4"/>
+<line class="wall" x1="240.5" y1="87.0" x2="295.5" y2="87.0" stroke-width="3.4"/>
+<line class="wall" x1="361.5" y1="87.0" x2="389.0" y2="87.0" stroke-width="3.4"/>
+<line class="wall" x1="389.0" y1="87.0" x2="389.0" y2="351.0" stroke-width="3.4"/>
+<line class="wall" x1="26.0" y1="351.0" x2="42.5" y2="351.0" stroke-width="3.4"/>
+<line class="wall" x1="75.5" y1="351.0" x2="389.0" y2="351.0" stroke-width="3.4"/>
+<line class="wall" x1="26.0" y1="87.0" x2="26.0" y2="351.0" stroke-width="3.4"/>
+<line class="wall" x1="158.0" y1="87.0" x2="158.0" y2="213.5" stroke-width="2.2"/>
+<line class="wall" x1="125.0" y1="252.0" x2="268.0" y2="252.0" stroke-width="2.2"/>
+<line class="wall" x1="92.0" y1="285.0" x2="92.0" y2="351.0" stroke-width="2.2"/>
+<line class="wall" x1="92.0" y1="285.0" x2="114.0" y2="285.0" stroke-width="2.2"/>
+<line class="wall" x1="147.0" y1="285.0" x2="213.0" y2="285.0" stroke-width="2.2"/>
+<line class="wall" x1="240.5" y1="285.0" x2="284.5" y2="285.0" stroke-width="2.2"/>
+<line class="wall" x1="191.0" y1="285.0" x2="191.0" y2="351.0" stroke-width="2.2"/>
+<line class="wall" x1="284.5" y1="285.0" x2="284.5" y2="351.0" stroke-width="2.2"/>
+<line class="wall" x1="268.0" y1="87.0" x2="268.0" y2="255.3" stroke-width="2.2"/>
+<line class="wall" x1="268.0" y1="282.8" x2="268.0" y2="285.0" stroke-width="2.2"/>
+<line class="wall" x1="284.5" y1="323.5" x2="301.0" y2="323.5" stroke-width="2.2"/>
+<line class="wall" x1="372.5" y1="323.5" x2="389.0" y2="323.5" stroke-width="2.2"/>
+<line class="glz" x1="174.5" y1="85.2" x2="240.5" y2="85.2"/>
+<line class="glz" x1="174.5" y1="88.8" x2="240.5" y2="88.8"/>
+<line class="glz" x1="295.5" y1="85.2" x2="361.5" y2="85.2"/>
+<line class="glz" x1="295.5" y1="88.8" x2="361.5" y2="88.8"/>
+<line class="glz" x1="59.0" y1="84.8" x2="94.2" y2="84.8"/>
+<line class="glz" x1="84.3" y1="89.2" x2="119.5" y2="89.2"/>
+<path class="swing" d="M 75.5 351.0 A 33.0 33.0 0 0 0 42.5 318.0"/>
+<line class="leaf" x1="42.5" y1="351.0" x2="42.5" y2="318.0"/>
+<path class="swing" d="M 147.0 285.0 A 33.0 33.0 0 0 1 114.0 318.0"/>
+<line class="leaf" x1="114.0" y1="285.0" x2="114.0" y2="318.0"/>
+<path class="swing" d="M 213.0 285.0 A 27.5 27.5 0 0 0 240.5 312.5"/>
+<line class="leaf" x1="240.5" y1="285.0" x2="240.5" y2="312.5"/>
+<path class="swing" d="M 268.0 255.3 A 27.5 27.5 0 0 1 295.5 282.8"/>
+<line class="leaf" x1="268.0" y1="282.8" x2="295.5" y2="282.8"/>
+<line class="leaf" x1="301.0" y1="321.5" x2="339.5" y2="321.5"/>
+<line class="leaf" x1="334.0" y1="325.5" x2="372.5" y2="325.5"/>
+<rect class="bal" x="59.0" y="26.5" width="88.0" height="60.5"/>
+<text class="lbl bal-t" x="103.0" y="38.6" font-size="7.8" letter-spacing="1.5">BALCONY</text>
+<text class="lbl bal-t dm" x="103.0" y="51.8" font-size="6.0" letter-spacing="0.9">8&prime; &times; 5&prime;6&Prime;</text>
+<circle class="fx" cx="103.0" cy="69.4" r="9.9"/>
+<rect class="fx" x="79.9" y="62.8" width="13.2" height="13.2"/>
+<rect class="fx" x="112.9" y="62.8" width="13.2" height="13.2"/>
+<text class="lbl" x="92.0" y="122.2" font-size="8.6" letter-spacing="1.5">LIVING ROOM</text>
+<text class="lbl dm" x="92.0" y="139.2" font-size="6.0" letter-spacing="0.8">12&prime; &times; 15&prime;</text>
+<text class="lbl" x="213.0" y="100.2" font-size="7.2" letter-spacing="0.7">DINING AREA</text>
+<text class="lbl" x="213.0" y="199.2" font-size="8.6" letter-spacing="1.5">KITCHEN</text>
+<text class="lbl dm" x="213.0" y="216.2" font-size="6.0" letter-spacing="0.8">10&prime; &times; 9&prime;</text>
+<text class="lbl" x="175.6" y="274.0" font-size="7.4" letter-spacing="0.7">HALL</text>
+<text class="lbl" x="147.0" y="323.5" font-size="6.6" letter-spacing="0.7">WALK-IN CLOSET</text>
+<text class="lbl dm" x="147.0" y="336.7" font-size="6.0" letter-spacing="0.8">9&prime; &times; 6&prime;</text>
+<text class="lbl" x="238.3" y="303.7" font-size="8.0" letter-spacing="1.5">BATH</text>
+<text class="lbl dm" x="238.3" y="320.8" font-size="6.0" letter-spacing="0.8">8&prime;6&Prime; &times; 6&prime;</text>
+<text class="lbl" x="318.6" y="252.0" font-size="8.6" letter-spacing="1.5">BEDROOM</text>
+<text class="lbl dm" x="318.6" y="269.1" font-size="6.0" letter-spacing="0.8">11&prime; &times; 18&prime;</text>
+<text class="lbl" x="337.3" y="335.6" font-size="6.8" letter-spacing="0.7">CLOSET</text>
+<text class="lbl" x="59.0" y="309.2" font-size="6.2" letter-spacing="1.1">ENTRY</text>
+<g class="dim"><line x1="26.0" y1="375.2" x2="389.0" y2="375.2"/>
+<line x1="26.0" y1="372.2" x2="26.0" y2="378.2"/>
+<line x1="389.0" y1="372.2" x2="389.0" y2="378.2"/>
+<text x="207.5" y="371.2" font-size="6.6" letter-spacing="1.2">33&prime; &ndash; 0&Prime;</text></g>
+<g class="dim"><line x1="412.1" y1="87.0" x2="412.1" y2="351.0"/>
+<line x1="409.1" y1="87.0" x2="415.1" y2="87.0"/>
+<line x1="409.1" y1="351.0" x2="415.1" y2="351.0"/>
+<text x="412.1" y="215.0" font-size="6.6" letter-spacing="1.2" transform="rotate(-90 412.1 219.0)">24&prime; &ndash; 0&Prime;</text></g>
+</svg>
+          </div>
+          <div class="plan-inner">
+            <h3>The Wilson</h3>
+            <span class="plan-meta">1 Bed &nbsp;|&nbsp; 1 Bath</span>
+            <span class="plan-sf">Approximately 800 sq ft</span>
+            <p>The front door opens into a living room that runs the full depth of the home and steps out to a private balcony. The walk-in closet sits just off the entry.</p>
+            <div class="plan-foot">
+              <button class="link-ul js-view-plan" type="button" data-plan="wilson">View Details</button>
+              <a class="plan-meta" href="tel:16515780498" style="text-decoration:none;">Call</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="plan reveal reveal-d1">
+          <div class="plan-fig">
+            <svg viewBox="0 0 300 200" aria-label="The Battle Creek two bedroom floor plan">
+              <rect x="12" y="12" width="276" height="176" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
+              <line x1="164" y1="12" x2="164" y2="188" stroke="var(--ink)" stroke-width="1.1"/>
+              <line x1="164" y1="100" x2="288" y2="100" stroke="var(--ink)" stroke-width="1.1"/>
+              <line x1="222" y1="100" x2="222" y2="188" stroke="var(--ink)" stroke-width="1.1"/>
+              <line x1="12" y1="130" x2="80" y2="130" stroke="var(--ink)" stroke-width="1.1"/>
+              <line x1="80" y1="130" x2="80" y2="188" stroke="var(--ink)" stroke-width="1.1"/>
+              <text x="30" y="60" font-family="Jost" font-size="8" letter-spacing="1.6" fill="var(--ink-soft)">LIVING / DINING</text>
+              <text x="28" y="164" font-family="Jost" font-size="7" letter-spacing="1.4" fill="var(--ink-soft)">KITCHEN</text>
+              <text x="94" y="164" font-family="Jost" font-size="7" letter-spacing="1.4" fill="var(--ink-soft)">BATH</text>
+              <text x="176" y="60" font-family="Jost" font-size="7" letter-spacing="1.4" fill="var(--ink-soft)">PRIMARY BED</text>
+              <text x="176" y="150" font-family="Jost" font-size="7" letter-spacing="1.4" fill="var(--ink-soft)">BED 2</text>
+              <text x="234" y="150" font-family="Jost" font-size="7" letter-spacing="1.4" fill="var(--ink-soft)">BATH</text>
+              <rect x="12" y="72" width="12" height="34" fill="none" stroke="var(--gold)" stroke-width="1.4"/>
+              <rect x="276" y="30" width="12" height="42" fill="none" stroke="var(--gold)" stroke-width="1.4"/>
+            </svg>
+          </div>
+          <div class="plan-inner">
+            <h3>The Battle Creek</h3>
+            <span class="plan-meta">2 Bed &nbsp;|&nbsp; 1&ndash;2 Bath</span>
+            <span class="plan-sf">Approximately 875 sq ft</span>
+            <p>A split-bedroom layout with a spacious living area, in-unit storage, and two private balconies overlooking the grounds.</p>
+            <div class="plan-foot">
+              <button class="link-ul js-view-plan" type="button" data-plan="battlecreek">View Details</button>
+              <a class="plan-meta" href="tel:16515780498" style="text-decoration:none;">Call</a>
+            </div>
+          </div>
+        </article>
+
+        <article class="plan reveal reveal-d2">
+          <div class="plan-fig">
+            <svg viewBox="0 0 300 200" aria-label="The Wakefield three bedroom floor plan">
+              <rect x="12" y="12" width="276" height="176" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
+              <line x1="152" y1="12" x2="152" y2="188" stroke="var(--ink)" stroke-width="1.1"/>
+              <line x1="152" y1="92" x2="288" y2="92" stroke="var(--ink)" stroke-width="1.1"/>
+              <line x1="220" y1="92" x2="220" y2="188" stroke="var(--ink)" stroke-width="1.1"/>
+              <line x1="12" y1="122" x2="78" y2="122" stroke="var(--ink)" stroke-width="1.1"/>
+              <line x1="78" y1="122" x2="78" y2="188" stroke="var(--ink)" stroke-width="1.1"/>
+              <text x="26" y="58" font-family="Jost" font-size="8" letter-spacing="1.6" fill="var(--ink-soft)">LIVING / DINING</text>
+              <text x="26" y="158" font-family="Jost" font-size="7" letter-spacing="1.4" fill="var(--ink-soft)">KITCHEN</text>
+              <text x="92" y="158" font-family="Jost" font-size="7" letter-spacing="1.4" fill="var(--ink-soft)">BATH</text>
+              <text x="164" y="56" font-family="Jost" font-size="7" letter-spacing="1.4" fill="var(--ink-soft)">PRIMARY BED</text>
+              <text x="164" y="144" font-family="Jost" font-size="7" letter-spacing="1.4" fill="var(--ink-soft)">BED 2</text>
+              <text x="232" y="144" font-family="Jost" font-size="7" letter-spacing="1.4" fill="var(--ink-soft)">BED 3</text>
+              <rect x="12" y="72" width="12" height="34" fill="none" stroke="var(--gold)" stroke-width="1.4"/>
+              <rect x="276" y="120" width="12" height="42" fill="none" stroke="var(--gold)" stroke-width="1.4"/>
+            </svg>
+          </div>
+          <div class="plan-inner">
+            <h3>The Wakefield</h3>
+            <span class="plan-meta">3 Bed &nbsp;|&nbsp; 2 Bath</span>
+            <span class="plan-sf">Approximately 1,050 sq ft</span>
+            <p>Our largest layout &mdash; three bedrooms, two full baths, and generous closet space throughout. Room for families and roommates alike.</p>
+            <div class="plan-foot">
+              <button class="link-ul js-view-plan" type="button" data-plan="wakefield">View Details</button>
+              <a class="plan-meta" href="tel:16515780498" style="text-decoration:none;">Call</a>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= AMENITIES ================= -->
+  <section class="band band-forest" id="amenities">
+    <div class="wrap">
+      <div class="wrap-narrow center-head reveal" style="padding:0; margin-bottom:64px;">
+        <span class="label label-gold">The Property</span>
+        <h2>Designed for <em>How You Actually Live</em></h2>
+        <p>Practical comforts, kept in good order &mdash; the details that make a place easy to come home to.</p>
+      </div>
+
+      <div class="amen-grid reveal">
+        <div class="amen">
+          <span class="amen-motif"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1"><path d="M20 6c0 0 10 12.5 10 19a10 10 0 0 1-20 0C10 18.5 20 6 20 6Z"/><path d="M15 25a5 5 0 0 0 5 5"/></svg></span>
+          <h3>Utilities Included</h3>
+          <hr class="rule">
+          <p>Heat, water, trash, and sewer are all covered by your rent. Electric is the only bill you set up.</p>
+        </div>
+        <div class="amen">
+          <span class="amen-motif"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1"><path d="M6 34V16L20 6l14 10v18"/><path d="M15 34V23h10v11"/></svg></span>
+          <h3>On-Site Parking</h3>
+          <hr class="rule">
+          <p>Resident parking steps from your own entrance, with garages available.</p>
+        </div>
+        <div class="amen">
+          <span class="amen-motif"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1"><rect x="7" y="7" width="26" height="26"/><path d="M7 17h26M17 7v26"/></svg></span>
+          <h3>Private Balconies</h3>
+          <hr class="rule">
+          <p>Most homes open onto a private balcony or patio overlooking the courtyard lawn.</p>
+        </div>
+        <div class="amen">
+          <span class="amen-motif"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1"><rect x="8" y="6" width="24" height="28"/><circle cx="20" cy="22" r="7"/><path d="M13 12h6"/></svg></span>
+          <h3>Laundry on Every Floor</h3>
+          <hr class="rule">
+          <p>An easily accessible laundry room on each floor, all credit card operated &mdash; no coins to keep track of.</p>
+        </div>
+        <div class="amen">
+          <span class="amen-motif"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1"><circle cx="20" cy="14" r="6"/><path d="M8 34c2.6-7 6.8-10.5 12-10.5S29.4 27 32 34"/></svg></span>
+          <h3>On-Site Management</h3>
+          <hr class="rule">
+          <p>A leasing team on the property every weekday for maintenance requests and questions.</p>
+        </div>
+        <div class="amen">
+          <span class="amen-motif"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1"><path d="M24 7v18.6a7 7 0 1 1-8 0V7a4 4 0 0 1 8 0Z"/><path d="M20 15v11"/></svg></span>
+          <h3>Heat &amp; Air Conditioning</h3>
+          <hr class="rule">
+          <p>Central heat, plus air conditioning available, keeping every home comfortable year-round.</p>
+        </div>
+        <div class="amen">
+          <span class="amen-motif"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1"><rect x="7" y="16" width="26" height="18"/><path d="M14 16v-4a6 6 0 0 1 12 0v4"/><circle cx="20" cy="25" r="2"/></svg></span>
+          <h3>Secure Entry</h3>
+          <hr class="rule">
+          <p>Locked building entrances with intercom access for your guests.</p>
+        </div>
+        <div class="amen">
+          <span class="amen-motif"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1"><rect x="6" y="8" width="28" height="24"/><path d="M6 17h28M15 8v9"/><circle cx="11" cy="12.5" r="1"/></svg></span>
+          <h3>Classic Kitchens</h3>
+          <hr class="rule">
+          <p>Warm wood cabinetry and timeless finishes give every kitchen its own character.</p>
+        </div>
+        <div class="amen">
+          <span class="amen-motif"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1"><path d="M20 34V18"/><path d="M20 18s-9-1-9-8c0 0 5.5 2 9 8Z"/><path d="M20 18s9-1 9-8c0 0-5.5 2-9 8Z"/><path d="M20 26s-7-.8-7-6c0 0 4.2 1.6 7 6Z"/></svg></span>
+          <h3>Oak Courtyard Grounds</h3>
+          <hr class="rule">
+          <p>Mature oaks and maintained lawns between the buildings, cared for through every season.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= GALLERY ================= -->
+  <section class="band band-forest-deep" id="gallery">
+    <div class="wrap">
+      <div class="split-head reveal">
+        <div>
+          <span class="label label-light">A Closer Look</span>
+          <h2>Take a Look Around</h2>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:26px; align-items:flex-start;">
+          <p style="color:color-mix(in srgb, var(--forest-ink) 74%, transparent); max-width:42ch;">A few views of the property, from the oak courtyard to the kitchens. Select any frame to enlarge, or browse the full gallery.</p>
+          <a class="link-ul on-dark" href="gallery.html" target="_blank" rel="noopener">View the Full Gallery &rarr;</a>
+        </div>
+      </div>
+
+      <div class="gal-grid reveal">
+        <button class="gal-item gal-a" type="button" data-lb="0" aria-label="Enlarge: Ridgewood Apartments">
+          <img src="assets/img/9bf9ef28bf18.jpg" alt="" loading="lazy">
+          <span class="gal-cap"><span class="gname">Ridgewood Apartments</span><span class="gnum">01</span></span>
+        </button>
+
+        <button class="gal-item gal-b" type="button" data-lb="1" aria-label="Enlarge: Kitchen">
+          <img src="assets/img/6f018fa9fe57.jpg" alt="" loading="lazy">
+          <span class="gal-cap"><span class="gname">Kitchen</span><span class="gnum">02</span></span>
+        </button>
+
+        <button class="gal-item gal-c" type="button" data-lb="2" aria-label="Enlarge: Living Room">
+          <img src="assets/img/6a54f510469a.jpg" alt="" loading="lazy">
+          <span class="gal-cap"><span class="gname">Living Room</span><span class="gnum">03</span></span>
+        </button>
+
+        <button class="gal-item gal-d" type="button" data-lb="3" aria-label="Enlarge: Bedroom">
+          <img src="assets/img/0c81ce54a146.jpg" alt="" loading="lazy">
+          <span class="gal-cap"><span class="gname">Bedroom</span><span class="gnum">04</span></span>
+        </button>
+
+        <button class="gal-item gal-e" type="button" data-lb="4" aria-label="Enlarge: The Green">
+          <img src="assets/img/e5bab127984a.jpg" alt="" loading="lazy">
+          <span class="gal-cap"><span class="gname">The Green</span><span class="gnum">05</span></span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= NEIGHBORHOOD ================= -->
+  <section class="band band-cream" id="neighborhood">
+    <div class="wrap hood-grid">
+      <div class="reveal">
+        <div class="map-frame">
+          <div class="map-img">
+          <img src="assets/img/9dbb6f66cf21.png" alt="Map centered on 1871 Wilson Ave, Saint Paul, MN, showing the surrounding streets and I-94">
+
+            <span class="map-pin" aria-hidden="true">
+              <svg width="34" height="44" viewBox="0 0 34 44" fill="none">
+                <path d="M17 43C17 43 32 27.6 32 16.5C32 7.9 25.5 1 17 1C8.5 1 2 7.9 2 16.5C2 27.6 17 43 17 43Z" fill="#cb9d47" stroke="#f4f0e6" stroke-width="2"/>
+                <circle cx="17" cy="16" r="6.5" fill="#f4f0e6"/>
+              </svg>
+            </span>
+          </div>
+          <div class="map-cap">
+            <span class="label" style="color:var(--gold);">1871 Wilson Ave</span>
+            <span class="coords">44.9542&deg; N &nbsp; 93.0215&deg; W</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal reveal-d1">
+        <span class="label label-gold">The East Side</span>
+        <h2 style="margin-top:20px; font-size:clamp(1.9rem,3.6vw,2.9rem); line-height:1.14;">Life at the Edge of the City</h2>
+        <p style="margin-top:22px; font-size:0.98rem; font-weight:300; line-height:1.8; color:var(--ink-soft);">A residential pocket of Saint Paul with parkland on one side and the Woodbury shopping corridor on the other &mdash; Target at the end of the block, six parks within ten minutes, and Whole Foods, Costco and Trader Joe&rsquo;s not far past that.</p>
+
+        <div class="tabs" id="tabs" role="group" aria-label="Filter nearby places">
+          <button class="tab" type="button" data-filter="all" aria-pressed="true">Highlights</button>
+          <button class="tab" type="button" data-filter="shopping" aria-pressed="false">Shopping</button>
+          <button class="tab" type="button" data-filter="parks" aria-pressed="false">Parks</button>
+          <button class="tab" type="button" data-filter="commute" aria-pressed="false">Getting Around</button>
+        </div>
+
+        <div class="hood-list" id="hoodList">
+          <div class="hood-item" data-category="parks" data-highlight="1">
+            <div>
+              <span class="label hcat">Neighborhood Park</span>
+              <h3>Conway Park</h3>
+              <p class="hdesc">Ball fields, a playground, and the rec center &mdash; a half mile up the street.</p>
+            </div>
+            <span class="htime">Walkable</span>
+          </div>
+          <div class="hood-item" data-category="parks">
+            <div>
+              <span class="label hcat">Regional Park</span>
+              <h3>Indian Mounds Regional Park</h3>
+              <p class="hdesc">Bluff-top trails with long views over the Mississippi and the downtown skyline.</p>
+            </div>
+            <span class="htime">5 min</span>
+          </div>
+          <div class="hood-item" data-category="parks" data-highlight="1">
+            <div>
+              <span class="label hcat">Regional Park</span>
+              <h3>Battle Creek Regional Park</h3>
+              <p class="hdesc">Wooded trails, a winter ski hill, the Battle Creek waterfall, and an off-leash dog park.</p>
+            </div>
+            <span class="htime">5 min</span>
+          </div>
+          <div class="hood-item" data-category="parks">
+            <div>
+              <span class="label hcat">Lakeside</span>
+              <h3>Beaver Lake</h3>
+              <p class="hdesc">A quiet fishing lake and shoreline path on the Maplewood side of McKnight.</p>
+            </div>
+            <span class="htime">6 min</span>
+          </div>
+          <div class="hood-item" data-category="parks">
+            <div>
+              <span class="label hcat">Nature Sanctuary</span>
+              <h3>Bruce Vento Nature Sanctuary</h3>
+              <p class="hdesc">Restored prairie and wetland below the bluffs, with paved trails and birding.</p>
+            </div>
+            <span class="htime">8 min</span>
+          </div>
+          <div class="hood-item" data-category="parks">
+            <div>
+              <span class="label hcat">Lakeside</span>
+              <h3>Lake Phalen</h3>
+              <p class="hdesc">Swimming beach, boat rentals, a golf course, and a loop trail around the lake.</p>
+            </div>
+            <span class="htime">10 min</span>
+          </div>
+          <div class="hood-item" data-category="shopping" data-highlight="1">
+            <div>
+              <span class="label hcat">Everyday</span>
+              <h3>Target</h3>
+              <p class="hdesc">On Suburban Avenue, close enough to walk when the weather cooperates.</p>
+            </div>
+            <span class="htime">2 min</span>
+          </div>
+          <div class="hood-item" data-category="shopping">
+            <div>
+              <span class="label hcat">Coffee</span>
+              <h3>Starbucks</h3>
+              <p class="hdesc">Right on Suburban Avenue for the morning run, with a larger caf&eacute; on 10th Street North.</p>
+            </div>
+            <span class="htime">3 min</span>
+          </div>
+          <div class="hood-item" data-category="shopping">
+            <div>
+              <span class="label hcat">Grocery</span>
+              <h3>Cub Foods</h3>
+              <p class="hdesc">Full-service grocery and pharmacy just north on White Bear Avenue.</p>
+            </div>
+            <span class="htime">3 min</span>
+          </div>
+          <div class="hood-item" data-category="shopping">
+            <div>
+              <span class="label hcat">Warehouse</span>
+              <h3>Costco</h3>
+              <p class="hdesc">Bulk shopping and cheap fuel on Tamarack Road in Woodbury.</p>
+            </div>
+            <span class="htime">8 min</span>
+          </div>
+          <div class="hood-item" data-category="shopping">
+            <div>
+              <span class="label hcat">Specialty Grocery</span>
+              <h3>Lunds &amp; Byerlys</h3>
+              <p class="hdesc">The upscale Twin Cities grocer, at Valley Creek Plaza.</p>
+            </div>
+            <span class="htime">10 min</span>
+          </div>
+          <div class="hood-item" data-category="shopping" data-highlight="1">
+            <div>
+              <span class="label hcat">Specialty Grocery</span>
+              <h3>Whole Foods Market</h3>
+              <p class="hdesc">Organic and prepared foods on Radio Drive.</p>
+            </div>
+            <span class="htime">12 min</span>
+          </div>
+          <div class="hood-item" data-category="shopping">
+            <div>
+              <span class="label hcat">Specialty Grocery</span>
+              <h3>Trader Joe's</h3>
+              <p class="hdesc">The Hudson Road store, out past I-494.</p>
+            </div>
+            <span class="htime">12 min</span>
+          </div>
+          <div class="hood-item" data-category="shopping">
+            <div>
+              <span class="label hcat">Shopping District</span>
+              <h3>Woodbury Lakes</h3>
+              <p class="hdesc">An open-air centre with Lululemon, Sephora, J.Crew, Athleta, and Warby Parker.</p>
+            </div>
+            <span class="htime">12 min</span>
+          </div>
+          <div class="hood-item" data-category="commute">
+            <div>
+              <span class="label hcat">Education</span>
+              <h3>College Campuses</h3>
+              <p class="hdesc">Metropolitan State University and Century College.</p>
+            </div>
+            <span class="htime">10&ndash;15 min</span>
+          </div>
+          <div class="hood-item" data-category="commute" data-highlight="1">
+            <div>
+              <span class="label hcat">Downtown</span>
+              <h3>Downtown Saint Paul</h3>
+              <p class="hdesc">Government offices, Xcel Energy Center, and the riverfront.</p>
+            </div>
+            <span class="htime">15 min</span>
+          </div>
+          <div class="hood-item" data-category="commute">
+            <div>
+              <span class="label hcat">Downtown</span>
+              <h3>Downtown Minneapolis</h3>
+              <p class="hdesc">The Twin Cities' other downtown, a straight shot on I-94.</p>
+            </div>
+            <span class="htime">25 min</span>
+          </div>
+          <div class="hood-item" data-category="commute" data-highlight="1">
+            <div>
+              <span class="label hcat">Travel</span>
+              <h3>MSP International Airport</h3>
+              <p class="hdesc">Minneapolis&ndash;Saint Paul International, via I-494.</p>
+            </div>
+            <span class="htime">20 min</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CLOSING CTA ================= -->
+  <section class="band band-forest cta-band" id="contact">
+    <div class="wrap-narrow reveal">
+      <span class="label label-light">Come See It In Person</span>
+      <h2>Take a Look Around, <em>In Person</em></h2>
+      <p>Our leasing team is on site every weekday afternoon and would be glad to show you a home. Book a time below, or call ahead &mdash; walk-ins are welcome during office hours.</p>
+      <div class="cta-actions">
+        <button class="btn btn-light js-open-tour" type="button">Schedule a Tour</button>
+        <a class="link-ul on-dark" href="tel:16515780498">651-578-0498</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a class="wordmark" href="#top">
+          <img class="logo-mark" src="assets/img/eac9b379aa07.png" alt="">
+      <img class="logo-text" src="assets/img/347a84b8b28c.png" alt="Ridgewood Apartments">
+        </a>
+        <p>An oak-shaded courtyard community on Saint Paul's east side &mdash; leasing one, two, and three bedroom homes.</p>
+      </div>
+      <div class="foot-col">
+        <h4 class="label">Explore</h4>
+        <div>
+          <a href="#residences">Residences</a>
+          <a href="#amenities">Amenities</a>
+          <a href="gallery.html" target="_blank" rel="noopener">Gallery</a>
+          <a href="neighborhood.html" target="_blank" rel="noopener">Neighborhood</a>
+            <a href="questions.html" target="_blank" rel="noopener">Questions</a>
+        </div>
+      </div>
+      <div class="foot-col">
+        <h4 class="label">Visit</h4>
+        <div>
+          <a href="https://maps.google.com/?q=1871+Wilson+Ave,+Saint+Paul,+MN+55119" target="_blank" rel="noopener">1871 &amp; 1885 Wilson Ave</a>
+          <a href="https://maps.google.com/?q=1871+Wilson+Ave,+Saint+Paul,+MN+55119" target="_blank" rel="noopener">Saint Paul, MN 55119</a>
+          <a href="tel:16515780498">651-578-0498</a>
+        </div>
+      </div>
+      <div class="foot-col">
+        <h4 class="label">Office Hours</h4>
+        <div>
+          <span>Monday &ndash; Friday</span>
+          <span>1:00pm &ndash; 5:00pm</span>
+          <span style="color:var(--ink-soft);">Saturday &amp; Sunday, closed</span>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>&copy; 2026 Ridgewood Apartments</span>
+      <span>Equal Housing Opportunity</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ================= TOUR MODAL ================= -->
+<div class="ov" id="tourOverlay" hidden>
+  <div class="sheet sheet--tour" role="dialog" aria-modal="true" aria-labelledby="tourTitle">
+    <div class="sheet-head">
+      <h3 id="tourTitle">Schedule a Tour</h3>
+      <button class="sheet-close" id="tourClose" type="button" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M5 5l14 14M19 5L5 19"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <!-- Replace data-url with your real Calendly event link: Calendly -> event type -> Share -> copy link -->
+      <div class="calendly-inline-widget" id="calendlyWidget" data-url="https://calendly.com/ridgewood-apartments/property-tour?hide_gdpr_banner=1" style="min-width:280px; height:640px;"></div>
+      <div class="fallback" id="tourFallback" hidden>
+        <p>The live scheduler isn't reachable from this preview. Open it in a new tab, or call the leasing office to book your tour.</p>
+        <div class="fallback-actions">
+          <a class="btn btn-sm" href="https://calendly.com/ridgewood-apartments/property-tour" target="_blank" rel="noopener">Open Scheduler</a>
+          <a class="btn btn-outline btn-sm" href="tel:16515780498">Call 651-578-0498</a>
+        </div>
+      </div>
+      <p class="sheet-note">Prefer to talk it through? Call the leasing office at <a href="tel:16515780498">651-578-0498</a>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= FLOOR PLAN MODAL ================= -->
+<div class="ov" id="planOverlay" hidden>
+  <div class="sheet sheet--plan" role="dialog" aria-modal="true" aria-labelledby="planTitle">
+    <div class="sheet-head">
+      <h3 id="planTitle">Floor Plan</h3>
+      <button class="sheet-close" id="planClose" type="button" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M5 5l14 14M19 5L5 19"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body" id="planBody"></div>
+  </div>
+</div>
+
+<!-- ================= LIGHTBOX ================= -->
+<div class="lb" id="lightbox" hidden>
+  <div class="lb-top">
+    <span class="lb-title" id="lbTitle">Gallery</span>
+    <button class="menu-close" id="lbClose" type="button" aria-label="Close gallery">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M5 5l14 14M19 5L5 19"/></svg>
+    </button>
+  </div>
+  <div class="lb-stage">
+    <button class="lb-nav" id="lbPrev" type="button" aria-label="Previous image">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <figure class="lb-figure" id="lbFigure"></figure>
+    <button class="lb-nav" id="lbNext" type="button" aria-label="Next image">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="m-bar" id="mBar">
+  <a class="btn btn-outline btn-sm" href="tel:16515780498">Call</a>
+  <button class="btn btn-sm js-open-tour" type="button">Schedule a Tour</button>
+</div>
+
+<template id="plan-wilson">
+  <div class="plan-sheet-fig iso">
+    <svg class="plan" viewBox="0 0 424 391" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Floor plan of The Wilson, a one bedroom apartment of about 800 square feet">
+<rect class="rm" x="26.0" y="87.0" width="132.0" height="165.0" data-room="Living Room" data-dim="12&prime; &times; 15&prime;" data-area="234 sq ft" id="rm-living-room"/>
+<rect class="rm" x="26.0" y="252.0" width="66.0" height="99.0" data-room="Living Room" data-dim="12&prime; &times; 15&prime;" data-area="234 sq ft" id="rm-living-room-2"/>
+<rect class="rm wet" x="158.0" y="87.0" width="110.0" height="66.0" data-room="Dining Area" data-dim="10&prime; &times; 6&prime;" data-area="60 sq ft" id="rm-dining-area"/>
+<rect class="rm wet" x="158.0" y="153.0" width="110.0" height="99.0" data-room="Kitchen" data-dim="10&prime; &times; 9&prime;" data-area="90 sq ft" id="rm-kitchen"/>
+<rect class="rm" x="92.0" y="252.0" width="176.0" height="33.0" data-room="Hall" data-dim="16&prime; &times; 3&prime;" data-area="48 sq ft" id="rm-hall"/>
+<rect class="rm" x="92.0" y="285.0" width="99.0" height="66.0" data-room="Walk-in Closet" data-dim="9&prime; &times; 6&prime;" data-area="54 sq ft" id="rm-walk-in-closet"/>
+<rect class="rm wet" x="191.0" y="285.0" width="93.5" height="66.0" data-room="Bath" data-dim="8&prime;6&Prime; &times; 6&prime;" data-area="51 sq ft" id="rm-bath"/>
+<rect class="rm" x="268.0" y="87.0" width="121.0" height="198.0" data-room="Bedroom" data-dim="11&prime; &times; 18&prime;" data-area="231 sq ft" id="rm-bedroom"/>
+<rect class="rm" x="284.5" y="285.0" width="104.5" height="38.5" data-room="Bedroom" data-dim="11&prime; &times; 18&prime;" data-area="231 sq ft" id="rm-bedroom-2"/>
+<rect class="rm" x="284.5" y="323.5" width="104.5" height="27.5" data-room="Closet" data-dim="9&prime;6&Prime; &times; 2&prime;6&Prime;" data-area="24 sq ft" id="rm-closet"/>
+<rect class="fx" x="158.0" y="155.2" width="22.0" height="58.3"/>
+<rect class="fx" x="246.0" y="155.2" width="22.0" height="94.6"/>
+<rect class="fx" x="159.7" y="175.0" width="18.7" height="26.4"/>
+<circle class="fx" cx="164.6" cy="181.6" r="3.0"/>
+<circle class="fx" cx="173.4" cy="181.6" r="3.0"/>
+<circle class="fx" cx="164.6" cy="194.8" r="3.0"/>
+<circle class="fx" cx="173.4" cy="194.8" r="3.0"/>
+<rect class="fx" x="247.1" y="222.3" width="19.8" height="25.8"/>
+<line class="fx" x1="247.1" y1="228.9" x2="266.9" y2="228.9"/>
+<rect class="fx" x="248.2" y="180.5" width="17.6" height="26.4"/>
+<line class="fx" x1="248.2" y1="193.7" x2="265.8" y2="193.7"/>
+<circle class="fx" cx="257.0" cy="176.7" r="2.4"/>
+<rect class="fx" x="219.6" y="325.7" width="62.7" height="23.1" rx="3"/>
+<rect class="fx" x="224.0" y="329.0" width="53.9" height="16.5" rx="2"/>
+<circle class="fx" cx="227.9" cy="337.2" r="2.4"/>
+<rect class="fx" x="193.2" y="288.3" width="17.6" height="33.0"/>
+<circle class="fx" cx="202.0" cy="304.8" r="5.7"/>
+<rect class="fx" x="266.4" y="287.8" width="14.3" height="7.1"/>
+<ellipse class="fx" cx="273.5" cy="302.1" rx="6.1" ry="7.9"/>
+<rect class="fx" x="92.0" y="287.8" width="13.2" height="60.5"/>
+<line class="fx" x1="98.6" y1="289.4" x2="98.6" y2="346.6" stroke-dasharray="2 2"/>
+<rect class="fx" x="105.2" y="338.4" width="83.0" height="10.2"/>
+<line class="fx" x1="106.9" y1="343.5" x2="186.6" y2="343.5" stroke-dasharray="2 2"/>
+<rect class="fx" x="287.2" y="340.6" width="99.0" height="8.0"/>
+<line class="fx" x1="288.9" y1="344.6" x2="384.6" y2="344.6" stroke-dasharray="2 2"/>
+<rect class="fx" x="29.9" y="144.2" width="24.8" height="61.6"/>
+<rect class="fx" x="36.5" y="148.6" width="17.6" height="52.8"/>
+<rect class="fx" x="72.2" y="161.8" width="26.4" height="26.4"/>
+<rect class="fx" x="74.4" y="213.5" width="22.0" height="22.0"/>
+<rect class="fx" x="78.2" y="216.8" width="17.6" height="15.4"/>
+<rect class="fx" x="141.5" y="157.4" width="14.8" height="35.2"/>
+<rect class="fx" x="30.4" y="216.8" width="15.4" height="15.4"/>
+<circle class="fx" cx="213.0" cy="129.3" r="12.6"/>
+<rect class="fx" x="206.9" y="104.0" width="12.1" height="11.0"/>
+<line class="fx" x1="206.9" y1="104.0" x2="219.1" y2="104.0" stroke-width="1.5"/>
+<rect class="fx" x="206.9" y="143.7" width="12.1" height="8.8"/>
+<line class="fx" x1="206.9" y1="152.4" x2="219.1" y2="152.4" stroke-width="1.5"/>
+<rect class="fx" x="186.6" y="123.3" width="12.1" height="12.1"/>
+<line class="fx" x1="186.6" y1="123.3" x2="186.6" y2="135.4" stroke-width="1.5"/>
+<rect class="fx" x="227.3" y="123.3" width="12.1" height="12.1"/>
+<line class="fx" x1="239.4" y1="123.3" x2="239.4" y2="135.4" stroke-width="1.5"/>
+<rect class="fx" x="326.3" y="151.9" width="60.5" height="55.0"/>
+<rect class="fx" x="372.5" y="155.8" width="12.1" height="22.0"/>
+<rect class="fx" x="372.5" y="181.1" width="12.1" height="22.0"/>
+<line class="fx" x1="349.4" y1="151.9" x2="349.4" y2="206.9"/>
+<rect class="fx" x="371.4" y="134.3" width="15.4" height="14.9"/>
+<rect class="fx" x="371.4" y="209.7" width="15.4" height="14.8"/>
+<rect class="fx" x="270.2" y="115.6" width="16.5" height="46.2"/>
+<rect class="fx" x="294.4" y="100.2" width="22.0" height="22.0"/>
+<line class="wall" x1="26.0" y1="87.0" x2="59.0" y2="87.0" stroke-width="3.4"/>
+<line class="wall" x1="119.5" y1="87.0" x2="174.5" y2="87.0" stroke-width="3.4"/>
+<line class="wall" x1="240.5" y1="87.0" x2="295.5" y2="87.0" stroke-width="3.4"/>
+<line class="wall" x1="361.5" y1="87.0" x2="389.0" y2="87.0" stroke-width="3.4"/>
+<line class="wall" x1="389.0" y1="87.0" x2="389.0" y2="351.0" stroke-width="3.4"/>
+<line class="wall" x1="26.0" y1="351.0" x2="42.5" y2="351.0" stroke-width="3.4"/>
+<line class="wall" x1="75.5" y1="351.0" x2="389.0" y2="351.0" stroke-width="3.4"/>
+<line class="wall" x1="26.0" y1="87.0" x2="26.0" y2="351.0" stroke-width="3.4"/>
+<line class="wall" x1="158.0" y1="87.0" x2="158.0" y2="213.5" stroke-width="2.2"/>
+<line class="wall" x1="125.0" y1="252.0" x2="268.0" y2="252.0" stroke-width="2.2"/>
+<line class="wall" x1="92.0" y1="285.0" x2="92.0" y2="351.0" stroke-width="2.2"/>
+<line class="wall" x1="92.0" y1="285.0" x2="114.0" y2="285.0" stroke-width="2.2"/>
+<line class="wall" x1="147.0" y1="285.0" x2="213.0" y2="285.0" stroke-width="2.2"/>
+<line class="wall" x1="240.5" y1="285.0" x2="284.5" y2="285.0" stroke-width="2.2"/>
+<line class="wall" x1="191.0" y1="285.0" x2="191.0" y2="351.0" stroke-width="2.2"/>
+<line class="wall" x1="284.5" y1="285.0" x2="284.5" y2="351.0" stroke-width="2.2"/>
+<line class="wall" x1="268.0" y1="87.0" x2="268.0" y2="255.3" stroke-width="2.2"/>
+<line class="wall" x1="268.0" y1="282.8" x2="268.0" y2="285.0" stroke-width="2.2"/>
+<line class="wall" x1="284.5" y1="323.5" x2="301.0" y2="323.5" stroke-width="2.2"/>
+<line class="wall" x1="372.5" y1="323.5" x2="389.0" y2="323.5" stroke-width="2.2"/>
+<line class="glz" x1="174.5" y1="85.2" x2="240.5" y2="85.2"/>
+<line class="glz" x1="174.5" y1="88.8" x2="240.5" y2="88.8"/>
+<line class="glz" x1="295.5" y1="85.2" x2="361.5" y2="85.2"/>
+<line class="glz" x1="295.5" y1="88.8" x2="361.5" y2="88.8"/>
+<line class="glz" x1="59.0" y1="84.8" x2="94.2" y2="84.8"/>
+<line class="glz" x1="84.3" y1="89.2" x2="119.5" y2="89.2"/>
+<path class="swing" d="M 75.5 351.0 A 33.0 33.0 0 0 0 42.5 318.0"/>
+<line class="leaf" x1="42.5" y1="351.0" x2="42.5" y2="318.0"/>
+<path class="swing" d="M 147.0 285.0 A 33.0 33.0 0 0 1 114.0 318.0"/>
+<line class="leaf" x1="114.0" y1="285.0" x2="114.0" y2="318.0"/>
+<path class="swing" d="M 213.0 285.0 A 27.5 27.5 0 0 0 240.5 312.5"/>
+<line class="leaf" x1="240.5" y1="285.0" x2="240.5" y2="312.5"/>
+<path class="swing" d="M 268.0 255.3 A 27.5 27.5 0 0 1 295.5 282.8"/>
+<line class="leaf" x1="268.0" y1="282.8" x2="295.5" y2="282.8"/>
+<line class="leaf" x1="301.0" y1="321.5" x2="339.5" y2="321.5"/>
+<line class="leaf" x1="334.0" y1="325.5" x2="372.5" y2="325.5"/>
+<rect class="bal" x="59.0" y="26.5" width="88.0" height="60.5"/>
+<text class="lbl bal-t" x="103.0" y="38.6" font-size="7.8" letter-spacing="1.5">BALCONY</text>
+<text class="lbl bal-t dm" x="103.0" y="51.8" font-size="6.0" letter-spacing="0.9">8&prime; &times; 5&prime;6&Prime;</text>
+<circle class="fx" cx="103.0" cy="69.4" r="9.9"/>
+<rect class="fx" x="79.9" y="62.8" width="13.2" height="13.2"/>
+<rect class="fx" x="112.9" y="62.8" width="13.2" height="13.2"/>
+<text class="lbl" x="92.0" y="122.2" font-size="8.6" letter-spacing="1.5">LIVING ROOM</text>
+<text class="lbl dm" x="92.0" y="139.2" font-size="6.0" letter-spacing="0.8">12&prime; &times; 15&prime;</text>
+<text class="lbl" x="213.0" y="100.2" font-size="7.2" letter-spacing="0.7">DINING AREA</text>
+<text class="lbl" x="213.0" y="199.2" font-size="8.6" letter-spacing="1.5">KITCHEN</text>
+<text class="lbl dm" x="213.0" y="216.2" font-size="6.0" letter-spacing="0.8">10&prime; &times; 9&prime;</text>
+<text class="lbl" x="175.6" y="274.0" font-size="7.4" letter-spacing="0.7">HALL</text>
+<text class="lbl" x="147.0" y="323.5" font-size="6.6" letter-spacing="0.7">WALK-IN CLOSET</text>
+<text class="lbl dm" x="147.0" y="336.7" font-size="6.0" letter-spacing="0.8">9&prime; &times; 6&prime;</text>
+<text class="lbl" x="238.3" y="303.7" font-size="8.0" letter-spacing="1.5">BATH</text>
+<text class="lbl dm" x="238.3" y="320.8" font-size="6.0" letter-spacing="0.8">8&prime;6&Prime; &times; 6&prime;</text>
+<text class="lbl" x="318.6" y="252.0" font-size="8.6" letter-spacing="1.5">BEDROOM</text>
+<text class="lbl dm" x="318.6" y="269.1" font-size="6.0" letter-spacing="0.8">11&prime; &times; 18&prime;</text>
+<text class="lbl" x="337.3" y="335.6" font-size="6.8" letter-spacing="0.7">CLOSET</text>
+<text class="lbl" x="59.0" y="309.2" font-size="6.2" letter-spacing="1.1">ENTRY</text>
+<g class="dim"><line x1="26.0" y1="375.2" x2="389.0" y2="375.2"/>
+<line x1="26.0" y1="372.2" x2="26.0" y2="378.2"/>
+<line x1="389.0" y1="372.2" x2="389.0" y2="378.2"/>
+<text x="207.5" y="371.2" font-size="6.6" letter-spacing="1.2">33&prime; &ndash; 0&Prime;</text></g>
+<g class="dim"><line x1="412.1" y1="87.0" x2="412.1" y2="351.0"/>
+<line x1="409.1" y1="87.0" x2="415.1" y2="87.0"/>
+<line x1="409.1" y1="351.0" x2="415.1" y2="351.0"/>
+<text x="412.1" y="215.0" font-size="6.6" letter-spacing="1.2" transform="rotate(-90 412.1 219.0)">24&prime; &ndash; 0&Prime;</text></g>
+</svg>
+  </div>
+  <p class="plan-readout"><span class="rn">Hover a room</span><span class="rd">dimensions appear here</span></p>
+  <div class="plan-sheet-specs">
+    <div><strong>1</strong><span class="label">Bedroom</span></div>
+    <div><strong>1</strong><span class="label">Bathroom</span></div>
+    <div><strong>800</strong><span class="label">Approx Sq Ft</span></div>
+    <div><strong>1&ndash;2</strong><span class="label">Floor Options</span></div>
+  </div>
+  <p class="plan-sheet-desc">The front door opens into a living room that runs the full depth of the home and steps out through a full-height slider to a private balcony. A spacious walk-in closet sits just off the entry, with the bath beside it along a short hall. The galley kitchen stays semi-open to the living room and opens at its far end into a dining area under a window. The bedroom takes the whole east side, with a window of its own and a wide, shallow closet.</p>
+  <div class="fallback-actions">
+    <button class="btn btn-sm js-open-tour" type="button">Tour The Wilson</button>
+    <a class="btn btn-outline btn-sm" href="tel:16515780498">Call the Office</a>
+  </div>
+</template>
+
+<template id="plan-battlecreek">
+  <div class="plan-sheet-fig">
+    <svg viewBox="0 0 300 200">
+      <rect x="12" y="12" width="276" height="176" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
+      <line x1="164" y1="12" x2="164" y2="188" stroke="var(--ink)" stroke-width="1.1"/>
+      <line x1="164" y1="100" x2="288" y2="100" stroke="var(--ink)" stroke-width="1.1"/>
+      <line x1="222" y1="100" x2="222" y2="188" stroke="var(--ink)" stroke-width="1.1"/>
+      <line x1="12" y1="130" x2="80" y2="130" stroke="var(--ink)" stroke-width="1.1"/>
+      <line x1="80" y1="130" x2="80" y2="188" stroke="var(--ink)" stroke-width="1.1"/>
+      <text x="30" y="60" font-family="Jost" font-size="8" letter-spacing="1.6" fill="var(--ink-soft)">LIVING / DINING</text>
+      <text x="28" y="164" font-family="Jost" font-size="7" letter-spacing="1.4" fill="var(--ink-soft)">KITCHEN</text>
+      <text x="94" y="164" font-family="Jost" font-size="7" letter-spacing="1.4" fill="var(--ink-soft)">BATH</text>
+      <text x="176" y="60" font-family="Jost" font-size="7" letter-spacing="1.4" fill="var(--ink-soft)">PRIMARY BED</text>
+      <text x="176" y="150" font-family="Jost" font-size="7" letter-spacing="1.4" fill="var(--ink-soft)">BED 2</text>
+      <rect x="12" y="72" width="12" height="34" fill="none" stroke="var(--gold)" stroke-width="1.4"/>
+      <rect x="276" y="30" width="12" height="42" fill="none" stroke="var(--gold)" stroke-width="1.4"/>
+    </svg>
+  </div>
+  <div class="plan-sheet-specs">
+    <div><strong>2</strong><span class="label">Bedrooms</span></div>
+    <div><strong>1&ndash;2</strong><span class="label">Bathrooms</span></div>
+    <div><strong>875</strong><span class="label">Approx Sq Ft</span></div>
+    <div><strong>2</strong><span class="label">Balconies</span></div>
+  </div>
+  <p class="plan-sheet-desc">A split-bedroom layout with a spacious living area, in-unit storage, and two private balconies overlooking the grounds &mdash; a favorite among roommates who want separated bedrooms.</p>
+  <div class="fallback-actions">
+    <button class="btn btn-sm js-open-tour" type="button">Tour The Battle Creek</button>
+    <a class="btn btn-outline btn-sm" href="tel:16515780498">Call the Office</a>
+  </div>
+</template>
+
+<template id="plan-wakefield">
+  <div class="plan-sheet-fig">
+    <svg viewBox="0 0 300 200">
+      <rect x="12" y="12" width="276" height="176" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
+      <line x1="152" y1="12" x2="152" y2="188" stroke="var(--ink)" stroke-width="1.1"/>
+      <line x1="152" y1="92" x2="288" y2="92" stroke="var(--ink)" stroke-width="1.1"/>
+      <line x1="220" y1="92" x2="220" y2="188" stroke="var(--ink)" stroke-width="1.1"/>
+      <line x1="12" y1="122" x2="78" y2="122" stroke="var(--ink)" stroke-width="1.1"/>
+      <line x1="78" y1="122" x2="78" y2="188" stroke="var(--ink)" stroke-width="1.1"/>
+      <text x="26" y="58" font-family="Jost" font-size="8" letter-spacing="1.6" fill="var(--ink-soft)">LIVING / DINING</text>
+      <text x="26" y="158" font-family="Jost" font-size="7" letter-spacing="1.4" fill="var(--ink-soft)">KITCHEN</text>
+      <text x="92" y="158" font-family="Jost" font-size="7" letter-spacing="1.4" fill="var(--ink-soft)">BATH</text>
+      <text x="164" y="56" font-family="Jost" font-size="7" letter-spacing="1.4" fill="var(--ink-soft)">PRIMARY BED</text>
+      <text x="164" y="144" font-family="Jost" font-size="7" letter-spacing="1.4" fill="var(--ink-soft)">BED 2</text>
+      <text x="232" y="144" font-family="Jost" font-size="7" letter-spacing="1.4" fill="var(--ink-soft)">BED 3</text>
+      <rect x="12" y="72" width="12" height="34" fill="none" stroke="var(--gold)" stroke-width="1.4"/>
+      <rect x="276" y="120" width="12" height="42" fill="none" stroke="var(--gold)" stroke-width="1.4"/>
+    </svg>
+  </div>
+  <div class="plan-sheet-specs">
+    <div><strong>3</strong><span class="label">Bedrooms</span></div>
+    <div><strong>2</strong><span class="label">Bathrooms</span></div>
+    <div><strong>1,050</strong><span class="label">Approx Sq Ft</span></div>
+    <div><strong>Largest</strong><span class="label">Layout</span></div>
+  </div>
+  <p class="plan-sheet-desc">Our largest layout &mdash; three bedrooms, two full baths, and generous closet space throughout. Built for families and roommates who need room to spread out.</p>
+  <div class="fallback-actions">
+    <button class="btn btn-sm js-open-tour" type="button">Tour The Wakefield</button>
+    <a class="btn btn-outline btn-sm" href="tel:16515780498">Call the Office</a>
+  </div>
+</template>
+
+<script src="https://assets.calendly.com/assets/external/widget.js" async></script>
+<script>
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var head = document.getElementById('siteHead');
+    var hero = document.getElementById('hero');
+    var announce = document.getElementById('announce');
+    var mBar = document.getElementById('mBar');
+
+    /* ---- Header scroll state ---- */
+    function onScroll() {
+      var h = hero.offsetHeight, y = window.scrollY;
+      head.classList.toggle('on-hero', y < h - 120);
+      head.classList.toggle('is-stuck', y > 30);
+      if (y > 140) { announce.classList.add('is-collapsed'); }
+      mBar.classList.toggle('is-visible', y > h * 0.55);
+    }
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+
+    document.getElementById('announceClose').addEventListener('click', function () {
+      announce.classList.add('is-collapsed');
+    });
+
+    /* ---- Full-screen menu ---- */
+    var menu = document.getElementById('menuOverlay');
+    var menuOpen = document.getElementById('menuOpen');
+    var menuClose = document.getElementById('menuClose');
+    function openMenu() {
+      menu.hidden = false;
+      menuOpen.setAttribute('aria-expanded', 'true');
+      document.body.style.overflow = 'hidden';
+      menuClose.focus();
+    }
+    function closeMenu() {
+      menu.hidden = true;
+      menuOpen.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+      menuOpen.focus();
+    }
+    menuOpen.addEventListener('click', openMenu);
+    menuClose.addEventListener('click', closeMenu);
+    menu.querySelectorAll('[data-menu-close]').forEach(function (el) {
+      el.addEventListener('click', function () { menu.hidden = true; menuOpen.setAttribute('aria-expanded', 'false'); document.body.style.overflow = ''; });
+    });
+
+    /* ---- Reveal on scroll ---- */
+    var reveals = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
+    function revealInView() {
+      for (var i = reveals.length - 1; i >= 0; i--) {
+        if (reveals[i].getBoundingClientRect().top < window.innerHeight) {
+          reveals[i].classList.add('is-visible');
+          reveals.splice(i, 1);
+        }
+      }
+    }
+    if (!reduce && 'IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { e.target.classList.add('is-visible'); io.unobserve(e.target); }
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+      reveals.forEach(function (el) { io.observe(el); });
+      /* safety net: anchor jumps, fast scrolls and restored scroll positions
+         can all skip observer frames and strand a section at opacity 0 */
+      window.addEventListener('scroll', revealInView, { passive: true });
+      window.addEventListener('resize', revealInView);
+      window.addEventListener('load', revealInView);
+      revealInView();
+    } else {
+      reveals.forEach(function (el) { el.classList.add('is-visible'); });
+    }
+
+    /* ---- Tour modal ---- */
+    var tourOv = document.getElementById('tourOverlay');
+    var tourClose = document.getElementById('tourClose');
+    var fallback = document.getElementById('tourFallback');
+    var widget = document.getElementById('calendlyWidget');
+    var planOv = document.getElementById('planOverlay');
+    var lastFocus = null;
+
+    function openTour() {
+      if (!menu.hidden) closeMenu();
+      planOv.hidden = true;
+      lastFocus = document.activeElement;
+      tourOv.hidden = false;
+      document.body.style.overflow = 'hidden';
+      tourClose.focus();
+      setTimeout(function () {
+        if (!widget.querySelector('iframe')) { widget.hidden = true; fallback.hidden = false; }
+      }, 1800);
+    }
+    function closeTour() {
+      tourOv.hidden = true;
+      document.body.style.overflow = '';
+      if (lastFocus) lastFocus.focus();
+    }
+    function bindTour(root) {
+      root.querySelectorAll('.js-open-tour').forEach(function (b) { b.addEventListener('click', openTour); });
+    }
+    bindTour(document);
+    tourClose.addEventListener('click', closeTour);
+    tourOv.addEventListener('click', function (e) { if (e.target === tourOv) closeTour(); });
+
+    /* ---- Floor plan modal ---- */
+    var planClose = document.getElementById('planClose');
+    var planBody = document.getElementById('planBody');
+    var planTitle = document.getElementById('planTitle');
+    var planNames = { wilson: 'The Wilson', battlecreek: 'The Battle Creek', wakefield: 'The Wakefield' };
+    function openPlan(key) {
+      var tpl = document.getElementById('plan-' + key);
+      if (!tpl) return;
+      planBody.innerHTML = '';
+      planBody.appendChild(tpl.content.cloneNode(true));
+      planTitle.textContent = planNames[key] || 'Floor Plan';
+      bindTour(planBody);
+      var ro = planBody.querySelector('.plan-readout');
+      if (ro) {
+        planBody.querySelectorAll('svg.plan .rm').forEach(function (r) {
+          var show = function () {
+            planBody.querySelectorAll('svg.plan .rm.on').forEach(function (o) { o.classList.remove('on'); });
+            r.classList.add('on');
+            ro.innerHTML = '<span class="rn">' + r.dataset.room + '</span>' +
+                           '<span class="rd">' + r.dataset.dim + ' &nbsp;\u00b7&nbsp; ' + r.dataset.area + '</span>';
+          };
+          r.addEventListener('mouseenter', show);
+          r.addEventListener('click', show);
+        });
+      }
+      lastFocus = document.activeElement;
+      planOv.hidden = false;
+      document.body.style.overflow = 'hidden';
+      planClose.focus();
+    }
+    function closePlan() {
+      planOv.hidden = true;
+      document.body.style.overflow = '';
+      if (lastFocus) lastFocus.focus();
+    }
+    document.querySelectorAll('.js-view-plan').forEach(function (b) {
+      b.addEventListener('click', function () { openPlan(b.getAttribute('data-plan')); });
+    });
+    planClose.addEventListener('click', closePlan);
+    planOv.addEventListener('click', function (e) { if (e.target === planOv) closePlan(); });
+
+    /* ---- Neighborhood filter ---- */
+    var tabs = document.getElementById('tabs');
+    var items = document.querySelectorAll('#hoodList .hood-item');
+    tabs.addEventListener('click', function (e) {
+      var btn = e.target.closest('.tab');
+      if (!btn) return;
+      tabs.querySelectorAll('.tab').forEach(function (t) { t.setAttribute('aria-pressed', 'false'); });
+      btn.setAttribute('aria-pressed', 'true');
+      applyFilter(btn.getAttribute('data-filter'));
+    });
+
+    /* The default view is a short highlight reel, not the full 18 rows —
+       picking a category opens up everything in it. */
+    function applyFilter(f) {
+      items.forEach(function (it) {
+        it.hidden = f === 'all'
+          ? !it.hasAttribute('data-highlight')
+          : it.getAttribute('data-category') !== f;
+      });
+    }
+    applyFilter('all');
+
+    /* ---- Lightbox ---- */
+    var galItems = Array.prototype.slice.call(document.querySelectorAll('.gal-item'));
+    var lb = document.getElementById('lightbox');
+    var lbFigure = document.getElementById('lbFigure');
+    var lbTitle = document.getElementById('lbTitle');
+    var lbClose = document.getElementById('lbClose');
+    var lbIndex = 0;
+
+    function showSlide(i) {
+      lbIndex = (i + galItems.length) % galItems.length;
+      var src = galItems[lbIndex];
+      var svg = src.querySelector('svg').cloneNode(true);
+      svg.removeAttribute('preserveAspectRatio');
+      lbFigure.innerHTML = '';
+      lbFigure.appendChild(svg);
+      lbTitle.textContent = src.querySelector('.gname').textContent;
+    }
+    function openLb(i) {
+      lastFocus = document.activeElement;
+      showSlide(i);
+      lb.hidden = false;
+      document.body.style.overflow = 'hidden';
+      lbClose.focus();
+    }
+    function closeLb() {
+      lb.hidden = true;
+      document.body.style.overflow = '';
+      if (lastFocus) lastFocus.focus();
+    }
+    galItems.forEach(function (el, i) { el.addEventListener('click', function () { openLb(i); }); });
+    lbClose.addEventListener('click', closeLb);
+    document.getElementById('lbPrev').addEventListener('click', function () { showSlide(lbIndex - 1); });
+    document.getElementById('lbNext').addEventListener('click', function () { showSlide(lbIndex + 1); });
+
+    /* ---- Keyboard ---- */
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        if (!lb.hidden) closeLb();
+        else if (!tourOv.hidden) closeTour();
+        else if (!planOv.hidden) closePlan();
+        else if (!menu.hidden) closeMenu();
+      }
+      if (!lb.hidden) {
+        if (e.key === 'ArrowLeft') showSlide(lbIndex - 1);
+        if (e.key === 'ArrowRight') showSlide(lbIndex + 1);
+      }
+    });
+  })();
+</script>
+
+</body>
+</html>

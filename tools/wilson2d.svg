@@ -1,0 +1,125 @@
+<svg class="plan" viewBox="0 0 424 391" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Floor plan of The Wilson, a one bedroom apartment of about 800 square feet">
+<rect class="rm" x="26.0" y="87.0" width="132.0" height="165.0" data-room="Living Room" data-dim="12&prime; &times; 15&prime;" data-area="234 sq ft" id="rm-living-room"/>
+<rect class="rm" x="26.0" y="252.0" width="66.0" height="99.0" data-room="Living Room" data-dim="12&prime; &times; 15&prime;" data-area="234 sq ft" id="rm-living-room-2"/>
+<rect class="rm wet" x="158.0" y="87.0" width="110.0" height="66.0" data-room="Dining Area" data-dim="10&prime; &times; 6&prime;" data-area="60 sq ft" id="rm-dining-area"/>
+<rect class="rm wet" x="158.0" y="153.0" width="110.0" height="99.0" data-room="Kitchen" data-dim="10&prime; &times; 9&prime;" data-area="90 sq ft" id="rm-kitchen"/>
+<rect class="rm" x="92.0" y="252.0" width="176.0" height="33.0" data-room="Hall" data-dim="16&prime; &times; 3&prime;" data-area="48 sq ft" id="rm-hall"/>
+<rect class="rm" x="92.0" y="285.0" width="99.0" height="66.0" data-room="Walk-in Closet" data-dim="9&prime; &times; 6&prime;" data-area="54 sq ft" id="rm-walk-in-closet"/>
+<rect class="rm wet" x="191.0" y="285.0" width="93.5" height="66.0" data-room="Bath" data-dim="8&prime;6&Prime; &times; 6&prime;" data-area="51 sq ft" id="rm-bath"/>
+<rect class="rm" x="268.0" y="87.0" width="121.0" height="198.0" data-room="Bedroom" data-dim="11&prime; &times; 18&prime;" data-area="231 sq ft" id="rm-bedroom"/>
+<rect class="rm" x="284.5" y="285.0" width="104.5" height="38.5" data-room="Bedroom" data-dim="11&prime; &times; 18&prime;" data-area="231 sq ft" id="rm-bedroom-2"/>
+<rect class="rm" x="284.5" y="323.5" width="104.5" height="27.5" data-room="Closet" data-dim="9&prime;6&Prime; &times; 2&prime;6&Prime;" data-area="24 sq ft" id="rm-closet"/>
+<rect class="fx" x="158.0" y="155.2" width="22.0" height="58.3"/>
+<rect class="fx" x="246.0" y="155.2" width="22.0" height="94.6"/>
+<rect class="fx" x="159.7" y="175.0" width="18.7" height="26.4"/>
+<circle class="fx" cx="164.6" cy="181.6" r="3.0"/>
+<circle class="fx" cx="173.4" cy="181.6" r="3.0"/>
+<circle class="fx" cx="164.6" cy="194.8" r="3.0"/>
+<circle class="fx" cx="173.4" cy="194.8" r="3.0"/>
+<rect class="fx" x="247.1" y="222.3" width="19.8" height="25.8"/>
+<line class="fx" x1="247.1" y1="228.9" x2="266.9" y2="228.9"/>
+<rect class="fx" x="248.2" y="180.5" width="17.6" height="26.4"/>
+<line class="fx" x1="248.2" y1="193.7" x2="265.8" y2="193.7"/>
+<circle class="fx" cx="257.0" cy="176.7" r="2.4"/>
+<rect class="fx" x="219.6" y="325.7" width="62.7" height="23.1" rx="3"/>
+<rect class="fx" x="224.0" y="329.0" width="53.9" height="16.5" rx="2"/>
+<circle class="fx" cx="227.9" cy="337.2" r="2.4"/>
+<rect class="fx" x="193.2" y="288.3" width="17.6" height="33.0"/>
+<circle class="fx" cx="202.0" cy="304.8" r="5.7"/>
+<rect class="fx" x="266.4" y="287.8" width="14.3" height="7.1"/>
+<ellipse class="fx" cx="273.5" cy="302.1" rx="6.1" ry="7.9"/>
+<rect class="fx" x="92.0" y="287.8" width="13.2" height="60.5"/>
+<line class="fx" x1="98.6" y1="289.4" x2="98.6" y2="346.6" stroke-dasharray="2 2"/>
+<rect class="fx" x="105.2" y="338.4" width="83.0" height="10.2"/>
+<line class="fx" x1="106.9" y1="343.5" x2="186.6" y2="343.5" stroke-dasharray="2 2"/>
+<rect class="fx" x="287.2" y="340.6" width="99.0" height="8.0"/>
+<line class="fx" x1="288.9" y1="344.6" x2="384.6" y2="344.6" stroke-dasharray="2 2"/>
+<rect class="fx" x="29.9" y="144.2" width="24.8" height="61.6"/>
+<rect class="fx" x="36.5" y="148.6" width="17.6" height="52.8"/>
+<rect class="fx" x="72.2" y="161.8" width="26.4" height="26.4"/>
+<rect class="fx" x="74.4" y="213.5" width="22.0" height="22.0"/>
+<rect class="fx" x="78.2" y="216.8" width="17.6" height="15.4"/>
+<rect class="fx" x="141.5" y="157.4" width="14.8" height="35.2"/>
+<rect class="fx" x="30.4" y="216.8" width="15.4" height="15.4"/>
+<circle class="fx" cx="213.0" cy="129.3" r="12.6"/>
+<rect class="fx" x="206.9" y="104.0" width="12.1" height="11.0"/>
+<line class="fx" x1="206.9" y1="104.0" x2="219.1" y2="104.0" stroke-width="1.5"/>
+<rect class="fx" x="206.9" y="143.7" width="12.1" height="8.8"/>
+<line class="fx" x1="206.9" y1="152.4" x2="219.1" y2="152.4" stroke-width="1.5"/>
+<rect class="fx" x="186.6" y="123.3" width="12.1" height="12.1"/>
+<line class="fx" x1="186.6" y1="123.3" x2="186.6" y2="135.4" stroke-width="1.5"/>
+<rect class="fx" x="227.3" y="123.3" width="12.1" height="12.1"/>
+<line class="fx" x1="239.4" y1="123.3" x2="239.4" y2="135.4" stroke-width="1.5"/>
+<rect class="fx" x="326.3" y="151.9" width="60.5" height="55.0"/>
+<rect class="fx" x="372.5" y="155.8" width="12.1" height="22.0"/>
+<rect class="fx" x="372.5" y="181.1" width="12.1" height="22.0"/>
+<line class="fx" x1="349.4" y1="151.9" x2="349.4" y2="206.9"/>
+<rect class="fx" x="371.4" y="134.3" width="15.4" height="14.9"/>
+<rect class="fx" x="371.4" y="209.7" width="15.4" height="14.8"/>
+<rect class="fx" x="270.2" y="115.6" width="16.5" height="46.2"/>
+<rect class="fx" x="294.4" y="100.2" width="22.0" height="22.0"/>
+<line class="wall" x1="26.0" y1="87.0" x2="59.0" y2="87.0" stroke-width="3.4"/>
+<line class="wall" x1="119.5" y1="87.0" x2="174.5" y2="87.0" stroke-width="3.4"/>
+<line class="wall" x1="240.5" y1="87.0" x2="295.5" y2="87.0" stroke-width="3.4"/>
+<line class="wall" x1="361.5" y1="87.0" x2="389.0" y2="87.0" stroke-width="3.4"/>
+<line class="wall" x1="389.0" y1="87.0" x2="389.0" y2="351.0" stroke-width="3.4"/>
+<line class="wall" x1="26.0" y1="351.0" x2="42.5" y2="351.0" stroke-width="3.4"/>
+<line class="wall" x1="75.5" y1="351.0" x2="389.0" y2="351.0" stroke-width="3.4"/>
+<line class="wall" x1="26.0" y1="87.0" x2="26.0" y2="351.0" stroke-width="3.4"/>
+<line class="wall" x1="158.0" y1="87.0" x2="158.0" y2="213.5" stroke-width="2.2"/>
+<line class="wall" x1="125.0" y1="252.0" x2="268.0" y2="252.0" stroke-width="2.2"/>
+<line class="wall" x1="92.0" y1="285.0" x2="92.0" y2="351.0" stroke-width="2.2"/>
+<line class="wall" x1="92.0" y1="285.0" x2="114.0" y2="285.0" stroke-width="2.2"/>
+<line class="wall" x1="147.0" y1="285.0" x2="213.0" y2="285.0" stroke-width="2.2"/>
+<line class="wall" x1="240.5" y1="285.0" x2="284.5" y2="285.0" stroke-width="2.2"/>
+<line class="wall" x1="191.0" y1="285.0" x2="191.0" y2="351.0" stroke-width="2.2"/>
+<line class="wall" x1="284.5" y1="285.0" x2="284.5" y2="351.0" stroke-width="2.2"/>
+<line class="wall" x1="268.0" y1="87.0" x2="268.0" y2="255.3" stroke-width="2.2"/>
+<line class="wall" x1="268.0" y1="282.8" x2="268.0" y2="285.0" stroke-width="2.2"/>
+<line class="wall" x1="284.5" y1="323.5" x2="301.0" y2="323.5" stroke-width="2.2"/>
+<line class="wall" x1="372.5" y1="323.5" x2="389.0" y2="323.5" stroke-width="2.2"/>
+<line class="glz" x1="174.5" y1="85.2" x2="240.5" y2="85.2"/>
+<line class="glz" x1="174.5" y1="88.8" x2="240.5" y2="88.8"/>
+<line class="glz" x1="295.5" y1="85.2" x2="361.5" y2="85.2"/>
+<line class="glz" x1="295.5" y1="88.8" x2="361.5" y2="88.8"/>
+<line class="glz" x1="59.0" y1="84.8" x2="94.2" y2="84.8"/>
+<line class="glz" x1="84.3" y1="89.2" x2="119.5" y2="89.2"/>
+<path class="swing" d="M 75.5 351.0 A 33.0 33.0 0 0 0 42.5 318.0"/>
+<line class="leaf" x1="42.5" y1="351.0" x2="42.5" y2="318.0"/>
+<path class="swing" d="M 147.0 285.0 A 33.0 33.0 0 0 1 114.0 318.0"/>
+<line class="leaf" x1="114.0" y1="285.0" x2="114.0" y2="318.0"/>
+<path class="swing" d="M 213.0 285.0 A 27.5 27.5 0 0 0 240.5 312.5"/>
+<line class="leaf" x1="240.5" y1="285.0" x2="240.5" y2="312.5"/>
+<path class="swing" d="M 268.0 255.3 A 27.5 27.5 0 0 1 295.5 282.8"/>
+<line class="leaf" x1="268.0" y1="282.8" x2="295.5" y2="282.8"/>
+<line class="leaf" x1="301.0" y1="321.5" x2="339.5" y2="321.5"/>
+<line class="leaf" x1="334.0" y1="325.5" x2="372.5" y2="325.5"/>
+<rect class="bal" x="59.0" y="26.5" width="88.0" height="60.5"/>
+<text class="lbl bal-t" x="103.0" y="38.6" font-size="7.8" letter-spacing="1.5">BALCONY</text>
+<text class="lbl bal-t dm" x="103.0" y="51.8" font-size="6.0" letter-spacing="0.9">8&prime; &times; 5&prime;6&Prime;</text>
+<circle class="fx" cx="103.0" cy="69.4" r="9.9"/>
+<rect class="fx" x="79.9" y="62.8" width="13.2" height="13.2"/>
+<rect class="fx" x="112.9" y="62.8" width="13.2" height="13.2"/>
+<text class="lbl" x="92.0" y="122.2" font-size="8.6" letter-spacing="1.5">LIVING ROOM</text>
+<text class="lbl dm" x="92.0" y="139.2" font-size="6.0" letter-spacing="0.8">12&prime; &times; 15&prime;</text>
+<text class="lbl" x="213.0" y="100.2" font-size="7.2" letter-spacing="0.7">DINING AREA</text>
+<text class="lbl" x="213.0" y="199.2" font-size="8.6" letter-spacing="1.5">KITCHEN</text>
+<text class="lbl dm" x="213.0" y="216.2" font-size="6.0" letter-spacing="0.8">10&prime; &times; 9&prime;</text>
+<text class="lbl" x="175.6" y="274.0" font-size="7.4" letter-spacing="0.7">HALL</text>
+<text class="lbl" x="147.0" y="323.5" font-size="6.6" letter-spacing="0.7">WALK-IN CLOSET</text>
+<text class="lbl dm" x="147.0" y="336.7" font-size="6.0" letter-spacing="0.8">9&prime; &times; 6&prime;</text>
+<text class="lbl" x="238.3" y="303.7" font-size="8.0" letter-spacing="1.5">BATH</text>
+<text class="lbl dm" x="238.3" y="320.8" font-size="6.0" letter-spacing="0.8">8&prime;6&Prime; &times; 6&prime;</text>
+<text class="lbl" x="318.6" y="252.0" font-size="8.6" letter-spacing="1.5">BEDROOM</text>
+<text class="lbl dm" x="318.6" y="269.1" font-size="6.0" letter-spacing="0.8">11&prime; &times; 18&prime;</text>
+<text class="lbl" x="337.3" y="335.6" font-size="6.8" letter-spacing="0.7">CLOSET</text>
+<text class="lbl" x="59.0" y="309.2" font-size="6.2" letter-spacing="1.1">ENTRY</text>
+<g class="dim"><line x1="26.0" y1="375.2" x2="389.0" y2="375.2"/>
+<line x1="26.0" y1="372.2" x2="26.0" y2="378.2"/>
+<line x1="389.0" y1="372.2" x2="389.0" y2="378.2"/>
+<text x="207.5" y="371.2" font-size="6.6" letter-spacing="1.2">33&prime; &ndash; 0&Prime;</text></g>
+<g class="dim"><line x1="412.1" y1="87.0" x2="412.1" y2="351.0"/>
+<line x1="409.1" y1="87.0" x2="415.1" y2="87.0"/>
+<line x1="409.1" y1="351.0" x2="415.1" y2="351.0"/>
+<text x="412.1" y="215.0" font-size="6.6" letter-spacing="1.2" transform="rotate(-90 412.1 219.0)">24&prime; &ndash; 0&Prime;</text></g>
+</svg>
