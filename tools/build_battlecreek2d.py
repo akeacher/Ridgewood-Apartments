@@ -30,7 +30,7 @@ ROOMS = [
      "13&prime; &times; 16&prime;6&Prime;", 244, False, 8.6),
     ("Dining Area", [(13, 0, 21, 6)], (17.0, 1.15), "8&prime; &times; 6&prime;", 48, True, 7.2),
     ("Kitchen", [(13, 6, 21, 13)], (17.8, 9.0), "8&prime; &times; 7&prime;", 56, True, 8.6),
-    ("Bedroom 1", [(21, 0, 35, 13)], (25.5, 3.0), "14&prime; &times; 13&prime;", 182, False, 8.6),
+    ("Bedroom 1", [(21, 0, 35, 13)], (27.5, 9.2), "14&prime; &times; 13&prime;", 182, False, 8.6),
     ("Hall", [(13, 13, 35, 16.5)], (16.5, 15.2), "22&prime; &times; 3&prime;6&Prime;", 77, False, 7.4),
     ("Walk-in Closet", [(3.5, 16.5, 10.5, 25)], (6.9, 18.4),
      "7&prime; &times; 8&prime;6&Prime;", 60, False, 6.2),
@@ -102,13 +102,13 @@ fx(4.75, 12.1, 6.35, 13.5)
 fx(11.5, 6.4, 12.85, 9.6)                                # console on the kitchen wall
 fx(0.4, 11.8, 1.8, 13.2)                                 # side table
 
-# --- bedroom one: head to the hall wall, closet alcove on the outer wall
-fx(25.5, 6.3, 30.5, 13)
-fx(25.5, 11.2, 30.5, 12.8)                               # pillows
-fline(25.5, 8.6, 30.5, 8.6)                              # turned-down blanket
-fx(24.1, 11.5, 25.4, 12.8)                               # nightstands
-fx(30.6, 11.5, 31.9, 12.8)
-fx(21.2, 8.0, 22.7, 12.0)                                # dresser
+# --- bedroom one: head under the window, well clear of the door swing
+fx(26.0, 0.3, 31.0, 7.0)
+fx(26.0, 0.5, 31.0, 2.3)                                 # pillows
+fline(26.0, 4.8, 31.0, 4.8)                              # turned-down blanket
+fx(24.5, 0.4, 25.8, 1.7)                                 # nightstands
+fx(31.2, 0.4, 32.4, 1.7)
+fx(21.3, 2.0, 22.8, 6.0)                                 # dresser
 shelf(32.6, 4.2, 34.9, 9.3, True)                        # closet shelf + rail
 
 # --- bedroom two
