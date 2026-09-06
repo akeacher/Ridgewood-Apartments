@@ -28,9 +28,9 @@ def add(s): out.append(s)
 ROOMS = [
     ("Living Room", [(0, 0, 13, 16.5), (0, 16.5, 3.5, 25)], (6.2, 3.2),
      "13&prime; &times; 16&prime;6&Prime;", 244, False, 8.6),
-    ("Dining Area", [(13, 0, 21, 6)], (17.0, 1.15), "8&prime; &times; 6&prime;", 48, True, 7.2),
-    ("Kitchen", [(13, 6, 21, 13)], (17.8, 9.0), "8&prime; &times; 7&prime;", 56, True, 8.6),
-    ("Bedroom 1", [(21, 0, 35, 13)], (27.5, 9.2), "14&prime; &times; 13&prime;", 182, False, 8.6),
+    ("Dining Area", [(13, 0, 21, 7)], (17.0, 1.6), "8&prime; &times; 7&prime;", 56, True, 7.2),
+    ("Kitchen", [(13, 7, 21, 13)], (18.0, 8.9), "8&prime; &times; 6&prime;", 48, True, 8.6),
+    ("Bedroom 1", [(21, 0, 35, 13)], (28.6, 10.5), "14&prime; &times; 13&prime;", 182, False, 8.6),
     ("Hall", [(13, 13, 35, 16.5)], (16.5, 15.2), "22&prime; &times; 3&prime;6&Prime;", 77, False, 7.4),
     ("Walk-in Closet", [(3.5, 16.5, 10.5, 25)], (6.9, 18.4),
      "7&prime; &times; 8&prime;6&Prime;", 60, False, 6.2),
@@ -75,48 +75,48 @@ def shelf(x0, y0, x1, y1, vert):
         fline(x0 + 0.15, m, x1 - 0.15, m, ' stroke-dasharray="2 2"')
 
 # --- L-shaped kitchen, opening north into the dining area
-fx(13, 6.4, 15, 12.8)                                    # west run
+fx(13, 7.4, 15, 12.8)                                    # west run
 fx(15, 11.0, 20.8, 13)                                   # south run
-fx(13, 6.4, 14.8, 8.8)                                   # refrigerator
-fline(13, 7.0, 14.8, 7.0)
-fx(13.15, 10.0, 14.85, 12.4)                             # range
-for cx, cy in ((13.6, 10.6), (14.4, 10.6), (13.6, 11.8), (14.4, 11.8)):
-    circ(cx, cy, 0.27)
-fx(16.4, 11.2, 18.8, 12.8)                               # double sink
-fline(17.6, 11.2, 17.6, 12.8)
-circ(17.6, 11.05, 0.22)
+fx(13, 7.4, 15.5, 9.9)                                   # refrigerator
+fline(13, 8.1, 15.5, 8.1)
+fx(13.15, 10.5, 15.0, 12.8)                              # range
+for cx, cy in ((13.65, 11.2), (14.5, 11.2), (13.65, 12.2), (14.5, 12.2)):
+    circ(cx, cy, 0.3)
+fx(16.6, 11.2, 19.0, 12.8)                               # double sink
+fline(17.8, 11.2, 17.8, 12.8)
+circ(17.8, 11.05, 0.22)
 
 # --- dining
-circ(17.0, 3.7, 1.25)
-chair(16.45, 1.50, 17.55, 2.40, "n")
-chair(16.45, 5.05, 17.55, 5.90, "s")
-chair(14.65, 3.15, 15.65, 4.25, "w")
-chair(18.35, 3.15, 19.35, 4.25, "e")
+circ(17.0, 3.9, 1.6)
+chair(16.20, 5.65, 17.80, 7.00, "s")
+chair(13.60, 3.15, 15.15, 4.65, "w")
+chair(18.85, 3.15, 20.40, 4.65, "e")
 
 # --- living room
-fx(0.35, 5.0, 2.6, 10.6)                                 # sofa on the west wall
-fx(0.95, 5.4, 2.55, 10.2)
-fx(4.2, 6.8, 6.6, 9.2)                                   # coffee table
-fx(4.4, 11.8, 6.4, 13.8)                                 # armchair
-fx(4.75, 12.1, 6.35, 13.5)
-fx(11.5, 6.4, 12.85, 9.6)                                # console on the kitchen wall
-fx(0.4, 11.8, 1.8, 13.2)                                 # side table
+fx(0.35, 4.8, 3.10, 11.8)                                # sofa on the west wall
+fx(1.05, 5.2, 3.05, 11.4)
+fx(4.4, 6.5, 6.4, 10.1)                                  # coffee table
+fx(4.2, 12.6, 6.8, 15.2)                                 # armchair
+fx(4.55, 12.95, 6.75, 14.85)
+fx(11.4, 5.8, 12.85, 10.8)                               # console on the kitchen wall
+fx(0.4, 12.4, 2.0, 14.0)                                 # side table
 
-# --- bedroom one: head under the window, well clear of the door swing
-fx(26.0, 0.3, 31.0, 7.0)
-fx(26.0, 0.5, 31.0, 2.3)                                 # pillows
-fline(26.0, 4.8, 31.0, 4.8)                              # turned-down blanket
-fx(24.5, 0.4, 25.8, 1.7)                                 # nightstands
-fx(31.2, 0.4, 32.4, 1.7)
-fx(21.3, 2.0, 22.8, 6.0)                                 # dresser
+# --- bedroom one: bed centred on the left-hand wall, a nightstand each side
+fx(21.3, 3.9, 28.0, 8.9)
+fx(21.5, 3.9, 23.3, 8.9)                                 # pillows
+fline(25.6, 3.9, 25.6, 8.9)                              # turned-down blanket
+fx(21.3, 2.1, 22.9, 3.7)                                 # nightstands
+fx(21.3, 9.1, 22.9, 10.7)
+fx(33.1, 9.9, 34.9, 12.9)                                # chest, under the closet
+fx(29.2, 1.5, 31.8, 4.1)                                 # armchair by the window
 shelf(32.6, 4.2, 34.9, 9.3, True)                        # closet shelf + rail
 
 # --- bedroom two
-fx(26.5, 18.5, 31.5, 25)
+fx(26.5, 18.3, 31.5, 25)
 fx(26.5, 23.2, 31.5, 24.8)                               # pillows
 fline(26.5, 20.8, 31.5, 20.8)
-fx(25.1, 23.5, 26.4, 24.8)                               # nightstands
-fx(31.6, 23.5, 32.9, 24.8)
+fx(24.8, 23.2, 26.4, 24.8)                               # nightstands
+fx(31.6, 23.2, 33.2, 24.8)
 shelf(32.6, 17.4, 34.9, 21.0, True)                      # closet shelf + rail
 
 # --- bath
@@ -202,7 +202,7 @@ def door(hx, hy, ex, ey, ix, iy):
 door(0.5, 25, 3.5, 25, 2.0, 22.0)          # entry, into the living room
 door(3.5, 20.3, 3.5, 22.3, 5.5, 21.3)      # walk-in closet
 door(12.5, 16.5, 15.5, 16.5, 14.0, 19.5)   # bath
-door(22.5, 13, 25.5, 13, 24.0, 10.0)       # bedroom one, off the hall
+door(25.5, 13, 22.5, 13, 24.0, 10.0)       # bedroom one, opening away from the bed
 door(21.5, 16.5, 24.5, 16.5, 23.0, 19.5)   # bedroom two, off the hall
 
 # closet bypass doors
@@ -222,8 +222,8 @@ add(f'<text class="lbl bal-t" x="{X(6.75):.1f}" y="{Y(-4.4):.1f}" '
 add(f'<text class="lbl bal-t dm" x="{X(6.75):.1f}" y="{Y(-3.2):.1f}" '
     f'font-size="6.0" letter-spacing="0.9">8&prime;6&Prime; &times; 5&prime;6&Prime;</text>')
 circ(6.75, -1.6, 0.9)
-fx(4.65, -2.2, 5.85, -1.0)
-fx(7.65, -2.2, 8.85, -1.0)
+fx(4.55, -2.3, 5.95, -0.9)
+fx(7.55, -2.3, 8.95, -0.9)
 
 # ---------------------------------------------------------------- labels
 for name, _r, (lx, ly), dim, _a, _w, fs in ROOMS:
