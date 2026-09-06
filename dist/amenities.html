@@ -3,19 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Questions & Answers | Ridgewood Apartments</title>
-<meta name="description" content="Answers to the questions prospective residents ask most about touring, applying, and living at Ridgewood Apartments.">
-<link rel="canonical" href="https://ridgewoodapartmentsmn.com/questions.html">
+<title>Amenities | Ridgewood Apartments</title>
+<meta name="description" content="What comes with living at Ridgewood Apartments in Saint Paul — heat, water, trash and sewer included, laundry on every floor, on-site parking with garages, and on-site management.">
+<link rel="canonical" href="https://ridgewoodapartmentsmn.com/amenities.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Ridgewood Apartments">
-<meta property="og:title" content="Questions & Answers | Ridgewood Apartments">
-<meta property="og:description" content="Answers to the questions prospective residents ask most about touring, applying, and living at Ridgewood Apartments.">
-<meta property="og:url" content="https://ridgewoodapartmentsmn.com/questions.html">
+<meta property="og:title" content="Amenities | Ridgewood Apartments">
+<meta property="og:description" content="What comes with living at Ridgewood Apartments in Saint Paul — heat, water, trash and sewer included, laundry on every floor, on-site parking with garages, and on-site management.">
+<meta property="og:url" content="https://ridgewoodapartmentsmn.com/amenities.html">
 <meta property="og:image" content="https://ridgewoodapartmentsmn.com/assets/img/ece7fe7b6a6e.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#2e482b">
 <link rel="icon" href="assets/img/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="assets/img/favicon.png">
+<head>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
@@ -134,6 +135,126 @@
   .menu-info-block p, .menu-info-block a { font-size:0.95rem; line-height:1.6; color:var(--forest-ink); text-decoration:none; }
   .menu-info-block a:hover { color:var(--gold); }
 
+  /* ---------- Hero ---------- */
+  .page-hero { position:relative; overflow:hidden; background:var(--forest); min-height:clamp(460px,62vh,620px); display:flex; align-items:flex-end; }
+  .page-hero img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:brightness(0.5) saturate(1.08); }
+  .page-hero .scrim { position:absolute; inset:0; background:linear-gradient(180deg,hsl(var(--shadow)/0.5) 0%,hsl(var(--shadow)/0.25) 40%,hsl(var(--shadow)/0.72) 100%); }
+  .page-hero .inner { position:relative; z-index:2; width:100%; padding:170px 0 70px; color:var(--forest-ink); }
+  .crumb { display:inline-flex; align-items:center; gap:10px; font-size:0.66rem; letter-spacing:0.2em; text-transform:uppercase; text-decoration:none; color:color-mix(in srgb,var(--forest-ink) 66%,transparent); margin-bottom:24px; transition:color .25s ease,gap .25s ease; }
+  .crumb:hover { color:var(--gold); gap:16px; }
+  .page-hero h1 { margin-top:18px; font-size:clamp(2.6rem,6vw,4.6rem); line-height:1.05; color:var(--forest-ink); }
+  .page-hero h1 em { font-style:italic; }
+  .page-hero p { margin-top:22px; max-width:52ch; font-size:1.02rem; line-height:1.75; color:color-mix(in srgb,var(--forest-ink) 84%,transparent); }
+
+  /* ---------- Stat row (count-up) ---------- */
+  .stats { background:var(--forest-deep); color:var(--forest-ink); border-top:1px solid color-mix(in srgb,var(--forest-ink) 14%,transparent); }
+  .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); }
+  .stat { padding:40px 26px; text-align:center; border-left:1px solid color-mix(in srgb,var(--forest-ink) 14%,transparent); }
+  .stat:first-child { border-left:none; }
+  .stat .num { font-family:"Cormorant Garamond",serif; font-size:clamp(2.4rem,4.4vw,3.4rem); line-height:1; color:var(--gold); font-variant-numeric:tabular-nums; }
+  .stat .cap { display:block; margin-top:12px; font-size:0.62rem; letter-spacing:0.2em; text-transform:uppercase; color:color-mix(in srgb,var(--forest-ink) 70%,transparent); }
+
+
+  /* ---------- Section bands (shared with the home page) ---------- */
+  .band { padding: clamp(80px, 11vw, 150px) 0; }
+  .band-forest { background: var(--forest); color: var(--forest-ink); }
+  .band-forest h2, .band-forest h3 { color: var(--forest-ink); }
+
+  /* ---------- Section headings (shared with the home page) ---------- */
+  .band-cream { background: var(--cream); }
+  .band-deep { background: var(--cream-deep); }
+  .center-head { text-align: center; max-width: 760px; margin: 0 auto; }
+  .center-head h2 {
+    margin-top: 22px;
+    font-size: clamp(2.1rem, 4.4vw, 3.4rem);
+    line-height: 1.12;
+  }
+  .center-head h2 em { font-style: italic; color: var(--gold); }
+  .center-head p {
+    margin-top: 26px;
+    font-size: 1.02rem; font-weight: 300; line-height: 1.8;
+    color: var(--ink-soft);
+  }
+  .band-forest .center-head p { color: color-mix(in srgb, var(--forest-ink) 78%, transparent); }
+  .split-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 40px; flex-wrap: wrap; margin-bottom: 60px; }
+  .split-head h2 { margin-top: 20px; font-size: clamp(1.9rem, 3.6vw, 2.9rem); line-height: 1.14; }
+  .split-head p { max-width: 42ch; font-size: 0.98rem; font-weight: 300; line-height: 1.75; color: var(--ink-soft); }
+
+  /* ---------- Amenity cards (shared with the home page) ---------- */
+  .amen-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+  .amen-grid { grid-template-columns: repeat(2, 1fr); }
+  .amen-grid { grid-template-columns: 1fr; }
+  .amen {
+    background: var(--cream-deep);
+    padding: 46px 32px 40px;
+    display: flex; flex-direction: column; gap: 20px;
+    transition: background .4s ease;
+  }
+  .amen:hover { background: var(--white); }
+  .amen-motif { color: var(--gold); }
+  .amen-motif svg { width: 38px; height: 38px; }
+  .amen h3 { font-size: 1.45rem; line-height: 1.25; font-weight: 400; }
+  .amen .rule { width: 100%; }
+  .amen p { font-size: 0.9rem; font-weight: 300; line-height: 1.72; color: var(--ink-soft); }
+
+  /* the hero crumb is inline-flex, so give it its own line above the label */
+  .page-hero .crumb { display: flex; width: max-content; }
+  .page-hero .label { display: block; }
+
+  /* ---------- Filter ---------- */
+  .amf-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 40px; border-bottom: 1px solid var(--line); }
+  .amf {
+    appearance: none; background: none; border: none; cursor: pointer;
+    font-family: "Jost", sans-serif; font-size: 0.7rem; font-weight: 500;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft);
+    padding: 14px 20px; position: relative; transition: color .25s ease;
+  }
+  .amf::after {
+    content: ""; position: absolute; left: 20px; right: 20px; bottom: -1px; height: 2px;
+    background: var(--forest); transform: scaleX(0); transform-origin: left;
+    transition: transform .4s cubic-bezier(.2,.7,.2,1);
+  }
+  .amf:hover { color: var(--ink); }
+  .amf.on { color: var(--forest); }
+  .amf.on::after { transform: scaleX(1); }
+  .amf-count { margin-left: auto; align-self: center; font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-soft); }
+
+  .am { transition: opacity .45s ease, transform .45s cubic-bezier(.2,.7,.2,1); }
+  .am.out { opacity: 0; transform: translateY(10px); pointer-events: none; }
+  .am[hidden] { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { .am { transition: none; } }
+
+  /* ---------- Included in rent ---------- */
+  .inc-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(34px, 5vw, 70px); align-items: center; }
+  .inc-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; list-style: none; padding: 0; }
+  .inc {
+    display: inline-flex; align-items: center; gap: 10px;
+    border: 1px solid color-mix(in srgb, var(--forest-ink) 26%, transparent);
+    padding: 12px 18px; font-size: 0.86rem; color: var(--forest-ink);
+  }
+  .inc .ic { font-size: 0.8rem; color: var(--gold); }
+  .inc.no { opacity: .62; }
+  .inc.no .ic { color: color-mix(in srgb, var(--forest-ink) 60%, transparent); }
+  .inc-note { margin-top: 26px; font-size: 0.88rem; line-height: 1.75; color: color-mix(in srgb, var(--forest-ink) 74%, transparent); }
+
+  /* match the heading scale on both sides of the split */
+  .inc-wrap > div:first-child h2 { margin-top: 16px; font-size: clamp(1.9rem, 3.8vw, 2.8rem); line-height: 1.14; }
+
+  /* ---------- Practical details ---------- */
+  .det-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line); border-top: 1px solid var(--line); margin-top: 50px; }
+  .det { background: var(--cream); padding: 30px 32px; }
+  .det dt { font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
+  .det dd { margin: 12px 0 0; font-size: 0.95rem; line-height: 1.75; color: var(--ink-soft); }
+
+  @media (max-width: 980px) {
+    .inc-wrap { grid-template-columns: 1fr; }
+    .det-list { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 680px) {
+    .amf { padding: 12px 13px; font-size: 0.64rem; }
+    .amf::after { left: 13px; right: 13px; }
+    .amf-count { display: none; }
+  }
   /* ---------- CTA ---------- */
   .cta { background:var(--cream-deep); padding:clamp(70px,9vw,110px) 0; text-align:center; }
   .cta h2 { margin-top:18px; font-size:clamp(2rem,4.2vw,3rem); line-height:1.12; }
@@ -203,100 +324,6 @@
     .cats { gap:18px; }
   }
 
-  /* ---------- Page hero ---------- */
-  .page-hero { position:relative; overflow:hidden; background:var(--forest); min-height:clamp(400px,54vh,540px); display:flex; align-items:flex-end; }
-  .page-hero img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:50% 62%; filter:brightness(0.46) saturate(1.06); }
-  .page-hero .scrim { position:absolute; inset:0; background:linear-gradient(180deg,hsl(var(--shadow)/0.5) 0%,hsl(var(--shadow)/0.28) 42%,hsl(var(--shadow)/0.74) 100%); }
-  .page-hero .inner { position:relative; z-index:2; width:100%; padding:165px 0 66px; color:var(--forest-ink); }
-  /* share the reading column so hero, sticky bar and questions all start on one line */
-  .page-hero .inner .wrap { max-width:880px; }
-  .crumb { display:inline-flex; align-items:center; gap:10px; font-size:0.66rem; letter-spacing:0.2em; text-transform:uppercase; text-decoration:none; color:color-mix(in srgb,var(--forest-ink) 66%,transparent); margin-bottom:24px; transition:color .25s ease,gap .25s ease; }
-  .crumb:hover { color:var(--gold); gap:16px; }
-  .page-hero h1 { margin-top:18px; font-size:clamp(2.5rem,5.6vw,4.3rem); line-height:1.05; color:var(--forest-ink); }
-  .page-hero h1 em { font-style:italic; }
-  .page-hero p { margin-top:20px; max-width:50ch; font-size:1.02rem; line-height:1.75; color:color-mix(in srgb,var(--forest-ink) 84%,transparent); }
-
-  /* ---------- Jump nav ---------- */
-  .jump { position:sticky; top:76px; z-index:40; background:color-mix(in srgb,var(--cream) 94%,transparent); backdrop-filter:blur(12px); border-bottom:1px solid var(--line); }
-  /* longhand padding: the `padding:16px 0` shorthand was cancelling .wrap's
-     horizontal padding and pinning the bar to the viewport edge */
-  .jump .wrap { max-width:880px; }
-  .jump-inner { display:flex; align-items:center; justify-content:space-between; gap:18px 28px; flex-wrap:wrap; padding-top:15px; padding-bottom:15px; }
-  .jump-links { display:flex; flex-wrap:wrap; gap:26px; }
-  .jump-links a {
-    font-size:0.64rem; font-weight:500; letter-spacing:0.2em; text-transform:uppercase;
-    text-decoration:none; color:var(--ink-soft); padding-bottom:6px;
-    border-bottom:1px solid transparent; transition:color .25s ease,border-color .25s ease;
-  }
-  .jump-links a:hover, .jump-links a.here { color:var(--ink); border-bottom-color:var(--gold); }
-  .lbl-short { display:none; }
-  .toggle-all {
-    appearance:none; background:none; border:none; cursor:pointer; padding:6px 0;
-    font-family:"Jost",sans-serif; font-size:0.62rem; letter-spacing:0.18em; text-transform:uppercase;
-    color:var(--ink-soft); border-bottom:1px solid var(--line); transition:color .25s ease,border-color .25s ease;
-  }
-  .toggle-all:hover { color:var(--gold); border-color:var(--gold); }
-
-  /* ---------- Q&A ---------- */
-  .qa-band { padding:clamp(60px,7vw,96px) 0; }
-  .qa-group + .qa-group { margin-top:clamp(52px,6vw,78px); }
-  .qa-head { display:flex; align-items:baseline; gap:18px; padding-bottom:20px; border-bottom:1px solid var(--line); margin-bottom:6px; }
-  .qa-head h2 { font-size:clamp(1.6rem,2.6vw,2.15rem); line-height:1.15; }
-  .qa-head .n { font-size:0.62rem; letter-spacing:0.2em; color:var(--gold); }
-
-  .qa { border-bottom:1px solid var(--line); }
-  .q {
-    appearance:none; width:100%; text-align:left; background:none; border:none; cursor:pointer;
-    display:flex; align-items:flex-start; justify-content:space-between; gap:26px;
-    padding:26px 2px; color:var(--ink);
-    font-family:"Cormorant Garamond",serif; font-size:clamp(1.18rem,1.9vw,1.42rem);
-    font-weight:400; line-height:1.35;
-    transition:color .25s ease;
-  }
-  .q:hover { color:var(--gold); }
-  .q:focus-visible { outline:2px solid var(--gold); outline-offset:3px; }
-  .mark { position:relative; flex-shrink:0; width:15px; height:15px; margin-top:.42em; }
-  .mark::before, .mark::after {
-    content:""; position:absolute; left:0; top:7px; width:15px; height:1px; background:currentColor;
-    transition:transform .4s cubic-bezier(.2,.8,.2,1), opacity .3s ease;
-  }
-  .mark::after { transform:rotate(90deg); }
-  .q[aria-expanded="true"] .mark::after { transform:rotate(0deg); opacity:0; }
-  .q[aria-expanded="true"] { color:var(--gold); }
-
-  /* max-height rather than grid 0fr/1fr: overflow:hidden on a grid item zeroes its
-     automatic minimum size, so the 1fr track collapses in an auto-height container. */
-  .a-wrap { max-height:0; overflow:hidden; transition:max-height .45s cubic-bezier(.2,.8,.2,1); }
-  .a { overflow:hidden; }
-  .a-inner { padding:0 60px 30px 2px; }
-  .a-inner p { font-size:0.97rem; line-height:1.9; color:var(--ink-soft); }
-  .a-inner p + p { margin-top:14px; }
-  .a-inner a { color:var(--gold); text-decoration:none; border-bottom:1px solid color-mix(in srgb,var(--gold) 45%,transparent); }
-  .a-inner a:hover { border-color:var(--gold); }
-  .a-inner ul { margin:14px 0 0; padding:0; list-style:none; display:flex; flex-direction:column; gap:9px; }
-  .a-inner li { position:relative; padding-left:20px; font-size:0.95rem; line-height:1.7; color:var(--ink-soft); }
-  .a-inner li::before { content:""; position:absolute; left:0; top:.62em; width:6px; height:1px; background:var(--gold); }
-  @media (prefers-reduced-motion: reduce) {
-    .a-wrap { transition:none; }
-    .mark::before, .mark::after { transition:none; }
-  }
-  @media (max-width:760px) {
-    .a-inner { padding-right:20px; }
-    .jump { top:70px; }
-    /* One scrolling row rather than a three-line stack eating the screen.
-       Expand-all is a desktop convenience: on a phone it produces a wall of
-       text, and keeping it here clipped the last category against the button. */
-    /* Four short labels fit on one line once abbreviated, which beats a
-       horizontal scroller that slices words off with no affordance. */
-    .jump-inner { flex-wrap:nowrap; gap:0; }
-    .jump-links { flex:1 1 auto; min-width:0; flex-wrap:nowrap; justify-content:space-between; gap:10px; }
-    .jump-links a { flex:0 1 auto; white-space:nowrap; font-size:0.58rem; letter-spacing:0.12em; }
-    .lbl-full { display:none; }
-    .lbl-short { display:inline; }
-    .toggle-all { display:none; }
-  }
-
-
   /* ---------- Green-led palette ---------- */
   :root { --accent: var(--forest); --accent-ink: #f6f2e8; }
   @media (prefers-color-scheme: dark) {
@@ -365,7 +392,6 @@
   .hero h1, .page-head h1, .page-hero h1 { color: var(--forest-ink); }
 </style>
 
-
 <header class="site-head" id="siteHead">
   <div class="announce" id="announce">
     <div class="announce-inner">
@@ -404,10 +430,10 @@
     <nav class="menu-links" aria-label="Main">
       <a href="index.html"><span class="mnum">01</span>Home</a>
       <a href="residences.html"><span class="mnum">02</span>Residences</a>
-      <a href="amenities.html"><span class="mnum">03</span>Amenities</a>
+      <a href="#top" aria-current="page" data-menu-close><span class="mnum">03</span>Amenities</a>
       <a href="gallery.html"><span class="mnum">04</span>Gallery</a>
       <a href="neighborhood.html"><span class="mnum">05</span>Neighborhood</a>
-      <a href="#top" aria-current="page" data-menu-close><span class="mnum">06</span>Questions</a>
+      <a href="questions.html"><span class="mnum">06</span>Questions</a>
       <a href="index.html#contact"><span class="mnum">07</span>Contact</a>
     </nav>
     <div class="menu-info">
@@ -421,204 +447,150 @@
 </div>
 
 <main id="top">
+
   <section class="page-hero">
-    <img src="assets/img/f1b78afdac5f.jpg" alt="">
+    <img src="assets/img/19a79e2356f5.jpg" alt="The oak courtyard between the Ridgewood buildings">
     <div class="scrim"></div>
-    <div class="inner"><div class="wrap">
-      <a class="crumb" href="index.html">&larr; Back to Ridgewood</a>
-      <span class="label label-light" style="display:block;">Before You Call</span>
-      <h1>Questions &amp; <em>Answers</em></h1>
-      <p>The things prospective residents ask us most, answered plainly. If yours is not here, the leasing office is a phone call away.</p>
-    </div></div>
-  </section>
-
-  <div class="jump">
-    <div class="wrap jump-inner">
-      <nav class="jump-links" aria-label="Question categories"><a href="#touring"><span class="lbl-full">Touring &amp; Applying</span><span class="lbl-short">Touring</span></a><a href="#living"><span class="lbl-full">Living at Ridgewood</span><span class="lbl-short">Living Here</span></a><a href="#policies"><span class="lbl-full">Policies</span><span class="lbl-short">Policies</span></a><a href="#area"><span class="lbl-full">The Neighborhood</span><span class="lbl-short">Neighborhood</span></a></nav>
-      <button class="toggle-all" id="toggleAll" type="button" aria-pressed="false">Expand all</button>
-    </div>
-  </div>
-
-  <div class="qa-band">
-    <div class="wrap" style="max-width:880px;">
-      <section class="qa-group" id="touring">
-        <div class="qa-head"><span class="n">01</span><h2>Touring &amp; Applying</h2></div>
-        <div class="qa">
-          <button class="q" id="q1" aria-expanded="false" aria-controls="a1">
-            <span>How do I schedule a tour?</span><span class="mark" aria-hidden="true"></span>
-          </button>
-          <div class="a-wrap" id="a1" role="region" aria-labelledby="q1">
-            <div class="a"><div class="a-inner"><p>Use the <button class="js-open-tour" style="all:unset;cursor:pointer;color:var(--gold);border-bottom:1px solid color-mix(in srgb,var(--gold) 45%,transparent);">Schedule a Tour</button> button anywhere on the site, or call the leasing office at <a href="tel:16515780498">651-578-0498</a>. Walk-ins are welcome during office hours as well &mdash; someone is on site every weekday afternoon.</p></div></div>
-          </div>
-        </div>
-        <div class="qa">
-          <button class="q" id="q2" aria-expanded="false" aria-controls="a2">
-            <span>What are your office hours?</span><span class="mark" aria-hidden="true"></span>
-          </button>
-          <div class="a-wrap" id="a2" role="region" aria-labelledby="q2">
-            <div class="a"><div class="a-inner"><p>Monday through Friday, 1:00pm to 5:00pm. The office is closed Saturday and Sunday, though you are welcome to leave a voicemail and we will return it the next business day.</p></div></div>
-          </div>
-        </div>
-        <div class="qa">
-          <button class="q" id="q3" aria-expanded="false" aria-controls="a3">
-            <span>What floor plans do you offer?</span><span class="mark" aria-hidden="true"></span>
-          </button>
-          <div class="a-wrap" id="a3" role="region" aria-labelledby="q3">
-            <div class="a"><div class="a-inner"><p>Three layouts across the two buildings:</p><ul><li><strong>The Wilson</strong> &mdash; 1 bed, 1 bath, roughly 800 sq ft</li><li><strong>The Battle Creek</strong> &mdash; 2 bed, 1 bath, roughly 875 sq ft</li><li><strong>The Wakefield</strong> &mdash; 3 bed, 1 bath, roughly 1,050 sq ft</li></ul><p>You can see the layouts on the <a href="residences.html">Residences</a> page.</p></div></div>
-          </div>
-        </div>
-        <div class="qa">
-          <button class="q" id="q4" aria-expanded="false" aria-controls="a4">
-            <span>What is the rent, and what is available right now?</span><span class="mark" aria-hidden="true"></span>
-          </button>
-          <div class="a-wrap" id="a4" role="region" aria-labelledby="q4">
-            <div class="a"><div class="a-inner"><p>Rent and availability change month to month, so rather than post a figure that goes stale we keep it with the leasing office. Call <a href="tel:16515780498">651-578-0498</a> and we will tell you exactly what is open, what it costs, and when it is ready.</p></div></div>
-          </div>
-        </div>
-        <div class="qa">
-          <button class="q" id="q5" aria-expanded="false" aria-controls="a5">
-            <span>What do I need in order to apply?</span><span class="mark" aria-hidden="true"></span>
-          </button>
-          <div class="a-wrap" id="a5" role="region" aria-labelledby="q5">
-            <div class="a"><div class="a-inner"><p>We generally look for household income of about three times the monthly rent, good credit, and a positive rental history. Applications are handled directly through the leasing office &mdash; call <a href="tel:16515780498">651-578-0498</a> and we will walk you through the paperwork and what to bring.</p></div></div>
-          </div>
-        </div>
-      </section>
-      <section class="qa-group" id="living">
-        <div class="qa-head"><span class="n">02</span><h2>Living at Ridgewood</h2></div>
-        <div class="qa">
-          <button class="q" id="q6" aria-expanded="false" aria-controls="a6">
-            <span>Which utilities are included?</span><span class="mark" aria-hidden="true"></span>
-          </button>
-          <div class="a-wrap" id="a6" role="region" aria-labelledby="q6">
-            <div class="a"><div class="a-inner"><p>Heat, water, trash, and sewer are all covered by your rent. <strong>Electric is the only utility you set up in your own name</strong> &mdash; there is no separate water bill, no trash fee, and no heating bill in January.</p></div></div>
-          </div>
-        </div>
-        <div class="qa">
-          <button class="q" id="q7" aria-expanded="false" aria-controls="a7">
-            <span>Is there laundry in the building?</span><span class="mark" aria-hidden="true"></span>
-          </button>
-          <div class="a-wrap" id="a7" role="region" aria-labelledby="q7">
-            <div class="a"><div class="a-inner"><p>There is a laundry room on every floor, so you are never carrying a basket more than a few doors down. The machines are card operated &mdash; no coins to hunt for.</p></div></div>
-          </div>
-        </div>
-        <div class="qa">
-          <button class="q" id="q8" aria-expanded="false" aria-controls="a8">
-            <span>Is parking included, and are garages available?</span><span class="mark" aria-hidden="true"></span>
-          </button>
-          <div class="a-wrap" id="a8" role="region" aria-labelledby="q8">
-            <div class="a"><div class="a-inner"><p>Resident parking is on site, steps from your entrance. Garages are available as well; ask the leasing office about current openings and cost when you call.</p></div></div>
-          </div>
-        </div>
-        <div class="qa">
-          <button class="q" id="q9" aria-expanded="false" aria-controls="a9">
-            <span>Do the apartments have air conditioning?</span><span class="mark" aria-hidden="true"></span>
-          </button>
-          <div class="a-wrap" id="a9" role="region" aria-labelledby="q9">
-            <div class="a"><div class="a-inner"><p>Heat is central and included in your rent. Air conditioning is available &mdash; ask the office which homes currently have it installed.</p></div></div>
-          </div>
-        </div>
-        <div class="qa">
-          <button class="q" id="q10" aria-expanded="false" aria-controls="a10">
-            <span>Do apartments have a balcony or patio?</span><span class="mark" aria-hidden="true"></span>
-          </button>
-          <div class="a-wrap" id="a10" role="region" aria-labelledby="q10">
-            <div class="a"><div class="a-inner"><p>Most homes open onto a private balcony or patio looking out over the courtyard lawn rather than the parking lot. The two- and three-bedroom layouts often have more than one.</p></div></div>
-          </div>
-        </div>
-        <div class="qa">
-          <button class="q" id="q11" aria-expanded="false" aria-controls="a11">
-            <span>What are the kitchens like?</span><span class="mark" aria-hidden="true"></span>
-          </button>
-          <div class="a-wrap" id="a11" role="region" aria-labelledby="q11">
-            <div class="a"><div class="a-inner"><p>Warm wood cabinetry and timeless finishes &mdash; the character of the era the buildings were built in, kept in good order. You can see them in the <a href="gallery.html">gallery</a>.</p></div></div>
-          </div>
-        </div>
-        <div class="qa">
-          <button class="q" id="q12" aria-expanded="false" aria-controls="a12">
-            <span>How do I submit a maintenance request?</span><span class="mark" aria-hidden="true"></span>
-          </button>
-          <div class="a-wrap" id="a12" role="region" aria-labelledby="q12">
-            <div class="a"><div class="a-inner"><p>Call the leasing office at <a href="tel:16515780498">651-578-0498</a> or stop in during office hours. The management team works on the property itself rather than from across town, so requests do not have to travel far.</p></div></div>
-          </div>
-        </div>
-        <div class="qa">
-          <button class="q" id="q13" aria-expanded="false" aria-controls="a13">
-            <span>Is the building secure?</span><span class="mark" aria-hidden="true"></span>
-          </button>
-          <div class="a-wrap" id="a13" role="region" aria-labelledby="q13">
-            <div class="a"><div class="a-inner"><p>Building entrances are locked, with intercom access so you can let guests in from your apartment.</p></div></div>
-          </div>
-        </div>
-      </section>
-      <section class="qa-group" id="policies">
-        <div class="qa-head"><span class="n">03</span><h2>Policies</h2></div>
-        <div class="qa">
-          <button class="q" id="q14" aria-expanded="false" aria-controls="a14">
-            <span>Do you allow pets?</span><span class="mark" aria-hidden="true"></span>
-          </button>
-          <div class="a-wrap" id="a14" role="region" aria-labelledby="q14">
-            <div class="a"><div class="a-inner"><p>No &mdash; Ridgewood is a pet-free community, and pets are not permitted in any of our homes.</p></div></div>
-          </div>
-        </div>
-        <div class="qa">
-          <button class="q" id="q15" aria-expanded="false" aria-controls="a15">
-            <span>What is the smoking policy?</span><span class="mark" aria-hidden="true"></span>
-          </button>
-          <div class="a-wrap" id="a15" role="region" aria-labelledby="q15">
-            <div class="a"><div class="a-inner"><p>Ridgewood is strictly non-smoking. Smoking is not permitted in any apartment, in the common areas, or anywhere on the property.</p></div></div>
-          </div>
-        </div>
-        <div class="qa">
-          <button class="q" id="q16" aria-expanded="false" aria-controls="a16">
-            <span>Is renters insurance required?</span><span class="mark" aria-hidden="true"></span>
-          </button>
-          <div class="a-wrap" id="a16" role="region" aria-labelledby="q16">
-            <div class="a"><div class="a-inner"><p>Ask the leasing office when you apply &mdash; they will tell you what coverage is expected and when proof is needed.</p></div></div>
-          </div>
-        </div>
-      </section>
-      <section class="qa-group" id="area">
-        <div class="qa-head"><span class="n">04</span><h2>The Neighborhood</h2></div>
-        <div class="qa">
-          <button class="q" id="q17" aria-expanded="false" aria-controls="a17">
-            <span>What is nearby?</span><span class="mark" aria-hidden="true"></span>
-          </button>
-          <div class="a-wrap" id="a17" role="region" aria-labelledby="q17">
-            <div class="a"><div class="a-inner"><p>Target is on Suburban Avenue about two minutes away, with Cub Foods just past it. Conway Park is a half-mile walk, and Battle Creek Regional Park &mdash; trails, a ski hill, a waterfall and a dog park &mdash; is five minutes out. Head east and the Woodbury corridor brings Costco, Lunds &amp; Byerlys, Whole Foods and Trader Joe&rsquo;s.</p><p>The <a href="neighborhood.html">neighborhood page</a> has an interactive map of everything within a short drive.</p></div></div>
-          </div>
-        </div>
-        <div class="qa">
-          <button class="q" id="q18" aria-expanded="false" aria-controls="a18">
-            <span>How long is the commute?</span><span class="mark" aria-hidden="true"></span>
-          </button>
-          <div class="a-wrap" id="a18" role="region" aria-labelledby="q18">
-            <div class="a"><div class="a-inner"><p>Roughly 15 minutes to downtown Saint Paul, 20 to MSP International, and 25 to downtown Minneapolis &mdash; I-94 and I-494 are both close by. Metropolitan State University is about nine minutes away.</p></div></div>
-          </div>
-        </div>
-        <div class="qa">
-          <button class="q" id="q19" aria-expanded="false" aria-controls="a19">
-            <span>Are there gyms close by?</span><span class="mark" aria-hidden="true"></span>
-          </button>
-          <div class="a-wrap" id="a19" role="region" aria-labelledby="q19">
-            <div class="a"><div class="a-inner"><p>An Anytime Fitness is two minutes from the door and the Conway Recreation Center is closer still. Further out you have Vertical Endeavors for climbing, the Eastside YMCA, CorePower Yoga, and Life Time in Woodbury.</p></div></div>
-          </div>
-        </div>
-      </section>
-    </div>
-  </div>
-
-  <section class="cta">
-    <div class="wrap">
-      <span class="label label-gold">Still Wondering?</span>
-      <h2>Ask Us <em>Directly</em></h2>
-      <p>The leasing office is on site every weekday afternoon and happy to answer anything this page does not.</p>
-      <div class="cta-actions">
-        <button class="btn js-open-tour" type="button">Schedule a Tour</button>
-        <a class="link-ul" href="tel:16515780498">651-578-0498</a>
+    <div class="inner">
+      <div class="wrap">
+        <a class="crumb" href="index.html">&larr; Back to Ridgewood</a>
+        <span class="label label-light">What Comes With Living Here</span>
+        <h1>The <em>Amenities</em></h1>
+        <p>Practical comforts, kept in good order. Most of what makes a place easy to come home
+           to is not a feature list &mdash; it is the heat being included, the laundry being on
+           your floor, and someone being here when you need them.</p>
       </div>
     </div>
   </section>
+
+  <section class="stats">
+    <div class="stats-grid" id="stats">
+      <div class="stat"><span class="num" data-to="4">0</span><span class="cap">Utilities included</span></div>
+      <div class="stat"><span class="num" data-to="1" data-text="Every floor">0</span><span class="cap">Has its own laundry</span></div>
+      <div class="stat"><span class="num" data-to="5">0</span><span class="cap">Weekdays on site</span></div>
+      <div class="stat"><span class="num" data-to="2">0</span><span class="cap">Buildings on Wilson Ave</span></div>
+    </div>
+  </section>
+
+  <section class="band band-cream" id="explore">
+    <div class="wrap">
+      <div class="split-head reveal">
+        <div>
+          <span class="label">Everything On Offer</span>
+          <h2>Designed for how you actually live</h2>
+        </div>
+        <p>Nine things you get by living at Ridgewood. Filter by where you will find them &mdash;
+           inside your home, in the building, or out on the grounds.</p>
+      </div>
+
+      <div class="amf-bar reveal" id="amfBar" role="group" aria-label="Filter amenities">
+        <button class="amf on" type="button" data-f="all" aria-pressed="true">Everything</button><button class="amf" type="button" data-f="home" aria-pressed="false">In Your Home</button><button class="amf" type="button" data-f="building" aria-pressed="false">In the Building</button><button class="amf" type="button" data-f="grounds" aria-pressed="false">On the Grounds</button><span class="amf-count" id="amfCount">9 amenities</span>
+      </div>
+
+      <div class="amen-grid" id="amGrid">
+        <div class="amen am" data-cat="home" data-name="Utilities Included">
+          <span class="amen-motif"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1"><path d="M20 6c0 0 10 12.5 10 19a10 10 0 0 1-20 0C10 18.5 20 6 20 6Z"/><path d="M15 25a5 5 0 0 0 5 5"/></svg></span>
+          <h3>Utilities Included</h3>
+          <hr class="rule">
+          <p>Heat, water, trash, and sewer are all covered by your rent. Electric is the only bill you set up.</p></div>
+        <div class="amen am" data-cat="building" data-name="On-Site Parking">
+          <span class="amen-motif"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1"><path d="M6 34V16L20 6l14 10v18"/><path d="M15 34V23h10v11"/></svg></span>
+          <h3>On-Site Parking</h3>
+          <hr class="rule">
+          <p>Resident parking steps from your own entrance, with garages available.</p></div>
+        <div class="amen am" data-cat="home" data-name="Private Balconies">
+          <span class="amen-motif"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1"><rect x="7" y="7" width="26" height="26"/><path d="M7 17h26M17 7v26"/></svg></span>
+          <h3>Private Balconies</h3>
+          <hr class="rule">
+          <p>Most homes open onto a private balcony or patio overlooking the courtyard lawn.</p></div>
+        <div class="amen am" data-cat="building" data-name="Laundry on Every Floor">
+          <span class="amen-motif"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1"><rect x="8" y="6" width="24" height="28"/><circle cx="20" cy="22" r="7"/><path d="M13 12h6"/></svg></span>
+          <h3>Laundry on Every Floor</h3>
+          <hr class="rule">
+          <p>An easily accessible laundry room on each floor, all credit card operated &mdash; no coins to keep track of.</p></div>
+        <div class="amen am" data-cat="grounds" data-name="On-Site Management">
+          <span class="amen-motif"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1"><circle cx="20" cy="14" r="6"/><path d="M8 34c2.6-7 6.8-10.5 12-10.5S29.4 27 32 34"/></svg></span>
+          <h3>On-Site Management</h3>
+          <hr class="rule">
+          <p>A leasing team on the property every weekday for maintenance requests and questions.</p></div>
+        <div class="amen am" data-cat="home" data-name="Heat &amp; Air Conditioning">
+          <span class="amen-motif"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1"><path d="M24 7v18.6a7 7 0 1 1-8 0V7a4 4 0 0 1 8 0Z"/><path d="M20 15v11"/></svg></span>
+          <h3>Heat &amp; Air Conditioning</h3>
+          <hr class="rule">
+          <p>Central heat, plus air conditioning available, keeping every home comfortable year-round.</p></div>
+        <div class="amen am" data-cat="building" data-name="Secure Entry">
+          <span class="amen-motif"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1"><rect x="7" y="16" width="26" height="18"/><path d="M14 16v-4a6 6 0 0 1 12 0v4"/><circle cx="20" cy="25" r="2"/></svg></span>
+          <h3>Secure Entry</h3>
+          <hr class="rule">
+          <p>Locked building entrances with intercom access for your guests.</p></div>
+        <div class="amen am" data-cat="home" data-name="Classic Kitchens">
+          <span class="amen-motif"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1"><rect x="6" y="8" width="28" height="24"/><path d="M6 17h28M15 8v9"/><circle cx="11" cy="12.5" r="1"/></svg></span>
+          <h3>Classic Kitchens</h3>
+          <hr class="rule">
+          <p>Warm wood cabinetry and timeless finishes give every kitchen its own character.</p></div>
+        <div class="amen am" data-cat="grounds" data-name="Oak Courtyard Grounds">
+          <span class="amen-motif"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1"><path d="M20 34V18"/><path d="M20 18s-9-1-9-8c0 0 5.5 2 9 8Z"/><path d="M20 18s9-1 9-8c0 0-5.5 2-9 8Z"/><path d="M20 26s-7-.8-7-6c0 0 4.2 1.6 7 6Z"/></svg></span>
+          <h3>Oak Courtyard Grounds</h3>
+          <hr class="rule">
+          <p>Mature oaks and maintained lawns between the buildings, cared for through every season.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band band-forest">
+    <div class="wrap">
+      <div class="inc-wrap">
+        <div class="reveal">
+          <span class="label">Included In Your Rent</span>
+          <h2>Four of the five bills, already handled</h2>
+          <ul class="inc-list"><li class="inc yes"><span class="ic">&#10003;</span>Heat</li><li class="inc yes"><span class="ic">&#10003;</span>Water</li><li class="inc yes"><span class="ic">&#10003;</span>Trash</li><li class="inc yes"><span class="ic">&#10003;</span>Sewer</li><li class="inc no"><span class="ic">&ndash;</span>Electric</li></ul>
+          <p class="inc-note">Heat, water, trash and sewer are covered by your rent. Electric is
+             the only account you open in your own name &mdash; which makes budgeting for a month
+             here a good deal simpler than most places you will look at.</p>
+        </div>
+        <div class="reveal">
+          <div class="center-head">
+            <h2>Ready to see it?</h2>
+            <p>The leasing office is on site every weekday afternoon.</p>
+            <button class="btn btn-light js-open-tour" type="button">Schedule a Tour</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band band-deep">
+    <div class="wrap">
+      <div class="center-head reveal">
+        <span class="label">The Practical Details</span>
+        <h2>Answers before you ask</h2>
+      </div>
+      <dl class="det-list">
+          <div class="det reveal"><dt>Leasing office</dt><dd>Monday to Friday, 1:00 &ndash; 5:00pm. Walk-ins welcome during office hours.</dd></div>
+          <div class="det reveal"><dt>Laundry</dt><dd>A laundry room on every floor, credit-card operated &mdash; no coins to keep track of.</dd></div>
+          <div class="det reveal"><dt>Parking</dt><dd>On-site resident parking, with garages available. Ask the office about current availability.</dd></div>
+          <div class="det reveal"><dt>Utilities</dt><dd>Heat, water, trash and sewer are included in the rent. Electric is the only account you open.</dd></div>
+          <div class="det reveal"><dt>Heating &amp; cooling</dt><dd>Central heat throughout. Air conditioning is available.</dd></div>
+          <div class="det reveal"><dt>Pets</dt><dd>Ridgewood is a pet-free community.</dd></div>
+          <div class="det reveal"><dt>Smoking</dt><dd>Strictly non-smoking &mdash; in the homes, the common areas, and anywhere on the property.</dd></div>
+          <div class="det reveal"><dt>Buildings</dt><dd>1871 &amp; 1885 Wilson Avenue, Saint Paul, MN 55119.</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="wrap">
+      <span class="label">Come See It In Person</span>
+      <h2>The list is short. <em>The place speaks for itself.</em></h2>
+      <p>Book a time below, or call ahead &mdash; walk-ins are welcome Monday to Friday,
+         1:00 to 5:00pm.</p>
+      <div class="cta-actions">
+        <button class="btn js-open-tour" type="button">Schedule a Tour</button>
+        <a class="link-ul" href="tel:16515780498">651&middot;578&middot;0498</a>
+      </div>
+    </div>
+  </section>
+
 </main>
 
 <footer>
@@ -633,7 +605,7 @@
       </div>
       <div class="foot-col"><h4 class="label">Explore</h4><div>
         <a href="index.html">Home</a><a href="residences.html">Residences</a>
-        <a href="amenities.html">Amenities</a><a href="gallery.html">Gallery</a><a href="neighborhood.html">Neighborhood</a></div></div>
+        <a href="#top">Amenities</a><a href="gallery.html">Gallery</a><a href="questions.html">Questions</a></div></div>
       <div class="foot-col"><h4 class="label">Visit</h4><div>
         <a href="https://maps.google.com/?q=1871+Wilson+Ave,+Saint+Paul,+MN+55119" target="_blank" rel="noopener">1871 &amp; 1885 Wilson Ave</a>
         <a href="https://maps.google.com/?q=1871+Wilson+Ave,+Saint+Paul,+MN+55119" target="_blank" rel="noopener">Saint Paul, MN 55119</a>
@@ -662,79 +634,84 @@
   </div>
 </div>
 
-
 <div class="m-bar" id="mBar">
   <button class="btn btn-sm js-open-tour" type="button">Schedule a Tour</button>
 </div>
+
 
 <script src="https://assets.calendly.com/assets/external/widget.js" async></script>
 <script>
 (function () {
   var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ---- accordion ---- */
-  var qs = [].slice.call(document.querySelectorAll('.q'));
+  /* ---- amenity filter ---- */
+  var btns = [].slice.call(document.querySelectorAll('.amf')),
+      cards = [].slice.call(document.querySelectorAll('.am')),
+      countEl = document.getElementById('amfCount');
+  function applyFilter(key) {
+    btns.forEach(function (b) {
+      var on = b.dataset.f === key;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    var shown = 0;
+    cards.forEach(function (c) {
+      var keep = key === 'all' || c.dataset.cat === key;
+      if (keep) shown++;
+      if (reduce) { c.hidden = !keep; c.classList.toggle('out', !keep); return; }
+      if (keep) {
+        c.hidden = false;
+        requestAnimationFrame(function () { c.classList.remove('out'); });
+      } else {
+        c.classList.add('out');
+        setTimeout(function () { if (c.classList.contains('out')) c.hidden = true; }, 450);
+      }
+    });
+    countEl.textContent = shown + (shown === 1 ? ' amenity' : ' amenities');
+  }
+  btns.forEach(function (b) { b.addEventListener('click', function () { applyFilter(b.dataset.f); }); });
 
-  function setOpen(q, open) {
-    var w = q.nextElementSibling;
-    q.setAttribute('aria-expanded', String(open));
-    if (reduce) { w.style.maxHeight = open ? 'none' : '0px'; return; }
-    /* measure the inner child: scrollHeight on a max-height:0 clipped box is unreliable */
-    var h = w.firstElementChild.getBoundingClientRect().height;
-    if (open) {
-      w.style.maxHeight = h + 'px';
-      var release = function () {
-        if (q.getAttribute('aria-expanded') === 'true') w.style.maxHeight = 'none';
-      };
-      w.addEventListener('transitionend', function done(e) {
-        if (e.propertyName !== 'max-height') return;
-        w.removeEventListener('transitionend', done);
-        release();
-      });
-      /* belt and braces: if transitionend never fires the panel would stay pinned
-         to a stale pixel height and stop reflowing with the window */
-      setTimeout(release, 600);
-    } else {
-      w.style.maxHeight = h + 'px';
-      void w.offsetHeight;                      /* reflow so the shrink animates */
-      w.style.maxHeight = '0px';
+  /* ---- count-up stats ---- */
+  function countUp(el) {
+    var target = +el.dataset.to, suffix = el.dataset.suffix || '';
+    var fmt = function (v) { return v.toLocaleString('en-US'); };
+    if (el.dataset.text) { el.innerHTML = el.dataset.text; return; }
+    if (reduce) { el.textContent = fmt(target) + suffix; return; }
+    var start = performance.now(), dur = 1100;
+    (function step(now) {
+      var k = Math.min(1, (now - start) / dur);
+      var eased = 1 - Math.pow(1 - k, 3);
+      el.textContent = fmt(Math.round(target * eased)) + suffix;
+      if (k < 1) requestAnimationFrame(step);
+    })(start);
+  }
+
+  /* ---- reveal + stats trigger ---- */
+  var reveals = [].slice.call(document.querySelectorAll('.reveal'));
+  function revealInView() {
+    for (var i = reveals.length - 1; i >= 0; i--) {
+      if (reveals[i].getBoundingClientRect().top < innerHeight) {
+        reveals[i].classList.add('is-visible'); reveals.splice(i, 1);
+      }
     }
   }
-  qs.forEach(function (q) {
-    q.addEventListener('click', function () {
-      setOpen(q, q.getAttribute('aria-expanded') !== 'true');
-      syncToggleAll();
-    });
-  });
-
-  var toggleAll = document.getElementById('toggleAll');
-  function syncToggleAll() {
-    var open = qs.filter(function (q) { return q.getAttribute('aria-expanded') === 'true'; }).length;
-    var all = open === qs.length;
-    toggleAll.textContent = all ? 'Collapse all' : 'Expand all';
-    toggleAll.setAttribute('aria-pressed', String(all));
+  var statsDone = false;
+  function statsInView() {
+    if (statsDone) return;
+    var s = document.getElementById('stats');
+    if (s.getBoundingClientRect().top < innerHeight - 60) {
+      statsDone = true;
+      s.querySelectorAll('.num').forEach(countUp);
+    }
   }
-  toggleAll.addEventListener('click', function () {
-    var open = toggleAll.getAttribute('aria-pressed') === 'true';
-    qs.forEach(function (q) { setOpen(q, !open); });
-    syncToggleAll();
-  });
-
-  /* ---- highlight the category you are reading ---- */
-  var links = [].slice.call(document.querySelectorAll('.jump-links a'));
-  var groups = links.map(function (a) { return document.querySelector(a.getAttribute('href')); });
-  function markHere() {
-    var y = scrollY + 200, idx = 0;
-    groups.forEach(function (g, i) { if (g && g.offsetTop <= y) idx = i; });
-    links.forEach(function (a, i) { a.classList.toggle('here', i === idx); });
-  }
+  if (reduce) { reveals.forEach(function (e) { e.classList.add('is-visible'); }); reveals.length = 0; }
 
   /* ---- header ---- */
   var head = document.getElementById('siteHead'), announce = document.getElementById('announce');
   function onScroll() {
     head.classList.toggle('is-stuck', scrollY > 30);
     if (scrollY > 140) announce.classList.add('is-collapsed');
-    markHere();
+    revealInView(); statsInView();
   }
   addEventListener('scroll', onScroll, { passive: true });
   addEventListener('resize', onScroll);
@@ -776,7 +753,7 @@
     if (!ov.hidden) closeTour(); else if (!menu.hidden) closeMenu();
   });
 
-  syncToggleAll();
+  applyFilter('all');
   onScroll();
 })();
 </script>

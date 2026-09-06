@@ -26,6 +26,7 @@ SITE_URL = "https://ridgewoodapartmentsmn.com"
 ARTIFACT = {
     "b2f40200-1062-428b-bec4-ab3549b61130": "index.html",
     "52b5e41b-1af3-4511-b2ab-ac45b5785688": "residences.html",
+    "bcbaa903-c0eb-43c3-8630-6d8a8d9800e5": "amenities.html",
     "51fc231b-eeb9-4f97-b7f7-1c1bec0dd45b": "gallery.html",
     "ee0c50c5-a17b-45b3-add7-b46b05ef7733": "neighborhood.html",
     "a3c9b0f3-1421-43f1-ad99-d91b9733cfd8": "questions.html",
@@ -38,6 +39,9 @@ PAGES = {
     "residences.html": ("Residences | Ridgewood Apartments",
         "Three floor plans at Ridgewood Apartments in Saint Paul \u2014 one, two and three bedrooms, "
         "drawn to scale room by room, with heat, water, trash and sewer included."),
+    "amenities.html": ("Amenities | Ridgewood Apartments",
+        "What comes with living at Ridgewood Apartments in Saint Paul \u2014 heat, water, trash and "
+        "sewer included, laundry on every floor, on-site parking with garages, and on-site management."),
     "gallery.html": ("Gallery | Ridgewood Apartments",
         "Photos of Ridgewood Apartments in Saint Paul — the grounds along Wilson Avenue, "
         "the buildings, and the homes inside."),

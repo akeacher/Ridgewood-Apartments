@@ -7,7 +7,7 @@ Leasing office: 651-578-0498, Monday–Friday 1:00–5:00pm.
 
 | Folder | What it is |
 | --- | --- |
-| `website/` | **The source pages.** Edit these. Four pages: home, gallery, neighborhood, questions. |
+| `website/` | **The source pages.** Edit these. Six pages: home, residences, amenities, gallery, neighborhood, questions. |
 | `dist/` | **The deployed site.** Generated — never edit by hand. |
 | `tools/` | Build and drawing scripts (floor plans, the site build). |
 | `assets/` | Logo files. |
@@ -34,16 +34,17 @@ That takes the HTML from about 6.8 MB to 0.23 MB.
 
 ## Deploying
 
-Publish directory is `dist`. No build command is needed on the host — `dist/` is
-committed, so what ships is exactly what was tested locally.
+Hosted on **Cloudflare Pages**, deploying from this repo on every push to `main`.
+Build command is empty and the output directory is `dist` — `dist/` is committed,
+so what ships is exactly what was tested locally.
 
-**Netlify:** New site → import from Git → pick this repo → set publish directory
-to `dist`, leave build command empty.
+Headers live in `dist/_headers`, which the build writes. That format is portable,
+so moving hosts needs no repo changes.
 
 **Preview locally before pushing:**
 
 ```bash
-cd dist && ruby -run -e httpd . -p 8850
+python3 tools/build_site.py && cd dist && ruby -run -e httpd . -p 8850
 ```
 
 Then open http://127.0.0.1:8850.
@@ -72,8 +73,12 @@ Kept out deliberately, to stop the repo bloating — they stay on the Desktop:
 
 ## Still open
 
-- The "Schedule a Tour" button points at a placeholder Calendly URL
-  (`calendly.com/ridgewood-apartments/property-tour`) that is not a real account.
-- `tour-booking-app/` has never been executed — there is no Node on the build machine.
-- Five answers on the Q&A page need real policy: pets, smoking, renters insurance,
-  application requirements, and garage cost.
+- `SITE_URL` in `tools/build_site.py` is a placeholder domain. It goes into the
+  canonical tags, og:image, sitemap and robots.txt, so it needs the real domain
+  once one is registered.
+- The Wakefield has no measured floor plan yet — it is still the placeholder
+  schematic, and its description is unverified copy.
+- Two Q&A answers still defer to the leasing office: renters insurance and
+  garage cost.
+- `tour-booking-app/` has never been executed &mdash; there is no Node on the
+  build machine. The site currently books through Calendly instead.
