@@ -130,6 +130,17 @@ def main():
     if os.path.isfile(hero):
         shutil.copy(hero, os.path.join(imgdir, "social.jpg"))
 
+    # headers, in the portable _headers format both Netlify and Cloudflare
+    # Pages read — so the site is not tied to either one
+    open(os.path.join(DIST, "_headers"), "w").write(
+        "/*\n"
+        "  X-Content-Type-Options: nosniff\n"
+        "  Referrer-Policy: strict-origin-when-cross-origin\n"
+        "\n"
+        "# Photos are content-hashed by this build, so they can be cached hard.\n"
+        "/assets/img/*\n"
+        "  Cache-Control: public, max-age=31536000, immutable\n")
+
     # tell crawlers where things are
     open(os.path.join(DIST, "robots.txt"), "w").write(
         f"User-agent: *\nAllow: /\nSitemap: {SITE_URL}/sitemap.xml\n")

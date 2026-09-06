@@ -1,0 +1,7 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# Photos are content-hashed by this build, so they can be cached hard.
+/assets/img/*
+  Cache-Control: public, max-age=31536000, immutable
