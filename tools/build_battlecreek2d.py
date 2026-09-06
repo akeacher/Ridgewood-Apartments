@@ -29,7 +29,7 @@ ROOMS = [
     ("Living Room", [(0, 0, 13, 16.5), (0, 16.5, 3.5, 25)], (6.2, 3.2),
      "13&prime; &times; 16&prime;6&Prime;", 244, False, 8.6),
     ("Dining Area", [(13, 0, 21, 7)], (17.0, 1.6), "8&prime; &times; 7&prime;", 56, True, 7.2),
-    ("Kitchen", [(13, 7, 21, 13)], (18.2, 11.0), "8&prime; &times; 6&prime;", 48, True, 8.6),
+    ("Kitchen", [(13, 7, 21, 13)], (16.0, 11.2), "8&prime; &times; 6&prime;", 48, True, 8.6),
     ("Bedroom 1", [(21, 0, 35, 13)], (28.6, 10.5), "14&prime; &times; 13&prime;", 182, False, 8.6),
     ("Hall", [(13, 13, 35, 16.5)], (16.5, 15.2), "22&prime; &times; 3&prime;6&Prime;", 77, False, 7.4),
     ("Walk-in Closet", [(3.5, 16.5, 10.5, 25)], (6.9, 18.4),
@@ -75,16 +75,15 @@ def shelf(x0, y0, x1, y1, vert):
         fline(x0 + 0.15, m, x1 - 0.15, m, ' stroke-dasharray="2 2"')
 
 # --- L-shaped kitchen, opening north into the dining area
-fx(13, 7.0, 15.2, 12.8)                                  # west run
-fx(15.4, 7.0, 20.8, 9.0)                                 # peninsula to the dining area
-fx(13.2, 7.4, 15.2, 9.7)                                 # range
-for cx, cy in ((13.75, 8.0), (14.65, 8.0), (13.75, 9.1), (14.65, 9.1)):
+fx(13.0, 7.0, 18.3, 9.0)                                 # counter along the north wall
+fx(13.4, 7.15, 15.4, 8.85)                               # range
+for cx, cy in ((13.9, 7.55), (14.9, 7.55), (13.9, 8.45), (14.9, 8.45)):
     circ(cx, cy, 0.3)
-fx(13, 10.2, 15.6, 12.8)                                 # refrigerator
-fline(13, 10.9, 15.6, 10.9)
-fx(17.0, 7.25, 19.4, 8.75)                               # double sink, facing north
-fline(18.2, 7.25, 18.2, 8.75)
-circ(18.2, 7.1, 0.22)
+fx(16.1, 7.2, 18.2, 8.8)                                 # double sink, facing the north wall
+fline(17.15, 7.2, 17.15, 8.8)
+circ(17.15, 7.05, 0.22)
+fx(18.8, 9.5, 21.0, 12.1)                                # refrigerator
+fline(19.5, 9.5, 19.5, 12.1)
 
 # --- dining
 circ(17.0, 3.9, 1.6)
@@ -151,6 +150,7 @@ wall(0, 0, 0, D, EXT)                                    # west party wall
 
 wall(13, 4, 13, 13, INT)                                 # living room / kitchen, open at both ends
 wall(21, 0, 21, 13, INT)                                 # kitchen and dining / bedroom one
+wall(13, 7, 18.5, 7, INT)                                # dining / kitchen, open at the east end
 for a, b in ((21, 22.5), (25.5, 35)):
     wall(a, 13, b, 13, INT)                              # bedroom one wall + its door
 for a, b in ((3.5, 12.5), (15.5, 20.5)):
