@@ -25,6 +25,7 @@ SITE_URL = "https://ridgewoodapartmentsmn.com"
 # artifact URL -> the file it should be on a real host
 ARTIFACT = {
     "b2f40200-1062-428b-bec4-ab3549b61130": "index.html",
+    "52b5e41b-1af3-4511-b2ab-ac45b5785688": "residences.html",
     "51fc231b-eeb9-4f97-b7f7-1c1bec0dd45b": "gallery.html",
     "ee0c50c5-a17b-45b3-add7-b46b05ef7733": "neighborhood.html",
     "a3c9b0f3-1421-43f1-ad99-d91b9733cfd8": "questions.html",
@@ -34,6 +35,9 @@ PAGES = {
     "index.html": ("Ridgewood Apartments | Saint Paul, MN",
         "One, two, and three bedroom apartments on Saint Paul's east side. Heat, water, "
         "trash and sewer included. On-site parking with garages available. Call 651-578-0498."),
+    "residences.html": ("Residences | Ridgewood Apartments",
+        "Three floor plans at Ridgewood Apartments in Saint Paul \u2014 one, two and three bedrooms, "
+        "drawn to scale room by room, with heat, water, trash and sewer included."),
     "gallery.html": ("Gallery | Ridgewood Apartments",
         "Photos of Ridgewood Apartments in Saint Paul — the grounds along Wilson Avenue, "
         "the buildings, and the homes inside."),
