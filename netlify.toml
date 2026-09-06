@@ -1,0 +1,22 @@
+# Deploy configuration, kept in the repo so the site does not depend on
+# dashboard settings that are easy to lose or change by accident.
+#
+# There is deliberately no build command: dist/ is committed, so Netlify serves
+# exactly the files that were tested locally. Rebuild it with
+#   python3 tools/build_site.py
+# and commit the result.
+
+[build]
+  publish = "dist"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Photos are content-hashed by the build, so they can be cached hard.
+[[headers]]
+  for = "/assets/img/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
