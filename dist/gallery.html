@@ -203,14 +203,12 @@
 
   /* ---------- Grid ---------- */
   .gal-section { padding: 60px 0 120px; }
-  .gal-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 20px; }
+  .gal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
   .shot {
     position: relative; overflow: hidden; cursor: pointer;
     background: var(--forest-deep); border: none; padding: 0; display: block; width: 100%;
-    grid-column: span 2; aspect-ratio: 4 / 3;
+    aspect-ratio: 4 / 3;
   }
-  .shot.wide { grid-column: span 4; aspect-ratio: 16 / 9; }
-  .shot.tall { grid-column: span 2; aspect-ratio: 3 / 4; }
   .shot[hidden] { display: none !important; }
   .shot img { width: 100%; height: 100%; object-fit: cover; filter: saturate(1.06) contrast(1.04); transition: transform .8s cubic-bezier(.2,.7,.2,1); }
   .shot:hover img { transform: scale(1.05); }
@@ -278,8 +276,7 @@
 
   @media (min-width: 700px) { .head-phone { display: inline-block; } }
   @media (max-width: 1024px) {
-    .gal-grid { grid-template-columns: repeat(4, 1fr); }
-    .shot.wide { grid-column: span 4; }
+    .gal-grid { grid-template-columns: repeat(2, 1fr); }
     .menu-body { grid-template-columns: 1fr; gap: 44px; padding-top: 50px; }
     .foot-grid { grid-template-columns: 1fr 1fr; gap: 40px; }
   }
@@ -289,7 +286,6 @@
     .menu-body { padding: 44px 22px 50px; }
     .page-head { padding: 160px 0 64px; }
     .gal-grid { grid-template-columns: 1fr; gap: 14px; }
-    .shot, .shot.wide, .shot.tall { grid-column: span 1; aspect-ratio: 4 / 3; }
     .foot-grid { grid-template-columns: 1fr; gap: 34px; }
     .m-bar { display: flex; }
     footer { padding-bottom: 100px; }
@@ -456,7 +452,7 @@
     <div class="wrap">
       <div class="gal-grid reveal" id="galGrid">
 
-        <button class="shot wide" type="button" data-cat="exterior" data-name="Ridgewood Apartments" aria-label="Enlarge: Ridgewood Apartments">
+        <button class="shot" type="button" data-cat="exterior" data-name="Ridgewood Apartments" aria-label="Enlarge: Ridgewood Apartments">
           <img src="assets/img/9bf9ef28bf18.jpg" alt="" loading="lazy">
           <span class="shot-cap"><span class="sname">Ridgewood Apartments</span><span class="scat">Exterior</span></span>
         </button>
@@ -471,7 +467,7 @@
           <span class="shot-cap"><span class="sname">Living Room</span><span class="scat">Interiors</span></span>
         </button>
 
-        <button class="shot tall" type="button" data-cat="interiors" data-name="Bathroom" aria-label="Enlarge: Bathroom">
+        <button class="shot" type="button" data-cat="interiors" data-name="Bathroom" aria-label="Enlarge: Bathroom">
           <img src="assets/img/145a3805e90b.jpg" alt="" loading="lazy">
           <span class="shot-cap"><span class="sname">Bathroom</span><span class="scat">Interiors</span></span>
         </button>
@@ -496,7 +492,7 @@
           <span class="shot-cap"><span class="sname">Entrance Sign</span><span class="scat">Grounds</span></span>
         </button>
 
-        <button class="shot wide" type="button" data-cat="grounds" data-name="The Grounds" aria-label="Enlarge: The Grounds">
+        <button class="shot" type="button" data-cat="grounds" data-name="The Grounds" aria-label="Enlarge: The Grounds">
           <img src="assets/img/19a79e2356f5.jpg" alt="" loading="lazy">
           <span class="shot-cap"><span class="sname">The Grounds</span><span class="scat">Grounds</span></span>
         </button>
