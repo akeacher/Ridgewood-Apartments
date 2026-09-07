@@ -685,12 +685,29 @@
   h1, h2, h3, h4 { color: var(--head); }
   .menu-overlay h1, .menu-overlay h2, .menu-overlay h3, .menu-overlay h4 { color: var(--forest-ink); }
   .hero h1, .page-head h1, .page-hero h1 { color: var(--forest-ink); }
+  /* the full promo line wraps to three lines on a phone, which makes the fixed
+     header eat the screen, so a short variant takes over there */
+  .ann-short { display: none; }
+  @media (max-width: 680px) {
+    .ann-full { display: none; }
+    .ann-short { display: inline; }
+    .announce-inner { padding: 8px 40px; }
+  }
+
+  /* the ticker only fitted two items on a phone, so words clipped mid-word */
+  @media (max-width: 680px) {
+    .marquee { padding: 12px 0; }
+    .marquee-track span { font-size: 0.54rem; letter-spacing: 0.12em; padding: 0 12px; gap: 12px; }
+    .marquee-track span::after { width: 3px; height: 3px; }
+    .marquee-track { animation-duration: 30s; }
+  }
+
 </style>
 
 <header class="site-head" id="siteHead">
   <div class="announce" id="announce">
     <div class="announce-inner">
-      <p>Now leasing &mdash; one, two &amp; three bedroom homes. Call 651-578-0498 for details.</p>
+      <p><span class="ann-full">Now leasing &mdash; one, two &amp; three bedroom homes. Call 651-578-0498 for details.</span><span class="ann-short">Now leasing &mdash; call 651-578-0498</span></p>
       <button class="announce-close" id="announceClose" type="button" aria-label="Dismiss announcement">&times;</button>
     </div>
   </div>
