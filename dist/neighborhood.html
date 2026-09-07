@@ -20,6 +20,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
+  /* Animation is deliberately NOT gated on prefers-reduced-motion: the owner
+     asked for the ticker, rails, scroll cue and reveals to play on every device.
+     Do not re-add those guards without checking with them. */
   :root {
     --cream: #f4f0e6; --cream-deep: #e8e2d3; --white: #fdfbf6;
     --ink: #222a1f; --ink-soft: #6c6b5e; --line: #dcd5c4;
@@ -45,7 +48,7 @@
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html { scroll-behavior: smooth; }
-  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
   body {
     margin: 0; background: var(--cream); color: var(--ink);
     font-family: "Jost", ui-sans-serif, system-ui, sans-serif; font-weight: 300;
@@ -64,7 +67,7 @@
 
   .reveal { opacity: 0; transform: translateY(20px); transition: opacity .8s cubic-bezier(.22,.7,.2,1), transform .8s cubic-bezier(.22,.7,.2,1); }
   .reveal.is-visible { opacity: 1; transform: none; }
-  @media (prefers-reduced-motion: reduce) { .reveal { opacity:1!important; transform:none!important; transition:none!important; } }
+
 
   .btn {
     appearance:none; display:inline-flex; align-items:center; justify-content:center; gap:10px;
@@ -229,10 +232,9 @@
   .wall .sub { text-align:center; color:color-mix(in srgb,var(--forest-ink) 70%,transparent); font-size:0.98rem; line-height:1.7; max-width:46ch; margin:0 auto 42px; }
   .rail { overflow:hidden; margin-bottom:14px; }
   .rail-track { display:flex; width:max-content; gap:0; }
-  @media (prefers-reduced-motion: no-preference) {
     .rail-a .rail-track { animation:railL 44s linear infinite; }
     .rail-b .rail-track { animation:railR 52s linear infinite; }
-  }
+  
   @keyframes railL { from{transform:translateX(0)} to{transform:translateX(-50%)} }
   @keyframes railR { from{transform:translateX(-50%)} to{transform:translateX(0)} }
   .rail-track span {
@@ -288,10 +290,9 @@
   .fallback-actions { display:flex; gap:14px; flex-wrap:wrap; }
   .sheet-note { font-size:0.85rem; color:var(--ink-soft); text-align:center; line-height:1.6; }
   .sheet-note a { color:var(--gold); text-decoration:none; }
-  @media (prefers-reduced-motion: no-preference) {
     .ov,.menu-overlay { animation:fade .22s ease; }
     .sheet { animation:pop .28s cubic-bezier(.2,.8,.2,1); }
-  }
+  
   @keyframes fade { from{opacity:0} to{opacity:1} }
   @keyframes pop { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
 
@@ -619,7 +620,9 @@
 <script src="https://assets.calendly.com/assets/external/widget.js" async></script>
 <script>
 (function () {
-  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var reduce = false;   /* the owner asked for motion to play regardless of the
+                         device's Reduce Motion setting; do not restore the check
+                         without asking them first */
   const POIS = [{"c": "home", "n": "Ridgewood Apartments", "d": "1871 &amp; 1885 Wilson Avenue", "t": "", "x": 43.76, "y": 46.55}, {"c": "parks", "n": "Conway Park", "d": "Ball fields, a playground, and the rec centre.", "t": "Walkable", "x": 48.58, "y": 45.71}, {"c": "parks", "n": "Battle Creek Regional Park", "d": "Trails, a ski hill, the waterfall, and a dog park.", "t": "5 min", "x": 48.06, "y": 62.32}, {"c": "parks", "n": "Indian Mounds Regional Park", "d": "Bluff trails above the Mississippi.", "t": "5 min", "x": 31.96, "y": 53.16}, {"c": "parks", "n": "Beaver Lake", "d": "A fishing lake and shoreline path.", "t": "6 min", "x": 56.65, "y": 36.86}, {"c": "parks", "n": "Lake Phalen", "d": "Swimming beach, boats, golf, and a loop trail.", "t": "8 min", "x": 30.31, "y": 23.51}, {"c": "parks", "n": "Bruce Vento Nature Sanctuary", "d": "Restored prairie and wetland below the bluffs.", "t": "8 min", "x": 18.93, "y": 50.24}, {"c": "wellness", "n": "Anytime Fitness", "d": "A 24-hour gym at the end of the block.", "t": "2 min", "x": 40.24, "y": 50.32}, {"c": "wellness", "n": "Conway Recreation Center", "d": "Courts, a gym, and year-round programmes.", "t": "2 min", "x": 48.26, "y": 45.29}, {"c": "wellness", "n": "Vertical Endeavors", "d": "Climbing walls and bouldering on Phalen Boulevard.", "t": "7 min", "x": 22.77, "y": 33.26}, {"c": "wellness", "n": "Saint Paul Eastside YMCA", "d": "Pool, weights, and drop-in classes.", "t": "8 min", "x": 21.3, "y": 31.47}, {"c": "wellness", "n": "Topgolf", "d": "Heated bays, a driving range, and a lounge.", "t": "9 min", "x": 74.69, "y": 59.4}, {"c": "wellness", "n": "CorePower Yoga", "d": "Heated flow and sculpt classes.", "t": "11 min", "x": 83.17, "y": 64.34}, {"c": "wellness", "n": "Life Time", "d": "The full athletic club &mdash; pools, courts, spa.", "t": "12 min", "x": 87.71, "y": 63.1}, {"c": "shopping", "n": "Target", "d": "On Suburban Avenue, close enough to walk.", "t": "2 min", "x": 40.08, "y": 51.14}, {"c": "shopping", "n": "Cub Foods", "d": "Full grocery and pharmacy on White Bear Avenue.", "t": "3 min", "x": 50.67, "y": 49.03}, {"c": "shopping", "n": "Costco", "d": "Bulk shopping and cheap fuel on Tamarack Road.", "t": "8 min", "x": 71.99, "y": 62.38}, {"c": "shopping", "n": "Lunds &amp; Byerlys", "d": "The upscale Twin Cities grocer at Valley Creek.", "t": "10 min", "x": 71.69, "y": 76.39}, {"c": "shopping", "n": "Whole Foods Market", "d": "Organic and prepared foods on Radio Drive.", "t": "12 min", "x": 87.96, "y": 58.39}, {"c": "shopping", "n": "Trader Joe&rsquo;s", "d": "The Hudson Road store, past I-494.", "t": "12 min", "x": 91.79, "y": 55.62}, {"c": "shopping", "n": "Woodbury Lakes", "d": "Lululemon, Sephora, J.Crew, Athleta, Warby Parker.", "t": "12 min", "x": 92.3, "y": 54.69}, {"c": "around", "n": "Metropolitan State University", "d": "The East Side campus on Seventh Street.", "t": "9 min", "x": 18.18, "y": 43.19}, {"c": "around", "n": "Downtown Saint Paul", "d": "Offices, Xcel Energy Center, the riverfront.", "t": "15 min", "x": 7.75, "y": 51.96}, {"c": "around", "n": "MSP International Airport", "d": "Minneapolis&ndash;Saint Paul International, via I-494.", "t": "20 min", "x": null, "y": null}, {"c": "around", "n": "Downtown Minneapolis", "d": "The other downtown, a straight shot on I-94.", "t": "25 min", "x": null, "y": null}];
 
   var CATS = { parks:'Parks & Recreation', wellness:'Wellness', shopping:'Shopping', around:'Getting Around', home:'Home' };

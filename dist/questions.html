@@ -20,6 +20,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
+  /* Animation is deliberately NOT gated on prefers-reduced-motion: the owner
+     asked for the ticker, rails, scroll cue and reveals to play on every device.
+     Do not re-add those guards without checking with them. */
   :root {
     --cream: #f4f0e6; --cream-deep: #e8e2d3; --white: #fdfbf6;
     --ink: #222a1f; --ink-soft: #6c6b5e; --line: #dcd5c4;
@@ -45,7 +48,7 @@
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html { scroll-behavior: smooth; }
-  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
   body {
     margin: 0; background: var(--cream); color: var(--ink);
     font-family: "Jost", ui-sans-serif, system-ui, sans-serif; font-weight: 300;
@@ -64,7 +67,7 @@
 
   .reveal { opacity: 0; transform: translateY(20px); transition: opacity .8s cubic-bezier(.22,.7,.2,1), transform .8s cubic-bezier(.22,.7,.2,1); }
   .reveal.is-visible { opacity: 1; transform: none; }
-  @media (prefers-reduced-motion: reduce) { .reveal { opacity:1!important; transform:none!important; transition:none!important; } }
+
 
   .btn {
     appearance:none; display:inline-flex; align-items:center; justify-content:center; gap:10px;
@@ -166,10 +169,9 @@
   .fallback-actions { display:flex; gap:14px; flex-wrap:wrap; }
   .sheet-note { font-size:0.85rem; color:var(--ink-soft); text-align:center; line-height:1.6; }
   .sheet-note a { color:var(--gold); text-decoration:none; }
-  @media (prefers-reduced-motion: no-preference) {
     .ov,.menu-overlay { animation:fade .22s ease; }
     .sheet { animation:pop .28s cubic-bezier(.2,.8,.2,1); }
-  }
+  
   @keyframes fade { from{opacity:0} to{opacity:1} }
   @keyframes pop { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
 
@@ -276,10 +278,7 @@
   .a-inner ul { margin:14px 0 0; padding:0; list-style:none; display:flex; flex-direction:column; gap:9px; }
   .a-inner li { position:relative; padding-left:20px; font-size:0.95rem; line-height:1.7; color:var(--ink-soft); }
   .a-inner li::before { content:""; position:absolute; left:0; top:.62em; width:6px; height:1px; background:var(--gold); }
-  @media (prefers-reduced-motion: reduce) {
-    .a-wrap { transition:none; }
-    .mark::before, .mark::after { transition:none; }
-  }
+
   @media (max-width:760px) {
     .a-inner { padding-right:20px; }
     .jump { top:70px; }
@@ -679,7 +678,9 @@
 <script src="https://assets.calendly.com/assets/external/widget.js" async></script>
 <script>
 (function () {
-  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var reduce = false;   /* the owner asked for motion to play regardless of the
+                         device's Reduce Motion setting; do not restore the check
+                         without asking them first */
 
   /* ---- accordion ---- */
   var qs = [].slice.call(document.querySelectorAll('.q'));

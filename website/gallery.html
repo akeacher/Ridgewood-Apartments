@@ -3,6 +3,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
+  /* Animation is deliberately NOT gated on prefers-reduced-motion: the owner
+     asked for the ticker, rails, scroll cue and reveals to play on every device.
+     Do not re-add those guards without checking with them. */
   :root {
     --cream: #f4f0e6;
     --cream-deep: #e8e2d3;
@@ -49,7 +52,7 @@
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html { scroll-behavior: smooth; }
-  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
 
   body {
     margin: 0;
@@ -77,7 +80,7 @@
 
   .reveal { opacity: 0; transform: translateY(20px); transition: opacity .8s cubic-bezier(.22,.7,.2,1), transform .8s cubic-bezier(.22,.7,.2,1); }
   .reveal.is-visible { opacity: 1; transform: none; }
-  @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1 !important; transform: none !important; transition: none !important; } }
+
 
   .btn {
     appearance: none; -webkit-appearance: none;
@@ -246,10 +249,9 @@
   .lb-nav:hover { border-color: var(--gold); color: var(--gold); }
   .lb-nav:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 
-  @media (prefers-reduced-motion: no-preference) {
     .ov, .lb, .menu-overlay { animation: fade-in .22s ease; }
     .sheet { animation: pop-in .28s cubic-bezier(.2,.8,.2,1); }
-  }
+  
   @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
   @keyframes pop-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 
@@ -594,7 +596,9 @@
 <script src="https://assets.calendly.com/assets/external/widget.js" async></script>
 <script>
   (function () {
-    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var reduce = false;   /* the owner asked for motion to play regardless of the
+                         device's Reduce Motion setting; do not restore the check
+                         without asking them first */
     var head = document.getElementById('siteHead');
     var announce = document.getElementById('announce');
 
