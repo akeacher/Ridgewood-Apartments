@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://ridgewoodapartments.org/</loc></url>
-  <url><loc>https://ridgewoodapartments.org/residences.html</loc></url>
-  <url><loc>https://ridgewoodapartments.org/amenities.html</loc></url>
-  <url><loc>https://ridgewoodapartments.org/gallery.html</loc></url>
-  <url><loc>https://ridgewoodapartments.org/neighborhood.html</loc></url>
-  <url><loc>https://ridgewoodapartments.org/questions.html</loc></url>
+  <url><loc>https://ridgewoodapartments.org/residences</loc></url>
+  <url><loc>https://ridgewoodapartments.org/amenities</loc></url>
+  <url><loc>https://ridgewoodapartments.org/gallery</loc></url>
+  <url><loc>https://ridgewoodapartments.org/neighborhood</loc></url>
+  <url><loc>https://ridgewoodapartments.org/questions</loc></url>
 </urlset>

@@ -58,6 +58,13 @@ PAGES = {
 EXT = {"jpeg": "jpg", "jpg": "jpg", "png": "png", "gif": "gif", "webp": "webp", "svg+xml": "svg"}
 
 
+def canon(page):
+    """The URL a page actually serves at. Cloudflare redirects /x.html to /x,
+    so the canonical and sitemap must name the extensionless form or they
+    point at a redirect."""
+    return "" if page == "index.html" else page[:-5]
+
+
 def main():
     if os.path.isdir(DIST):
         shutil.rmtree(DIST)
@@ -116,12 +123,12 @@ def main():
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title}</title>
 <meta name="description" content="{desc}">
-<link rel="canonical" href="{SITE_URL}/{'' if page == 'index.html' else page}">
+<link rel="canonical" href="{SITE_URL}/{canon(page)}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Ridgewood Apartments">
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{desc}">
-<meta property="og:url" content="{SITE_URL}/{'' if page == 'index.html' else page}">
+<meta property="og:url" content="{SITE_URL}/{canon(page)}">
 <meta property="og:image" content="{SITE_URL}/assets/img/__SOCIAL__">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#2e482b">
@@ -170,7 +177,7 @@ def main():
     open(os.path.join(DIST, "robots.txt"), "w").write(
         f"User-agent: *\nAllow: /\nSitemap: {SITE_URL}/sitemap.xml\n")
     urls = "".join(
-        f"  <url><loc>{SITE_URL}/{'' if p == 'index.html' else p}</loc></url>\n" for p in PAGES)
+        f"  <url><loc>{SITE_URL}/{canon(p)}</loc></url>\n" for p in PAGES)
     open(os.path.join(DIST, "sitemap.xml"), "w").write(
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + urls + "</urlset>\n")
