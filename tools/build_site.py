@@ -18,9 +18,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC  = os.path.join(ROOT, "website")
 DIST = os.path.join(ROOT, "dist")
 
-# Set this to the real domain once it is registered; it is only used for the
-# social-preview tags, which need absolute URLs.
-SITE_URL = "https://ridgewoodapartmentsmn.com"
+# The live domain. Used for the canonical tags, social-preview tags, sitemap
+# and robots.txt, all of which need absolute URLs. Apex, no www: the www form
+# should redirect here rather than resolve separately, so search engines only
+# ever see one address for a page.
+SITE_URL = "https://ridgewoodapartments.org"
 
 # artifact URL -> the file it should be on a real host
 ARTIFACT = {

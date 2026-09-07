@@ -1,6 +1,7 @@
 # Ridgewood Apartments
 
 Marketing website for Ridgewood Apartments, 1871 & 1885 Wilson Ave, Saint Paul, MN 55119.
+Live at **https://ridgewoodapartments.org**.
 Leasing office: 651-578-0498, Monday–Friday 1:00–5:00pm.
 
 ## What's in here
@@ -73,9 +74,6 @@ Kept out deliberately, to stop the repo bloating — they stay on the Desktop:
 
 ## Still open
 
-- `SITE_URL` in `tools/build_site.py` is a placeholder domain. It goes into the
-  canonical tags, og:image, sitemap and robots.txt, so it needs the real domain
-  once one is registered.
 - The Wakefield has no measured floor plan yet — it is still the placeholder
   schematic, and its description is unverified copy.
 - Two Q&A answers still defer to the leasing office: renters insurance and
