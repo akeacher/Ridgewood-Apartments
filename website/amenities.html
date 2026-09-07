@@ -211,6 +211,23 @@
   .am[hidden] { display: none !important; }
   @media (prefers-reduced-motion: reduce) { .am { transition: none; } }
 
+  /* ---------- Out the front door ---------- */
+  .out-lead { max-width: 62ch; margin-top: 22px; font-size: 1rem; line-height: 1.8; color: var(--ink-soft); }
+  .out-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line); border-top: 1px solid var(--line); margin-top: 46px; }
+  .out { background: var(--cream); padding: 26px 30px; display: flex; gap: 22px; align-items: flex-start; transition: background .35s ease; }
+  .out:hover { background: var(--white); }
+  .out .when { flex: 0 0 66px; padding-top: 5px; font-size: 0.58rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); }
+  .out h3 { font-size: 1.15rem; font-weight: 400; }
+  .out p { margin-top: 7px; font-size: 0.89rem; line-height: 1.7; color: var(--ink-soft); }
+  .out-grid .reveal:nth-child(2) { transition-delay: .05s; }
+  .out-grid .reveal:nth-child(3) { transition-delay: .10s; }
+  .out-grid .reveal:nth-child(4) { transition-delay: .15s; }
+  .out-grid .reveal:nth-child(5) { transition-delay: .20s; }
+  .out-grid .reveal:nth-child(6) { transition-delay: .25s; }
+  .out-note { margin-top: 36px; max-width: 68ch; font-size: 0.95rem; line-height: 1.8; color: var(--ink-soft); }
+  .out-note strong { font-weight: 500; color: var(--ink); }
+  @media (max-width: 980px) { .out-grid { grid-template-columns: 1fr; } }
+
   /* ---------- Included in rent ---------- */
   .inc-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(34px, 5vw, 70px); align-items: center; }
   .inc-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; list-style: none; padding: 0; }
@@ -521,6 +538,54 @@
           <hr class="rule">
           <p>Mature oaks and maintained lawns between the buildings, cared for through every season.</p></div>
       </div>
+    </div>
+  </section>
+
+
+  <section class="band band-deep" id="outdoors">
+    <div class="wrap">
+      <div class="split-head reveal">
+        <div>
+          <span class="label">Out The Front Door</span>
+          <h2>Green in every direction</h2>
+        </div>
+        <p class="out-lead">Ridgewood sits on the eastern edge of Saint Paul, where the street grid
+           starts giving way to parkland. Two buildings around an oak courtyard, and a short ride
+           from more trail than most people get through in a summer.</p>
+      </div>
+
+      <div class="out-grid">
+          <div class="out reveal">
+            <span class="when">On foot</span>
+            <div><h3>Conway Park</h3><p>Ball fields, a playground, and the rec centre &mdash; a half mile up the street.</p></div>
+          </div>
+          <div class="out reveal">
+            <span class="when">5 min</span>
+            <div><h3>Battle Creek Regional Park</h3><p>Trails through the woods, a ski hill, the waterfall, and a dog park.</p></div>
+          </div>
+          <div class="out reveal">
+            <span class="when">5 min</span>
+            <div><h3>Indian Mounds Regional Park</h3><p>Bluff trails along the top of the Mississippi river valley.</p></div>
+          </div>
+          <div class="out reveal">
+            <span class="when">6 min</span>
+            <div><h3>Beaver Lake</h3><p>A fishing lake with a path around the shoreline.</p></div>
+          </div>
+          <div class="out reveal">
+            <span class="when">8 min</span>
+            <div><h3>Lake Phalen</h3><p>A swimming beach, boat rental, golf, and a loop trail around the water.</p></div>
+          </div>
+          <div class="out reveal">
+            <span class="when">8 min</span>
+            <div><h3>Bruce Vento Nature Sanctuary</h3><p>Restored prairie and wetland tucked in below the bluffs.</p></div>
+          </div>
+      </div>
+
+      <p class="out-note"><strong>Conway Park is walkable</strong> &mdash; a half mile up the street,
+         with the rec centre and a 24-hour gym at the end of the block. Everything else here is an
+         easy ride: Battle Creek's wooded trails, the bluff paths at Indian Mounds looking out over
+         the Mississippi, and three lakes with water on one side and a loop trail on the other.
+         Times shown are by car, so allow a little longer on two wheels.</p>
     </div>
   </section>
 
