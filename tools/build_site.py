@@ -41,7 +41,7 @@ PAGES = {
         "drawn to scale room by room, with heat, water, trash and sewer included."),
     "amenities.html": ("Amenities | Ridgewood Apartments",
         "What comes with living at Ridgewood Apartments in Saint Paul \u2014 heat, water, trash and "
-        "sewer included, laundry on every floor, on-site parking with garages, and on-site management."),
+        "sewer included, new on-site laundry on every floor, parking with garages, and on-site management."),
     "gallery.html": ("Gallery | Ridgewood Apartments",
         "Photos of Ridgewood Apartments in Saint Paul — the grounds along Wilson Avenue, "
         "the buildings, and the homes inside."),
