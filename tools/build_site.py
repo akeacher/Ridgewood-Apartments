@@ -24,6 +24,22 @@ DIST = os.path.join(ROOT, "dist")
 # ever see one address for a page.
 SITE_URL = "https://ridgewoodapartments.org"
 
+# Google Ads tag. Emitted high in the <head> of every built page, as Google asks.
+# Deliberately absent from the artifact versions in website/: the artifact
+# sandbox blocks googletagmanager.com, and private previews should not be
+# counted as ad traffic anyway.
+GOOGLE_ADS_ID = "AW-18453434691"
+GTAG = (
+    '<!-- Google tag (gtag.js) -->\n'
+    f'<script async src="https://www.googletagmanager.com/gtag/js?id={GOOGLE_ADS_ID}"></script>\n'
+    '<script>\n'
+    '  window.dataLayer = window.dataLayer || [];\n'
+    '  function gtag(){dataLayer.push(arguments);}\n'
+    "  gtag('js', new Date());\n"
+    f"  gtag('config', '{GOOGLE_ADS_ID}');\n"
+    '</script>\n'
+)
+
 # artifact URL -> the file it should be on a real host
 ARTIFACT = {
     "b2f40200-1062-428b-bec4-ab3549b61130": "index.html",
@@ -121,7 +137,7 @@ def main():
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{title}</title>
+{GTAG}<title>{title}</title>
 <meta name="description" content="{desc}">
 <link rel="canonical" href="{SITE_URL}/{canon(page)}">
 <meta property="og:type" content="website">
