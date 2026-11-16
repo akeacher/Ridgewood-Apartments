@@ -7,6 +7,11 @@
   "compatibility_date": "2026-05-01",
   "main": "portal/worker.js",
   "assets": { "directory": "./dist", "binding": "ASSETS" },
+  // The portal's database. No id is given on purpose: Cloudflare creates a
+  // database with this name on the first deploy and reuses it on every one after.
+  "d1_databases": [
+    { "binding": "DB", "database_name": "ridgewood-portal" }
+  ],
   "vars": {
     // A fingerprint of the one-time staff setup code, never the code itself.
     "SETUP_CODE_SHA256": "8ba1fd043cff1337b0a15dff645b3eb428a9056c9de950c1fd9f25d71d100d90"
