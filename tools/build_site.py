@@ -178,9 +178,20 @@ def main():
         t = open(fp, encoding="utf-8").read().replace("__SOCIAL__", social)
         open(fp, "w", encoding="utf-8").write(t)
 
+    # The resident / staff portal. Unlike the marketing pages these are plain
+    # files with nothing to transform, so they are copied across as they are.
+    # Only the pages live here: the code that answers them (portal/worker.js)
+    # is deployed as the site's Worker and is never served as a file.
+    portal = os.path.join(ROOT, "portal", "site")
+    has_portal = os.path.isdir(portal)
+    if has_portal:
+        shutil.copytree(portal, os.path.join(DIST, "portal"), ignore=shutil.ignore_patterns(".*"))
+        for logo in ("logo-mark.png", "logo-text.png"):
+            shutil.copy(os.path.join(ROOT, "assets", logo), os.path.join(DIST, "portal", logo))
+
     # headers, in the portable _headers format both Netlify and Cloudflare
     # Pages read — so the site is not tied to either one
-    open(os.path.join(DIST, "_headers"), "w").write(
+    headers = (
         "/*\n"
         "  X-Content-Type-Options: nosniff\n"
         "  Referrer-Policy: strict-origin-when-cross-origin\n"
@@ -188,6 +199,22 @@ def main():
         "# Photos are content-hashed by this build, so they can be cached hard.\n"
         "/assets/img/*\n"
         "  Cache-Control: public, max-age=31536000, immutable\n")
+    if has_portal:
+        # People sign in here, so these pages are locked down harder than the
+        # rest: kept out of search engines, never framed by another site, and
+        # allowed to load scripts and send data only to this site itself.
+        headers += (
+            "\n"
+            "# Resident and staff portal\n"
+            "/portal/*\n"
+            "  X-Robots-Tag: noindex, nofollow\n"
+            "  X-Frame-Options: DENY\n"
+            "  Cache-Control: no-cache\n"
+            "  Content-Security-Policy: default-src 'none'; script-src 'self'; "
+            "style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; "
+            "img-src 'self' data:; connect-src 'self'; form-action 'self'; base-uri 'none'; "
+            "frame-ancestors 'none'\n")
+    open(os.path.join(DIST, "_headers"), "w").write(headers)
 
     # tell crawlers where things are
     open(os.path.join(DIST, "robots.txt"), "w").write(

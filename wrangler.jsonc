@@ -1,0 +1,16 @@
+{
+  // Cloudflare reads this on every deploy (each push to main).
+  // The site is still the static files in dist/. The one addition is the
+  // Worker in portal/worker.js, which answers /api/portal/* for the resident
+  // and staff portal and passes every other request to those static files.
+  "name": "ridgewood-apartments",
+  "compatibility_date": "2026-05-01",
+  "main": "portal/worker.js",
+  "assets": { "directory": "./dist", "binding": "ASSETS" },
+  "vars": {
+    // A fingerprint of the one-time staff setup code, never the code itself.
+    "SETUP_CODE_SHA256": "8ba1fd043cff1337b0a15dff645b3eb428a9056c9de950c1fd9f25d71d100d90"
+  },
+  // keeps the Worker's error log in the Cloudflare dashboard
+  "observability": { "enabled": true }
+}

@@ -24,3 +24,8 @@ tour-booking-app/.env
 tour-booking-app/*.db
 tour-booking-app/*.db-shm
 tour-booking-app/*.db-wal
+
+# Resident portal: the one-time setup code and local test databases stay on this Mac
+portal/SETUP-CODE.txt
+portal/dev/*.sqlite3*
+.wrangler/

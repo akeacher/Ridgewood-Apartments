@@ -5,3 +5,10 @@
 # Photos are content-hashed by this build, so they can be cached hard.
 /assets/img/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Resident and staff portal
+/portal/*
+  X-Robots-Tag: noindex, nofollow
+  X-Frame-Options: DENY
+  Cache-Control: no-cache
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'

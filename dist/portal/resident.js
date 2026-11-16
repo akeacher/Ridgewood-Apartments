@@ -1,0 +1,172 @@
+/* The resident side of the portal: sign in, ask for maintenance, follow it. */
+(function () {
+  'use strict';
+  const { api, h, when, day, field, input, textarea, select, check, choices, onSubmit, chip, urgencyChip, tel, OFFICE } = window.RW;
+  const app = document.getElementById('app');
+  const who = document.getElementById('who');
+  let flash = '';
+
+  const URGENCY = [
+    ['routine', 'Routine', 'It can wait for the next regular visit.'],
+    ['soon', 'Soon', 'It is getting in the way of daily life.'],
+    ['urgent', 'Urgent', 'It could cause damage or cannot be lived with.'],
+  ];
+
+  RW.onAuthError = function () { signIn('Your session has ended. Please sign in again.'); };
+
+  async function boot() {
+    try {
+      dashboard(await api('/me'));
+    } catch (e) {
+      if (e.status === 401) signIn();
+      else problem(e);
+    }
+  }
+
+  function problem(e) {
+    who.replaceChildren();
+    app.replaceChildren(h('div', { class: 'card card-narrow stack' },
+      h('p', { class: 'label label-gold' }, 'Resident Portal'),
+      h('h1', {}, e.code === 'no_db' ? 'Opening soon' : 'We hit a snag'),
+      h('p', {}, e.code === 'no_db'
+        ? 'The resident portal is not switched on yet. Until it is, please call the leasing office with any maintenance request.'
+        : e.message),
+      h('p', {}, 'Leasing office: ', tel(OFFICE)),
+      e.code === 'no_db' ? null : h('button', { class: 'btn btn-sm', type: 'button', onclick: boot }, 'Try again')));
+  }
+
+  /* ------------------------------------------------------------- sign in */
+  function signIn(notice) {
+    who.replaceChildren();
+    const form = h('form', { class: 'card card-narrow stack', novalidate: true },
+      h('div', {},
+        h('p', { class: 'label label-gold' }, 'Resident Portal'),
+        h('h1', {}, 'Sign in'),
+        h('p', { class: 'lede' }, 'Request maintenance for your apartment and follow its progress.')),
+      notice ? h('p', { class: 'msg' }, notice) : null,
+      field('Email address', input('email', { type: 'email', autocomplete: 'email', inputmode: 'email', autocapitalize: 'none', spellcheck: 'false', required: true })),
+      field('Phone number', input('phone', { type: 'tel', autocomplete: 'tel', required: true })),
+      field('Apartment number', input('unit', { autocomplete: 'off', autocapitalize: 'characters', required: true })),
+      field('Password', input('password', { type: 'password', autocomplete: 'current-password', required: true }),
+        'The password the leasing office gave you.'),
+      h('button', { class: 'btn', type: 'submit' }, 'Sign in'),
+      h('p', { class: 'msg', role: 'alert', hidden: true }),
+      h('p', { class: 'fine' }, 'Use the email address and phone number the leasing office has on file for you. Trouble signing in? Call ', tel(OFFICE), '.'));
+    onSubmit(form, async (v) => {
+      await api('/login', { email: v.email, phone: v.phone, unit: v.unit, password: v.password });
+      await boot();
+    });
+    app.replaceChildren(form);
+    form.querySelector('input').focus();
+  }
+
+  /* ----------------------------------------------------------- dashboard */
+  function dashboard(data) {
+    const r = data.resident;
+    who.replaceChildren(
+      h('span', { class: 'who' }, r.name, h('small', {}, 'Apartment ' + r.unit)),
+      h('button', { class: 'btn btn-sm btn-ghost', type: 'button', onclick: signOut }, 'Sign out'));
+
+    const open = data.requests.filter((q) => q.open);
+    const closed = data.requests.filter((q) => !q.open);
+
+    app.replaceChildren(...[
+      h('div', { class: 'hello' },
+        h('div', {},
+          h('p', { class: 'label label-gold' }, 'Resident Portal'),
+          h('h1', {}, 'Welcome, ' + r.name.split(' ')[0]),
+          h('p', { class: 'lede' }, 'Apartment ' + r.unit + (r.building ? ' · ' + r.building + ' Wilson Ave' : '')))),
+      h('p', { class: 'notice' },
+        h('strong', {}, 'If it cannot wait: '),
+        'for fire, a gas smell or immediate danger, call 911. For anything else urgent, call the leasing office at ', tel(OFFICE),
+        ' as well as sending a request — this page is not watched around the clock.'),
+      flash ? h('p', { class: 'notice', role: 'status' }, flash) : null,
+      h('div', { class: 'two' },
+        requestForm(data),
+        h('section', { 'aria-label': 'Your requests' },
+          h('div', { class: 'card-head' }, h('h2', {}, 'Your requests'),
+            h('span', { class: 'fine' }, open.length ? open.length + ' open' : 'Nothing open')),
+          data.requests.length === 0
+            ? h('div', { class: 'empty' }, 'You have not sent any requests yet. When you do, you can follow them here.')
+            : [open.map(requestCard),
+              closed.length ? h('details', { class: 'more', open: open.length === 0 },
+                h('summary', {}, closed.length + (closed.length === 1 ? ' closed request' : ' closed requests')),
+                closed.map(requestCard)) : null])),
+    ].filter(Boolean));
+    flash = '';
+  }
+
+  function requestForm(data) {
+    const r = data.resident;
+    const form = h('form', { class: 'card stack', novalidate: true },
+      h('div', {}, h('h2', {}, 'New maintenance request'),
+        h('p', { class: 'lede' }, 'Tell us what is wrong and we will take it from there.')),
+      field('What needs attention?', select('category', [['', 'Choose one…']].concat(data.categories.map((c) => [c, c])), '')),
+      field('Where is it?', input('location', { maxlength: 120, placeholder: 'Kitchen, bathroom, hallway…' })),
+      field('What is happening?', textarea('description', { maxlength: 4000, required: true,
+        placeholder: 'Describe the problem — what you see, hear or smell, and when it started.' })),
+      h('div', {}, h('span', { class: 'field-label' }, 'How soon?'), choices('urgency', URGENCY, 'routine')),
+      check('permission_to_enter', 'Maintenance may enter my apartment to make this repair if I am not home.', true),
+      field('Anything we should know before coming in?', input('entry_notes', { maxlength: 500, placeholder: 'Best times, where to find it… (optional)' })),
+      h('div', {}, h('span', { class: 'field-label' }, 'We will contact you at'),
+        h('p', {}, r.phone + ' · ' + r.email),
+        h('p', { class: 'fine' }, 'Out of date? Call the leasing office and we will correct it.')),
+      h('button', { class: 'btn', type: 'submit' }, 'Send request'),
+      h('p', { class: 'msg', role: 'alert', hidden: true }));
+    onSubmit(form, async (v) => {
+      const done = await api('/requests', { category: v.category, location: v.location, description: v.description,
+        urgency: v.urgency, permission_to_enter: v.permission_to_enter === 'on', entry_notes: v.entry_notes });
+      flash = 'Thank you — request ' + done.ref + ' has reached the maintenance team.';
+      await boot();
+      window.scrollTo({ top: 0 });
+    });
+    return form;
+  }
+
+  function requestCard(q) {
+    const card = h('article', { class: 'req' },
+      h('div', { class: 'req-top' }, h('span', { class: 'ref' }, q.ref), chip(q.status, q.status_label), urgencyChip(q.urgency)),
+      h('h3', {}, q.category + (q.location ? ' — ' + q.location : '')),
+      h('p', { class: 'when' }, 'Sent ' + when(q.created_at) + (q.completed_at ? ' · Completed ' + day(q.completed_at) : '')),
+      h('p', { class: 'req-body pre' }, q.description),
+      h('p', { class: 'fine' }, q.permission_to_enter ? 'Maintenance may enter if you are not home.' : 'Maintenance will arrange a time with you before entering.',
+        q.entry_notes ? ' Note: ' + q.entry_notes : ''),
+      q.updates.length ? h('ul', { class: 'tl' }, q.updates.map((u) => h('li', {},
+        h('div', { class: 'tl-head' }, h('strong', {}, u.from), h('span', {}, when(u.at))),
+        h('p', { class: 'pre' }, u.body)))) : null);
+
+    if (q.open) {
+      const note = h('form', { class: 'stack' },
+        field('Add a note for maintenance', textarea('body', { maxlength: 2000, required: true })),
+        h('div', { class: 'actions' },
+          h('button', { class: 'btn btn-sm', type: 'submit' }, 'Add note'),
+          h('button', { class: 'link-btn', type: 'button', onclick: () => cancel(q) }, 'Cancel this request')),
+        h('p', { class: 'msg', role: 'alert', hidden: true }));
+      onSubmit(note, async (v) => {
+        await api('/requests/' + q.id + '/note', { body: v.body });
+        flash = 'Your note was added to ' + q.ref + '.';
+        await boot();
+      });
+      card.append(h('details', { class: 'more' }, h('summary', {}, 'Add a note or cancel'), note));
+    }
+    return card;
+  }
+
+  async function cancel(q) {
+    if (!window.confirm('Cancel request ' + q.ref + '? Maintenance will be told it is no longer needed.')) return;
+    try {
+      await api('/requests/' + q.id + '/cancel', {});
+      flash = 'Request ' + q.ref + ' was cancelled.';
+    } catch (e) {
+      flash = e.message;
+    }
+    await boot();
+  }
+
+  async function signOut() {
+    try { await api('/logout', {}); } catch (e) { /* signed out either way */ }
+    signIn('You are signed out.');
+  }
+
+  boot();
+})();

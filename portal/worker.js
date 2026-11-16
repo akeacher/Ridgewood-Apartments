@@ -1,0 +1,972 @@
+/* Ridgewood resident portal — the API behind /portal and /portal/staff.
+
+   Runs as the Cloudflare Worker in front of the static site. Anything under
+   /api/portal/ is handled here against the D1 database bound as DB; every
+   other request falls straight through to the static assets, so the marketing
+   site behaves exactly as it did before this file existed.
+
+   No dependencies and no build step: Web Crypto for hashing, D1 for storage.
+   The tables are created on first use, so there are no migrations to run. */
+
+const TENANT_SESSION_HOURS = 24 * 7;
+const STAFF_SESSION_HOURS = 12;
+const LOCK_WINDOW_MIN = 15;        // failed sign-ins are counted over this window
+const LOCK_MAX_FAILS = 5;          // per email address; per-IP allows 4x for shared wifi
+const LOCK_DAY_FAILS = 15;         // per email address in 24 hours, then the office has to unlock it
+const MAX_REQUESTS_PER_DAY = 10;   // per resident
+const PBKDF2_ITERATIONS = 100000;  // the most Workers' Web Crypto will accept
+const MIN_STAFF_PASSWORD = 10;
+
+const CATEGORIES = ['Plumbing', 'Heating & cooling', 'Electrical', 'Appliance',
+  'Doors, locks & windows', 'Walls, floors & ceilings', 'Pest control',
+  'Laundry room', 'Common areas & grounds', 'Other'];
+const URGENCIES = ['routine', 'soon', 'urgent'];
+const OPEN_STATUSES = ['new', 'scheduled', 'in_progress', 'on_hold'];
+const STATUS_LABEL = { new: 'Received', scheduled: 'Scheduled', in_progress: 'In progress',
+  on_hold: 'On hold', completed: 'Completed', cancelled: 'Cancelled' };
+const BUILDINGS = ['', '1871', '1885'];
+
+const SCHEMA = [
+  `CREATE TABLE IF NOT EXISTS tenants (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     unit TEXT NOT NULL, unit_key TEXT NOT NULL, building TEXT NOT NULL DEFAULT '',
+     name TEXT NOT NULL, email TEXT NOT NULL, phone TEXT NOT NULL, phone_key TEXT NOT NULL,
+     active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS idx_tenants_login ON tenants (email, phone_key, unit_key)`,
+  `CREATE TABLE IF NOT EXISTS staff (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     name TEXT NOT NULL, email TEXT NOT NULL UNIQUE, pw_hash TEXT NOT NULL,
+     role TEXT NOT NULL DEFAULT 'tech', active INTEGER NOT NULL DEFAULT 1,
+     must_change INTEGER NOT NULL DEFAULT 0,
+     created_at TEXT NOT NULL, last_login_at TEXT)`,
+  `CREATE TABLE IF NOT EXISTS sessions (
+     token_hash TEXT PRIMARY KEY, kind TEXT NOT NULL, user_id INTEGER NOT NULL,
+     created_at TEXT NOT NULL, expires_at TEXT NOT NULL, ip TEXT NOT NULL DEFAULT '')`,
+  `CREATE TABLE IF NOT EXISTS work_orders (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     tenant_id INTEGER, unit TEXT NOT NULL, unit_key TEXT NOT NULL, building TEXT NOT NULL DEFAULT '',
+     contact_name TEXT NOT NULL, contact_email TEXT NOT NULL DEFAULT '', contact_phone TEXT NOT NULL DEFAULT '',
+     category TEXT NOT NULL, location TEXT NOT NULL DEFAULT '', description TEXT NOT NULL,
+     urgency TEXT NOT NULL DEFAULT 'routine',
+     permission_to_enter INTEGER NOT NULL DEFAULT 0, entry_notes TEXT NOT NULL DEFAULT '',
+     status TEXT NOT NULL DEFAULT 'new', assigned_to INTEGER, source TEXT NOT NULL DEFAULT 'tenant',
+     created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+     completed_at TEXT, completed_by INTEGER, completed_by_name TEXT,
+     work_done TEXT, resident_message TEXT)`,
+  `CREATE INDEX IF NOT EXISTS idx_wo_status ON work_orders (status, created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_wo_unit ON work_orders (unit_key, building, created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_wo_tenant ON work_orders (tenant_id, created_at)`,
+  `CREATE TABLE IF NOT EXISTS notes (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     work_order_id INTEGER NOT NULL, unit_key TEXT NOT NULL, building TEXT NOT NULL DEFAULT '',
+     kind TEXT NOT NULL, author_kind TEXT NOT NULL, author_id INTEGER, author_name TEXT NOT NULL,
+     body TEXT NOT NULL, visible_to_tenant INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS idx_notes_wo ON notes (work_order_id, created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_notes_unit ON notes (unit_key, building, kind, created_at)`,
+  `CREATE TABLE IF NOT EXISTS email_log (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     created_at TEXT NOT NULL, to_addr TEXT NOT NULL, subject TEXT NOT NULL, body TEXT NOT NULL,
+     kind TEXT NOT NULL, work_order_id INTEGER, status TEXT NOT NULL, detail TEXT NOT NULL DEFAULT '')`,
+  `CREATE TABLE IF NOT EXISTS activity_log (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     at TEXT NOT NULL, actor_kind TEXT NOT NULL, actor_id INTEGER, actor_label TEXT NOT NULL DEFAULT '',
+     event TEXT NOT NULL, detail TEXT NOT NULL DEFAULT '', ip TEXT NOT NULL DEFAULT '')`,
+  `CREATE INDEX IF NOT EXISTS idx_activity_at ON activity_log (at)`,
+  `CREATE TABLE IF NOT EXISTS login_attempts (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     at TEXT NOT NULL, kind TEXT NOT NULL, ident TEXT NOT NULL, ip TEXT NOT NULL DEFAULT '', ok INTEGER NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS idx_attempts ON login_attempts (kind, at)`,
+  `CREATE TABLE IF NOT EXISTS settings (name TEXT PRIMARY KEY, value TEXT NOT NULL)`,
+];
+
+/* ------------------------------------------------------------------ basics */
+
+class HttpError extends Error {
+  constructor(status, message, extra) { super(message); this.status = status; this.extra = extra || {}; }
+}
+
+function json(data, status, cookies) {
+  const headers = new Headers({
+    'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': 'no-store',
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'same-origin',
+  });
+  for (const ck of cookies || []) headers.append('Set-Cookie', ck);
+  return new Response(JSON.stringify(data), { status: status || 200, headers });
+}
+
+const nowIso = () => new Date().toISOString();
+const str = (v, max) => String(v === undefined || v === null ? '' : v).trim().slice(0, max || 4000);
+const normEmail = (v) => str(v, 200).toLowerCase();
+const normPhone = (v) => {
+  let d = String(v || '').replace(/\D/g, '');
+  if (d.length === 11 && d[0] === '1') d = d.slice(1);
+  return d.slice(0, 15);
+};
+// "Apt. #204", "unit 204" and "204" are all the same apartment
+const normUnit = (v) => String(v || '').trim().toUpperCase()
+  .replace(/^(APARTMENT|APT\.?|UNIT|NO\.?|#|\s)+/, '').replace(/[^A-Z0-9]/g, '').slice(0, 12);
+// ten-digit numbers are kept in one tidy form, however they were typed
+const fmtPhone = (v) => {
+  const d = normPhone(v);
+  return d.length === 10 ? `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}` : str(v, 30);
+};
+const validEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+const fmtRef = (id) => 'RW-' + String(1000 + Number(id));
+
+/* ---------------------------------------------------------------- database */
+
+const P = (v) => (v === undefined ? null : typeof v === 'boolean' ? (v ? 1 : 0) : v);
+function stmt(env, sql, params) {
+  const s = env.DB.prepare(sql);
+  return params.length ? s.bind(...params.map(P)) : s;
+}
+const all = async (env, sql, ...p) => (await stmt(env, sql, p).all()).results || [];
+const one = (env, sql, ...p) => stmt(env, sql, p).first();
+const run = async (env, sql, ...p) => (await stmt(env, sql, p).run()).meta || {};
+
+let schemaReady = false;
+async function ensureSchema(env) {
+  if (schemaReady) return;
+  await env.DB.batch(SCHEMA.map((s) => env.DB.prepare(s)));
+  schemaReady = true;
+}
+
+async function getSettings(env) {
+  const out = {};
+  for (const r of await all(env, 'SELECT name, value FROM settings')) out[r.name] = r.value;
+  return out;
+}
+
+/* ------------------------------------------------------------------ crypto */
+
+const enc = new TextEncoder();
+const toHex = (buf) => Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+const fromHex = (h) => new Uint8Array((h.match(/.{2}/g) || []).map((x) => parseInt(x, 16)));
+
+function randomHex(bytes) {
+  const a = new Uint8Array(bytes);
+  crypto.getRandomValues(a);
+  return toHex(a);
+}
+async function sha256Hex(text) {
+  return toHex(await crypto.subtle.digest('SHA-256', enc.encode(text)));
+}
+async function pbkdf2Hex(password, saltHex, iterations) {
+  const key = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', hash: 'SHA-256', salt: fromHex(saltHex), iterations }, key, 256);
+  return toHex(bits);
+}
+function safeEqual(a, b) {
+  a = String(a); b = String(b);
+  let diff = a.length ^ b.length;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i % (b.length || 1));
+  return diff === 0;
+}
+// stored as pbkdf2$<iterations>$<salt>$<hash>, so the cost can be raised later
+async function hashPassword(password) {
+  const salt = randomHex(16);
+  return `pbkdf2$${PBKDF2_ITERATIONS}$${salt}$${await pbkdf2Hex(password, salt, PBKDF2_ITERATIONS)}`;
+}
+const DUMMY_HASH = 'pbkdf2$' + PBKDF2_ITERATIONS + '$' + '00'.repeat(16) + '$' + '00'.repeat(32);
+async function verifyPassword(password, stored) {
+  const parts = String(stored || '').split('$');
+  if (parts.length !== 4 || parts[0] !== 'pbkdf2') return false;
+  const iterations = parseInt(parts[1], 10);
+  if (!(iterations > 0)) return false;
+  return safeEqual(await pbkdf2Hex(password, parts[2], iterations), parts[3]);
+}
+
+/* ---------------------------------------------------------------- sessions */
+
+const cookieName = (c, kind) => (c.secure ? '__Host-' : '') + 'rw_' + kind;
+
+function readCookie(request, name) {
+  for (const part of (request.headers.get('Cookie') || '').split(';')) {
+    const i = part.indexOf('=');
+    if (i > 0 && part.slice(0, i).trim() === name) return part.slice(i + 1).trim();
+  }
+  return '';
+}
+function sessionCookie(c, kind, token, hours) {
+  return `${cookieName(c, kind)}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${token ? hours * 3600 : 0}` +
+    (c.secure ? '; Secure' : '');
+}
+async function createSession(c, kind, userId, hours) {
+  const token = randomHex(32);
+  await run(c.env, 'INSERT INTO sessions (token_hash, kind, user_id, created_at, expires_at, ip) VALUES (?,?,?,?,?,?)',
+    await sha256Hex(token), kind, userId, nowIso(), new Date(Date.now() + hours * 3600e3).toISOString(), c.ip);
+  // a sign-in is a convenient moment to sweep out what has expired
+  await run(c.env, 'DELETE FROM sessions WHERE expires_at < ?', nowIso());
+  await run(c.env, 'DELETE FROM login_attempts WHERE at < ?', new Date(Date.now() - 86400e3).toISOString());
+  return token;
+}
+async function sessionUser(c, kind) {
+  const token = readCookie(c.request, cookieName(c, kind));
+  if (!/^[0-9a-f]{64}$/.test(token)) return null;
+  const hash = await sha256Hex(token);
+  const s = await one(c.env, 'SELECT user_id FROM sessions WHERE token_hash = ? AND kind = ? AND expires_at > ?',
+    hash, kind, nowIso());
+  if (!s) return null;
+  const table = kind === 'tenant' ? 'tenants' : 'staff';
+  const user = await one(c.env, `SELECT * FROM ${table} WHERE id = ? AND active = 1`, s.user_id);
+  if (user) c.tokenHash = hash;
+  return user || null;
+}
+async function endSession(c, kind) {
+  const token = readCookie(c.request, cookieName(c, kind));
+  if (/^[0-9a-f]{64}$/.test(token)) {
+    await run(c.env, 'DELETE FROM sessions WHERE token_hash = ?', await sha256Hex(token));
+  }
+  return json({ ok: true }, 200, [sessionCookie(c, kind, '', 0)]);
+}
+
+/* ------------------------------------------------ lockout and the audit log */
+
+async function guardAttempts(c, kind, ident) {
+  const since = new Date(Date.now() - LOCK_WINDOW_MIN * 60e3).toISOString();
+  const day = new Date(Date.now() - 86400e3).toISOString();
+  const n = await one(c.env,
+    `SELECT SUM(CASE WHEN ident = ? AND at > ? THEN 1 ELSE 0 END) AS recent,
+            SUM(CASE WHEN ident = ? THEN 1 ELSE 0 END) AS today,
+            SUM(CASE WHEN ip = ? AND ip != '' AND at > ? THEN 1 ELSE 0 END) AS from_ip
+       FROM login_attempts WHERE kind = ? AND ok = 0 AND at > ?`,
+    ident, since, ident, c.ip, since, kind, day) || {};
+  if ((n.today || 0) >= LOCK_DAY_FAILS) {
+    throw new HttpError(429, 'Sign-in is locked after too many attempts. Please call the leasing office at 651-578-0498.',
+      { code: 'locked' });
+  }
+  if ((n.recent || 0) >= LOCK_MAX_FAILS || (n.from_ip || 0) >= LOCK_MAX_FAILS * 4) {
+    throw new HttpError(429, `Too many attempts. Please wait ${LOCK_WINDOW_MIN} minutes and try again, or call the leasing office.`,
+      { code: 'locked' });
+  }
+}
+async function recordAttempt(c, kind, ident, ok) {
+  if (ok) await run(c.env, 'DELETE FROM login_attempts WHERE kind = ? AND ident = ? AND ok = 0', kind, ident);
+  await run(c.env, 'INSERT INTO login_attempts (at, kind, ident, ip, ok) VALUES (?,?,?,?,?)', nowIso(), kind, ident, c.ip, ok);
+}
+async function logActivity(c, actorKind, actorId, label, event, detail) {
+  await run(c.env, 'INSERT INTO activity_log (at, actor_kind, actor_id, actor_label, event, detail, ip) VALUES (?,?,?,?,?,?,?)',
+    nowIso(), actorKind, actorId, str(label, 200), event, str(detail, 500), c.ip);
+}
+
+/* ------------------------------------------------------------------- email */
+
+// Every message is written to email_log whether or not it could be sent, so the
+// office always has a record of what the portal tried to tell people.
+async function sendEmail(c, settings, msg) {
+  let status = 'not_sent';
+  let detail = 'Email delivery is not switched on yet';
+  const from = settings.mail_from || '';
+  if (!msg.to) {
+    detail = msg.missing || 'No address on file';
+  } else if (c.env.RESEND_API_KEY && from) {
+    try {
+      const r = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${c.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from, to: [msg.to], subject: msg.subject, text: msg.body }),
+      });
+      if (r.ok) { status = 'sent'; detail = ''; } else { status = 'failed'; detail = `The email provider answered ${r.status}`; }
+    } catch (e) {
+      status = 'failed'; detail = 'Could not reach the email provider';
+    }
+  }
+  await run(c.env, 'INSERT INTO email_log (created_at, to_addr, subject, body, kind, work_order_id, status, detail) VALUES (?,?,?,?,?,?,?,?)',
+    nowIso(), msg.to || '(not set)', str(msg.subject, 300), str(msg.body, 6000), msg.kind, msg.workOrderId || null, status, detail);
+}
+
+function describeOrder(o) {
+  return [
+    `Reference: ${fmtRef(o.id)}`,
+    `Apartment: ${o.unit}${o.building ? ` (${o.building} Wilson Ave)` : ''}`,
+    `Resident: ${o.contact_name}`,
+    `Phone: ${o.contact_phone || 'not given'}`,
+    `Email: ${o.contact_email || 'not given'}`,
+    `Category: ${o.category}${o.location ? ` — ${o.location}` : ''}`,
+    `Urgency: ${o.urgency}`,
+    `Permission to enter: ${o.permission_to_enter ? 'Yes' : 'No — arrange a time first'}`,
+    o.entry_notes ? `Entry notes: ${o.entry_notes}` : '',
+    '',
+    o.description,
+  ].filter((l) => l !== '').join('\n');
+}
+
+async function emailNewRequest(c, o) {
+  const s = await getSettings(c.env);
+  await sendEmail(c, s, {
+    to: s.office_email || '', missing: 'No office address is set under Settings',
+    kind: 'office_new_request', workOrderId: o.id,
+    subject: `New maintenance request — Apt ${o.unit} (${o.category})`,
+    body: `${describeOrder(o)}\n\nOpen it: ${c.url.origin}/portal/staff`,
+  });
+  await sendEmail(c, s, {
+    to: o.contact_email, kind: 'resident_received', workOrderId: o.id,
+    subject: `We received your maintenance request (${fmtRef(o.id)})`,
+    body: `Hello ${o.contact_name},\n\nThe Ridgewood maintenance team has your request and will be in touch.\n\n` +
+      `${o.category}${o.location ? ` — ${o.location}` : ''}\n${o.description}\n\n` +
+      `You can follow it at ${c.url.origin}/portal\n\nRidgewood Apartments · 651-578-0498`,
+  });
+}
+async function emailResident(c, o, kind, subject, lines) {
+  await sendEmail(c, await getSettings(c.env), {
+    to: o.contact_email, kind, workOrderId: o.id, subject,
+    body: `Hello ${o.contact_name},\n\n${lines}\n\nYou can see the full request at ${c.url.origin}/portal\n\nRidgewood Apartments · 651-578-0498`,
+  });
+}
+
+/* ----------------------------------------------------------- request intake */
+
+async function readBody(c) {
+  const text = await c.request.text();
+  if (text.length > 60000) throw new HttpError(413, 'That is more text than the portal can take in one go.');
+  try {
+    const v = JSON.parse(text || '{}');
+    if (v && typeof v === 'object' && !Array.isArray(v)) return v;
+  } catch (e) { /* fall through */ }
+  throw new HttpError(400, 'The portal could not read that request.');
+}
+
+function orderFields(b) {
+  const category = str(b.category, 60);
+  const description = str(b.description, 4000);
+  const urgency = str(b.urgency, 20) || 'routine';
+  if (!CATEGORIES.includes(category)) throw new HttpError(400, 'Choose what kind of problem it is.');
+  if (description.length < 5) throw new HttpError(400, 'Describe the problem in a sentence or two.');
+  if (!URGENCIES.includes(urgency)) throw new HttpError(400, 'Choose how urgent it is.');
+  return {
+    category, description, urgency,
+    location: str(b.location, 120),
+    permission: b.permission_to_enter ? 1 : 0,
+    entryNotes: str(b.entry_notes, 500),
+  };
+}
+
+async function insertOrder(c, who, f) {
+  const now = nowIso();
+  const meta = await run(c.env,
+    `INSERT INTO work_orders (tenant_id, unit, unit_key, building, contact_name, contact_email, contact_phone,
+       category, location, description, urgency, permission_to_enter, entry_notes, status, source, created_at, updated_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,'new',?,?,?)`,
+    who.tenantId, who.unit, normUnit(who.unit), who.building, who.name, who.email, who.phone,
+    f.category, f.location, f.description, f.urgency, f.permission, f.entryNotes, who.source, now, now);
+  return one(c.env, 'SELECT * FROM work_orders WHERE id = ?', meta.last_row_id);
+}
+
+async function addNote(c, o, kind, author, body, visible) {
+  await run(c.env,
+    `INSERT INTO notes (work_order_id, unit_key, building, kind, author_kind, author_id, author_name, body, visible_to_tenant, created_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?)`,
+    o.id, o.unit_key, o.building, kind, author.kind, author.id, author.name, str(body, 4000), visible, nowIso());
+}
+
+/* --------------------------------------------------------- resident routes */
+
+async function tenantLogin(c) {
+  const b = await readBody(c);
+  const email = normEmail(b.email), phoneKey = normPhone(b.phone);
+  const unitKey = normUnit(b.unit), passKey = normUnit(b.password);
+  if (!email || !phoneKey || !unitKey || !passKey) {
+    throw new HttpError(400, 'Enter your email, phone number, apartment number and password.');
+  }
+  await guardAttempts(c, 'tenant', email);
+  const t = await one(c.env,
+    'SELECT * FROM tenants WHERE active = 1 AND email = ? AND phone_key = ? AND unit_key = ? LIMIT 1', email, phoneKey, unitKey);
+  // the password is the apartment number, as the office hands it out
+  const ok = !!t && passKey === t.unit_key;
+  await recordAttempt(c, 'tenant', email, ok);
+  if (!ok) {
+    await logActivity(c, 'tenant', null, email, 'sign_in_failed', `Tried apartment ${str(b.unit, 20)} · phone ${str(b.phone, 30)}`);
+    throw new HttpError(401, 'Those details do not match our records. Check them and try again, or call the leasing office.');
+  }
+  const token = await createSession(c, 'tenant', t.id, TENANT_SESSION_HOURS);
+  await logActivity(c, 'tenant', t.id, `${t.name} · Apt ${t.unit}`, 'sign_in', `${t.email} · ${t.phone}`);
+  return json({ ok: true }, 200, [sessionCookie(c, 'tenant', token, TENANT_SESSION_HOURS)]);
+}
+
+const tenantView = (o, notes) => ({
+  id: o.id, ref: fmtRef(o.id), category: o.category, location: o.location, description: o.description,
+  urgency: o.urgency, status: o.status, status_label: STATUS_LABEL[o.status] || o.status,
+  permission_to_enter: !!o.permission_to_enter, entry_notes: o.entry_notes,
+  created_at: o.created_at, updated_at: o.updated_at, completed_at: o.completed_at,
+  resident_message: o.resident_message || '',
+  open: OPEN_STATUSES.includes(o.status),
+  // staff names stay inside the office; residents see who spoke, not which person
+  updates: notes.map((n) => ({
+    at: n.created_at, body: n.body, from: n.author_kind === 'tenant' ? 'You' : 'Ridgewood maintenance',
+  })),
+});
+
+async function tenantMe(c) {
+  const t = c.user;
+  const orders = await all(c.env, 'SELECT * FROM work_orders WHERE tenant_id = ? ORDER BY created_at DESC LIMIT 100', t.id);
+  const notes = await all(c.env,
+    `SELECT work_order_id, created_at, body, author_kind FROM notes
+      WHERE work_order_id IN (SELECT id FROM work_orders WHERE tenant_id = ?)
+        AND (visible_to_tenant = 1 OR author_kind = 'tenant') ORDER BY created_at ASC`, t.id);
+  return json({
+    resident: { name: t.name, unit: t.unit, building: t.building, email: t.email, phone: t.phone },
+    categories: CATEGORIES,
+    requests: orders.map((o) => tenantView(o, notes.filter((n) => n.work_order_id === o.id))),
+  });
+}
+
+async function tenantCreate(c) {
+  const t = c.user;
+  const f = orderFields(await readBody(c));
+  const today = await one(c.env, 'SELECT COUNT(*) AS n FROM work_orders WHERE tenant_id = ? AND created_at > ?',
+    t.id, new Date(Date.now() - 86400e3).toISOString());
+  if (today.n >= MAX_REQUESTS_PER_DAY) {
+    throw new HttpError(429, 'That is a lot of requests for one day. Please call the leasing office at 651-578-0498.');
+  }
+  const o = await insertOrder(c, { tenantId: t.id, unit: t.unit, building: t.building, name: t.name,
+    email: t.email, phone: t.phone, source: 'tenant' }, f);
+  await logActivity(c, 'tenant', t.id, `${t.name} · Apt ${t.unit}`, 'request_created', `${fmtRef(o.id)} · ${o.category}`);
+  await emailNewRequest(c, o);
+  return json({ ok: true, ref: fmtRef(o.id), id: o.id });
+}
+
+async function ownOrder(c, id) {
+  const o = await one(c.env, 'SELECT * FROM work_orders WHERE id = ? AND tenant_id = ?', id, c.user.id);
+  if (!o) throw new HttpError(404, 'We could not find that request.');
+  return o;
+}
+async function tenantAddNote(c, m) {
+  const o = await ownOrder(c, m[1]);
+  const text = str((await readBody(c)).body, 2000);
+  if (text.length < 2) throw new HttpError(400, 'Write a short note first.');
+  if (!OPEN_STATUSES.includes(o.status)) throw new HttpError(409, 'That request is closed. Please open a new one.');
+  await addNote(c, o, 'tenant', { kind: 'tenant', id: c.user.id, name: c.user.name }, text, 1);
+  await run(c.env, 'UPDATE work_orders SET updated_at = ? WHERE id = ?', nowIso(), o.id);
+  return json({ ok: true });
+}
+async function tenantCancel(c, m) {
+  const o = await ownOrder(c, m[1]);
+  if (!OPEN_STATUSES.includes(o.status)) throw new HttpError(409, 'That request is already closed.');
+  await run(c.env, "UPDATE work_orders SET status = 'cancelled', updated_at = ? WHERE id = ?", nowIso(), o.id);
+  await addNote(c, o, 'tenant', { kind: 'tenant', id: c.user.id, name: c.user.name }, 'Cancelled by the resident.', 1);
+  await logActivity(c, 'tenant', c.user.id, `${c.user.name} · Apt ${c.user.unit}`, 'request_cancelled', fmtRef(o.id));
+  return json({ ok: true });
+}
+
+/* ------------------------------------------------- staff: sign-in and setup */
+
+const staffView = (s) => ({ id: s.id, name: s.name, email: s.email, role: s.role, active: !!s.active,
+  must_change: !!s.must_change, last_login_at: s.last_login_at, created_at: s.created_at });
+
+async function isActivated(env) {
+  return (await one(env, 'SELECT COUNT(*) AS n FROM staff')).n > 0;
+}
+async function checkSetupCode(c, code) {
+  if (!c.env.SETUP_CODE_SHA256) throw new HttpError(404, 'Not found');
+  const who = c.ip || 'setup';
+  await guardAttempts(c, 'setup', who);
+  const ok = safeEqual(await sha256Hex(str(code, 200)), String(c.env.SETUP_CODE_SHA256).toLowerCase());
+  await recordAttempt(c, 'setup', who, ok);
+  if (!ok) throw new HttpError(401, 'That setup code is not right.');
+}
+function checkNewPassword(pw) {
+  pw = String(pw || '');
+  if (pw.length < MIN_STAFF_PASSWORD) throw new HttpError(400, `Choose a password of at least ${MIN_STAFF_PASSWORD} characters.`);
+  if (pw.length > 200) throw new HttpError(400, 'That password is too long.');
+  return pw;
+}
+
+async function staffState(c) {
+  const me = await sessionUser(c, 'staff');
+  return json({
+    activated: await isActivated(c.env),
+    setup_available: !!c.env.SETUP_CODE_SHA256,
+    signed_in: !!me, me: me ? staffView(me) : null,
+  });
+}
+
+// One-time: creates the first manager. Closed for good once a real account exists.
+async function staffSetup(c) {
+  if (await isActivated(c.env)) throw new HttpError(409, 'The portal is already set up. Sign in instead.');
+  const b = await readBody(c);
+  await checkSetupCode(c, b.code);
+  const name = str(b.name, 80), email = normEmail(b.email);
+  if (name.length < 2) throw new HttpError(400, 'Enter your name.');
+  if (!validEmail(email)) throw new HttpError(400, 'Enter a valid email address.');
+  const pw = checkNewPassword(b.password);
+  const meta = await run(c.env,
+    "INSERT INTO staff (name, email, pw_hash, role, active, must_change, created_at, last_login_at) VALUES (?,?,?,'manager',1,0,?,?)",
+    name, email, await hashPassword(pw), nowIso(), nowIso());
+  const token = await createSession(c, 'staff', meta.last_row_id, STAFF_SESSION_HOURS);
+  await logActivity(c, 'staff', meta.last_row_id, name, 'portal_set_up', email);
+  return json({ ok: true }, 200, [sessionCookie(c, 'staff', token, STAFF_SESSION_HOURS)]);
+}
+
+async function staffLogin(c) {
+  const b = await readBody(c);
+  const email = normEmail(b.email), pw = String(b.password || '');
+  if (!email || !pw) throw new HttpError(400, 'Enter your email and password.');
+  await guardAttempts(c, 'staff', email);
+  const s = await one(c.env, 'SELECT * FROM staff WHERE email = ? AND active = 1', email);
+  // an unknown address does the same work as a wrong password, so timing gives nothing away
+  const ok = await verifyPassword(pw, s ? s.pw_hash : DUMMY_HASH) && !!s;
+  await recordAttempt(c, 'staff', email, ok);
+  if (!ok) {
+    await logActivity(c, 'staff', null, email, 'sign_in_failed', '');
+    throw new HttpError(401, 'That email and password do not match.');
+  }
+  await run(c.env, 'UPDATE staff SET last_login_at = ? WHERE id = ?', nowIso(), s.id);
+  const token = await createSession(c, 'staff', s.id, STAFF_SESSION_HOURS);
+  await logActivity(c, 'staff', s.id, s.name, 'sign_in', s.email);
+  return json({ ok: true, must_change: !!s.must_change }, 200, [sessionCookie(c, 'staff', token, STAFF_SESSION_HOURS)]);
+}
+
+async function staffMe(c) {
+  const team = await all(c.env, 'SELECT id, name FROM staff WHERE active = 1 ORDER BY name');
+  return json({ me: staffView(c.user), team, categories: CATEGORIES, buildings: BUILDINGS, status_labels: STATUS_LABEL });
+}
+
+async function staffChangePassword(c) {
+  const b = await readBody(c);
+  if (!await verifyPassword(String(b.current || ''), c.user.pw_hash)) throw new HttpError(401, 'Your current password is not right.');
+  const pw = checkNewPassword(b.next);
+  if (pw === String(b.current)) throw new HttpError(400, 'Choose a password different from the current one.');
+  await run(c.env, 'UPDATE staff SET pw_hash = ?, must_change = 0 WHERE id = ?', await hashPassword(pw), c.user.id);
+  // every other device signed in as this person is signed out
+  await run(c.env, "DELETE FROM sessions WHERE kind = 'staff' AND user_id = ? AND token_hash != ?", c.user.id, c.tokenHash);
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'password_changed', '');
+  return json({ ok: true });
+}
+
+/* ------------------------------------------------------ staff: work orders */
+
+const ORDER_SELECT = `SELECT w.*, s.name AS assigned_name FROM work_orders w LEFT JOIN staff s ON s.id = w.assigned_to`;
+const orderView = (o) => Object.assign({}, o, {
+  ref: fmtRef(o.id), status_label: STATUS_LABEL[o.status] || o.status,
+  permission_to_enter: !!o.permission_to_enter, open: OPEN_STATUSES.includes(o.status),
+});
+
+async function staffOrders(c) {
+  const view = c.url.searchParams.get('view') || 'open';
+  const text = str(c.url.searchParams.get('q'), 80).replace(/[%_]/g, '');
+  const where = [], args = [];
+  if (view === 'open') where.push("w.status IN ('new','scheduled','in_progress','on_hold')");
+  else if (view === 'completed') where.push("w.status = 'completed'");
+  else if (view === 'mine') { where.push("w.status IN ('new','scheduled','in_progress','on_hold') AND w.assigned_to = ?"); args.push(c.user.id); }
+  if (text) {
+    where.push('(w.unit_key LIKE ? OR w.contact_name LIKE ? OR w.description LIKE ? OR w.category LIKE ? OR w.work_done LIKE ?)');
+    const like = `%${text}%`;
+    args.push(`%${normUnit(text) || text}%`, like, like, like, like);
+  }
+  const order = view === 'completed' ? 'w.completed_at DESC'
+    : view === 'all' ? 'w.created_at DESC'
+    : "CASE w.urgency WHEN 'urgent' THEN 0 WHEN 'soon' THEN 1 ELSE 2 END, w.created_at ASC";
+  const rows = await all(c.env,
+    `${ORDER_SELECT} ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY ${order} LIMIT 300`, ...args);
+  const counts = {};
+  for (const r of await all(c.env, 'SELECT status, COUNT(*) AS n FROM work_orders GROUP BY status')) counts[r.status] = r.n;
+  return json({ orders: rows.map(orderView), counts });
+}
+
+async function getOrder(c, id) {
+  const o = await one(c.env, `${ORDER_SELECT} WHERE w.id = ?`, id);
+  if (!o) throw new HttpError(404, 'That work order does not exist.');
+  return o;
+}
+
+// `building` null means "whichever building" — used by the apartment lookup
+async function unitHistory(c, unitKey, building, exceptId) {
+  const any = building === null ? 1 : 0;
+  const previous = await all(c.env,
+    `SELECT id, building, category, location, description, status, created_at, completed_at, completed_by_name, work_done
+       FROM work_orders WHERE unit_key = ? AND (? = 1 OR building = ?) AND id != ? ORDER BY created_at DESC LIMIT 40`,
+    unitKey, any, building || '', exceptId || 0);
+  const handoff = await all(c.env,
+    `SELECT id, work_order_id, building, body, author_name, created_at FROM notes
+      WHERE unit_key = ? AND (? = 1 OR building = ?) AND kind = 'handoff' ORDER BY created_at DESC, id DESC LIMIT 40`,
+    unitKey, any, building || '');
+  return {
+    previous: previous.map((p) => Object.assign(p, { ref: fmtRef(p.id), status_label: STATUS_LABEL[p.status] || p.status })),
+    handoff: handoff.map((n) => Object.assign(n, { ref: fmtRef(n.work_order_id) })),
+  };
+}
+
+async function staffOrderDetail(c, m) {
+  const o = await getOrder(c, m[1]);
+  const notes = await all(c.env,
+    'SELECT id, kind, author_kind, author_name, body, visible_to_tenant, created_at FROM notes WHERE work_order_id = ? ORDER BY created_at ASC', o.id);
+  return json({ order: orderView(o), notes, unit: await unitHistory(c, o.unit_key, o.building, o.id) });
+}
+
+async function staffUnit(c) {
+  const unitKey = normUnit(c.url.searchParams.get('unit'));
+  const asked = c.url.searchParams.get('building');
+  const building = asked === null || asked === 'any' ? null : str(asked, 10);
+  if (!unitKey) throw new HttpError(400, 'Enter an apartment number.');
+  const residents = await all(c.env,
+    `SELECT id, name, email, phone, unit, building, active FROM tenants
+      WHERE unit_key = ? AND (? = 1 OR building = ?) ORDER BY active DESC, name`,
+    unitKey, building === null ? 1 : 0, building || '');
+  return json(Object.assign({ unit: unitKey, building: building === null ? 'any' : building, residents },
+    await unitHistory(c, unitKey, building, 0)));
+}
+
+// For requests that come in by phone or at the office window.
+async function staffCreateOrder(c) {
+  const b = await readBody(c);
+  const f = orderFields(b);
+  const unit = str(b.unit, 12), name = str(b.contact_name, 80);
+  if (!normUnit(unit)) throw new HttpError(400, 'Enter the apartment number.');
+  if (name.length < 2) throw new HttpError(400, "Enter the resident's name.");
+  const building = BUILDINGS.includes(str(b.building, 10)) ? str(b.building, 10) : '';
+  const email = normEmail(b.contact_email);
+  const match = email ? await one(c.env,
+    'SELECT id FROM tenants WHERE active = 1 AND email = ? AND unit_key = ? LIMIT 1', email, normUnit(unit)) : null;
+  const o = await insertOrder(c, { tenantId: match ? match.id : null, unit, building, name, email,
+    phone: fmtPhone(b.contact_phone), source: 'staff' }, f);
+  await addNote(c, o, 'status', { kind: 'staff', id: c.user.id, name: c.user.name }, `Logged by ${c.user.name} on the resident's behalf.`, 0);
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'order_created', `${fmtRef(o.id)} · Apt ${o.unit}`);
+  return json({ ok: true, id: o.id, ref: fmtRef(o.id) });
+}
+
+async function staffUpdateOrder(c, m) {
+  const o = await getOrder(c, m[1]);
+  const b = await readBody(c);
+  const author = { kind: 'staff', id: c.user.id, name: c.user.name };
+  const sets = [], args = [];
+  if (b.status !== undefined && b.status !== o.status) {
+    const status = str(b.status, 20);
+    if (!STATUS_LABEL[status]) throw new HttpError(400, 'That status does not exist.');
+    if (status === 'completed') throw new HttpError(400, 'Use "Complete work order" so the work is written up.');
+    sets.push('status = ?'); args.push(status);
+    await addNote(c, o, 'status', author, `Status changed to ${STATUS_LABEL[status]}.`, 1);
+  }
+  if (b.urgency !== undefined && b.urgency !== o.urgency) {
+    if (!URGENCIES.includes(b.urgency)) throw new HttpError(400, 'That urgency does not exist.');
+    sets.push('urgency = ?'); args.push(b.urgency);
+    await addNote(c, o, 'status', author, `Urgency set to ${b.urgency}.`, 0);
+  }
+  const assignee = b.assigned_to === undefined ? undefined : (Number(b.assigned_to) || null);
+  if (assignee !== undefined && assignee !== (o.assigned_to || null)) {
+    let who = null;
+    if (assignee) {
+      who = await one(c.env, 'SELECT id, name FROM staff WHERE id = ? AND active = 1', assignee);
+      if (!who) throw new HttpError(400, 'That person is not on the team.');
+    }
+    sets.push('assigned_to = ?'); args.push(who ? who.id : null);
+    await addNote(c, o, 'status', author, who ? `Assigned to ${who.name}.` : 'Unassigned.', 0);
+  }
+  if (sets.length) {
+    await run(c.env, `UPDATE work_orders SET ${sets.join(', ')}, updated_at = ? WHERE id = ?`, ...args, nowIso(), o.id);
+    await logActivity(c, 'staff', c.user.id, c.user.name, 'order_updated', fmtRef(o.id));
+  }
+  return json({ ok: true });
+}
+
+async function staffAddNote(c, m) {
+  const o = await getOrder(c, m[1]);
+  const b = await readBody(c);
+  const text = str(b.body, 4000);
+  if (text.length < 2) throw new HttpError(400, 'Write the note first.');
+  const author = { kind: 'staff', id: c.user.id, name: c.user.name };
+  // 'handoff' notes stay with the apartment and are shown to whoever goes there next
+  const kind = b.kind === 'handoff' ? 'handoff' : b.visible_to_tenant ? 'message' : 'note';
+  await addNote(c, o, kind, author, text, kind === 'message' ? 1 : 0);
+  await run(c.env, 'UPDATE work_orders SET updated_at = ? WHERE id = ?', nowIso(), o.id);
+  if (kind === 'message') {
+    await emailResident(c, o, 'resident_update', `An update on your maintenance request (${fmtRef(o.id)})`, text);
+  }
+  return json({ ok: true });
+}
+
+async function staffComplete(c, m) {
+  const o = await getOrder(c, m[1]);
+  if (o.status === 'completed') throw new HttpError(409, 'That work order is already completed.');
+  const b = await readBody(c);
+  const workDone = str(b.work_done, 4000);
+  const handoff = str(b.handoff_note, 4000);
+  const message = str(b.resident_message, 2000);
+  if (workDone.length < 5) throw new HttpError(400, 'Write up what was done before completing it.');
+  const author = { kind: 'staff', id: c.user.id, name: c.user.name };
+  const now = nowIso();
+  await run(c.env,
+    `UPDATE work_orders SET status = 'completed', completed_at = ?, completed_by = ?, completed_by_name = ?,
+            work_done = ?, resident_message = ?, updated_at = ? WHERE id = ?`,
+    now, c.user.id, c.user.name, workDone, message, now, o.id);
+  await addNote(c, o, 'completed', author, workDone, 0);
+  if (handoff) await addNote(c, o, 'handoff', author, handoff, 0);
+  await addNote(c, o, 'message', author, message || 'This request has been completed.', 1);
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'order_completed', `${fmtRef(o.id)} · Apt ${o.unit}`);
+  await emailResident(c, o, 'resident_completed', `Your maintenance request is complete (${fmtRef(o.id)})`,
+    `Your request has been completed.${message ? `\n\n${message}` : ''}\n\nIf anything is still not right, reply through the portal or call the office.`);
+  return json({ ok: true });
+}
+
+function csvCell(v) {
+  let s = String(v === null || v === undefined ? '' : v);
+  if (/^[=+\-@\t]/.test(s)) s = "'" + s;       // spreadsheets would run these as formulas
+  return '"' + s.replace(/"/g, '""') + '"';
+}
+async function staffExport(c) {
+  const rows = await all(c.env, `${ORDER_SELECT} ORDER BY w.created_at DESC LIMIT 5000`);
+  const head = ['Reference', 'Apartment', 'Building', 'Resident', 'Email', 'Phone', 'Category', 'Location', 'Problem',
+    'Urgency', 'Status', 'Opened', 'Completed', 'Completed by', 'Work completed', 'Assigned to'];
+  const lines = [head.map(csvCell).join(',')];
+  for (const o of rows) {
+    lines.push([fmtRef(o.id), o.unit, o.building, o.contact_name, o.contact_email, o.contact_phone, o.category, o.location,
+      o.description, o.urgency, STATUS_LABEL[o.status] || o.status, o.created_at, o.completed_at, o.completed_by_name,
+      o.work_done, o.assigned_name].map(csvCell).join(','));
+  }
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'records_exported', `${rows.length} work orders`);
+  return new Response(lines.join('\r\n') + '\r\n', { status: 200, headers: new Headers({
+    'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'no-store',
+    'Content-Disposition': `attachment; filename="ridgewood-work-orders-${nowIso().slice(0, 10)}.csv"`,
+  }) });
+}
+
+/* --------------------------------------------------------- staff: residents */
+
+function tenantFields(b) {
+  const unit = str(b.unit, 12), name = str(b.name, 80), email = normEmail(b.email), phone = fmtPhone(b.phone);
+  const building = str(b.building, 10);
+  if (!normUnit(unit)) throw new HttpError(400, 'Enter the apartment number.');
+  if (name.length < 2) throw new HttpError(400, "Enter the resident's name.");
+  if (!validEmail(email)) throw new HttpError(400, `"${email || 'blank'}" is not a valid email address.`);
+  if (normPhone(phone).length < 10) throw new HttpError(400, 'Enter a ten-digit phone number.');
+  if (!BUILDINGS.includes(building)) throw new HttpError(400, 'Choose 1871 or 1885 for the building, or leave it blank.');
+  return { unit, name, email, phone, building };
+}
+async function insertTenant(c, f) {
+  const dupe = await one(c.env, 'SELECT id FROM tenants WHERE active = 1 AND email = ? AND unit_key = ?', f.email, normUnit(f.unit));
+  if (dupe) throw new HttpError(409, `${f.email} is already listed for apartment ${f.unit}.`);
+  const now = nowIso();
+  await run(c.env,
+    'INSERT INTO tenants (unit, unit_key, building, name, email, phone, phone_key, active, created_at, updated_at) VALUES (?,?,?,?,?,?,?,1,?,?)',
+    f.unit, normUnit(f.unit), f.building, f.name, f.email, f.phone, normPhone(f.phone), now, now);
+}
+
+async function staffTenants(c) {
+  const rows = await all(c.env,
+    'SELECT id, unit, building, name, email, phone, active, created_at FROM tenants ORDER BY active DESC, building, unit_key, name LIMIT 2000');
+  return json({ residents: rows.map((r) => Object.assign(r, { active: !!r.active })) });
+}
+async function staffAddTenant(c) {
+  const f = tenantFields(await readBody(c));
+  await insertTenant(c, f);
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'resident_added', `${f.name} · Apt ${f.unit}`);
+  return json({ ok: true });
+}
+// One resident per line: apartment, name, email, phone, building (optional)
+async function staffBulkTenants(c) {
+  const lines = str((await readBody(c)).text, 50000).split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (!lines.length) throw new HttpError(400, 'Paste at least one line.');
+  if (lines.length > 300) throw new HttpError(400, 'Add at most 300 residents at a time.');
+  const taken = new Set((await all(c.env, 'SELECT email, unit_key FROM tenants WHERE active = 1'))
+    .map((r) => `${r.email}|${r.unit_key}`));
+  const inserts = [], problems = [], now = nowIso();
+  for (let i = 0; i < lines.length; i++) {
+    const p = lines[i].split(/\t|,/).map((x) => x.trim());
+    try {
+      const f = tenantFields({ unit: p[0], name: p[1], email: p[2], phone: p[3], building: p[4] || '' });
+      const key = `${f.email}|${normUnit(f.unit)}`;
+      if (taken.has(key)) throw new HttpError(409, `${f.email} is already listed for apartment ${f.unit}.`);
+      taken.add(key);
+      inserts.push(c.env.DB.prepare(
+        'INSERT INTO tenants (unit, unit_key, building, name, email, phone, phone_key, active, created_at, updated_at) VALUES (?,?,?,?,?,?,?,1,?,?)')
+        .bind(f.unit, normUnit(f.unit), f.building, f.name, f.email, f.phone, normPhone(f.phone), now, now));
+    } catch (e) {
+      if (!(e instanceof HttpError)) throw e;
+      problems.push({ line: i + 1, text: lines[i].slice(0, 120), problem: e.message });
+    }
+  }
+  for (let i = 0; i < inserts.length; i += 50) await c.env.DB.batch(inserts.slice(i, i + 50));
+  if (inserts.length) await logActivity(c, 'staff', c.user.id, c.user.name, 'residents_imported', `${inserts.length} added`);
+  return json({ ok: true, added: inserts.length, problems });
+}
+async function staffUnlockTenant(c, m) {
+  const t = await one(c.env, 'SELECT * FROM tenants WHERE id = ?', m[1]);
+  if (!t) throw new HttpError(404, 'That resident does not exist.');
+  await run(c.env, "DELETE FROM login_attempts WHERE kind = 'tenant' AND ident = ? AND ok = 0", t.email);
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'resident_unlocked', `${t.name} · Apt ${t.unit}`);
+  return json({ ok: true });
+}
+async function staffEditTenant(c, m) {
+  const t = await one(c.env, 'SELECT * FROM tenants WHERE id = ?', m[1]);
+  if (!t) throw new HttpError(404, 'That resident does not exist.');
+  const b = await readBody(c);
+  if (b.active !== undefined && Object.keys(b).length === 1) {
+    await run(c.env, 'UPDATE tenants SET active = ?, updated_at = ? WHERE id = ?', !!b.active, nowIso(), t.id);
+    if (!b.active) await run(c.env, "DELETE FROM sessions WHERE kind = 'tenant' AND user_id = ?", t.id);
+    await logActivity(c, 'staff', c.user.id, c.user.name, b.active ? 'resident_restored' : 'resident_removed', `${t.name} · Apt ${t.unit}`);
+    return json({ ok: true });
+  }
+  const f = tenantFields(Object.assign({ unit: t.unit, name: t.name, email: t.email, phone: t.phone, building: t.building }, b));
+  await run(c.env,
+    'UPDATE tenants SET unit = ?, unit_key = ?, building = ?, name = ?, email = ?, phone = ?, phone_key = ?, updated_at = ? WHERE id = ?',
+    f.unit, normUnit(f.unit), f.building, f.name, f.email, f.phone, normPhone(f.phone), nowIso(), t.id);
+  // their sign-in details changed, so they sign in again with the new ones
+  await run(c.env, "DELETE FROM sessions WHERE kind = 'tenant' AND user_id = ?", t.id);
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'resident_edited', `${f.name} · Apt ${f.unit}`);
+  return json({ ok: true });
+}
+
+/* ------------------------------------- staff: team, settings and the logs */
+
+async function staffTeam(c) {
+  return json({ team: (await all(c.env, 'SELECT * FROM staff ORDER BY active DESC, name')).map(staffView) });
+}
+async function staffAddMember(c) {
+  const b = await readBody(c);
+  const name = str(b.name, 80), email = normEmail(b.email), role = b.role === 'manager' ? 'manager' : 'tech';
+  if (name.length < 2) throw new HttpError(400, 'Enter their name.');
+  if (!validEmail(email)) throw new HttpError(400, 'Enter a valid email address.');
+  const pw = checkNewPassword(b.password);
+  if (await one(c.env, 'SELECT id FROM staff WHERE email = ?', email)) throw new HttpError(409, 'Someone on the team already uses that email.');
+  // they are made to choose their own password the first time they sign in
+  await run(c.env, 'INSERT INTO staff (name, email, pw_hash, role, active, must_change, created_at) VALUES (?,?,?,?,1,1,?)',
+    name, email, await hashPassword(pw), role, nowIso());
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'team_member_added', `${name} (${role})`);
+  return json({ ok: true });
+}
+async function staffEditMember(c, m) {
+  const s = await one(c.env, 'SELECT * FROM staff WHERE id = ?', m[1]);
+  if (!s) throw new HttpError(404, 'That person is not on the team.');
+  const b = await readBody(c);
+  const role = b.role === undefined ? s.role : b.role === 'manager' ? 'manager' : 'tech';
+  const active = b.active === undefined ? !!s.active : !!b.active;
+  if (s.id === c.user.id && (!active || role !== 'manager')) throw new HttpError(400, 'You cannot remove your own manager access.');
+  if (b.password !== undefined) {
+    await run(c.env, 'UPDATE staff SET pw_hash = ?, must_change = 1 WHERE id = ?', await hashPassword(checkNewPassword(b.password)), s.id);
+    await run(c.env, "DELETE FROM sessions WHERE kind = 'staff' AND user_id = ?", s.id);
+    await logActivity(c, 'staff', c.user.id, c.user.name, 'team_password_reset', s.name);
+  }
+  await run(c.env, 'UPDATE staff SET role = ?, active = ? WHERE id = ?', role, active, s.id);
+  if (!active) await run(c.env, "DELETE FROM sessions WHERE kind = 'staff' AND user_id = ?", s.id);
+  if (role !== s.role || active !== !!s.active) {
+    await logActivity(c, 'staff', c.user.id, c.user.name, 'team_member_changed', `${s.name}: ${role}, ${active ? 'active' : 'removed'}`);
+  }
+  return json({ ok: true });
+}
+
+async function staffGetSettings(c) {
+  const s = await getSettings(c.env);
+  return json({ office_email: s.office_email || '', mail_from: s.mail_from || '', delivery_on: !!(c.env.RESEND_API_KEY && s.mail_from) ,
+    provider_key_set: !!c.env.RESEND_API_KEY });
+}
+async function staffSaveSettings(c) {
+  const b = await readBody(c);
+  const office = normEmail(b.office_email), from = str(b.mail_from, 200);
+  if (office && !validEmail(office)) throw new HttpError(400, 'The office address is not a valid email.');
+  for (const [name, value] of [['office_email', office], ['mail_from', from]]) {
+    await run(c.env, 'INSERT INTO settings (name, value) VALUES (?, ?) ON CONFLICT(name) DO UPDATE SET value = excluded.value', name, value);
+  }
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'settings_changed', '');
+  return json({ ok: true });
+}
+async function staffEmails(c) {
+  return json({ emails: await all(c.env,
+    'SELECT id, created_at, to_addr, subject, body, kind, work_order_id, status, detail FROM email_log ORDER BY id DESC LIMIT 300') });
+}
+async function staffActivity(c) {
+  return json({ activity: await all(c.env,
+    'SELECT id, at, actor_kind, actor_label, event, detail, ip FROM activity_log ORDER BY id DESC LIMIT 400') });
+}
+
+/* ------------------------------------------------------------------ router */
+
+async function health(c) {
+  return json({ ok: true, db: true, activated: await isActivated(c.env) });
+}
+
+// [method, path, handler, who may call it]
+const ROUTES = [
+  ['GET', /^\/health$/, health],
+  ['POST', /^\/login$/, tenantLogin],
+  ['POST', /^\/logout$/, (c) => endSession(c, 'tenant')],
+  ['GET', /^\/me$/, tenantMe, 'tenant'],
+  ['POST', /^\/requests$/, tenantCreate, 'tenant'],
+  ['POST', /^\/requests\/(\d+)\/note$/, tenantAddNote, 'tenant'],
+  ['POST', /^\/requests\/(\d+)\/cancel$/, tenantCancel, 'tenant'],
+
+  ['GET', /^\/staff\/state$/, staffState],
+  ['POST', /^\/staff\/setup$/, staffSetup],
+  ['POST', /^\/staff\/login$/, staffLogin],
+  ['POST', /^\/staff\/logout$/, (c) => endSession(c, 'staff')],
+  ['GET', /^\/staff\/me$/, staffMe, 'staff*'],
+  ['POST', /^\/staff\/password$/, staffChangePassword, 'staff*'],
+  ['GET', /^\/staff\/workorders$/, staffOrders, 'staff'],
+  ['POST', /^\/staff\/workorders$/, staffCreateOrder, 'staff'],
+  ['GET', /^\/staff\/workorders\/(\d+)$/, staffOrderDetail, 'staff'],
+  ['POST', /^\/staff\/workorders\/(\d+)$/, staffUpdateOrder, 'staff'],
+  ['POST', /^\/staff\/workorders\/(\d+)\/notes$/, staffAddNote, 'staff'],
+  ['POST', /^\/staff\/workorders\/(\d+)\/complete$/, staffComplete, 'staff'],
+  ['GET', /^\/staff\/unit$/, staffUnit, 'staff'],
+  ['GET', /^\/staff\/export\.csv$/, staffExport, 'staff'],
+  ['GET', /^\/staff\/residents$/, staffTenants, 'staff'],
+  ['POST', /^\/staff\/residents$/, staffAddTenant, 'manager'],
+  ['POST', /^\/staff\/residents\/bulk$/, staffBulkTenants, 'manager'],
+  ['POST', /^\/staff\/residents\/(\d+)$/, staffEditTenant, 'manager'],
+  ['POST', /^\/staff\/residents\/(\d+)\/unlock$/, staffUnlockTenant, 'staff'],
+  ['GET', /^\/staff\/emails$/, staffEmails, 'staff'],
+  ['GET', /^\/staff\/activity$/, staffActivity, 'manager'],
+  ['GET', /^\/staff\/team$/, staffTeam, 'manager'],
+  ['POST', /^\/staff\/team$/, staffAddMember, 'manager'],
+  ['POST', /^\/staff\/team\/(\d+)$/, staffEditMember, 'manager'],
+  ['GET', /^\/staff\/settings$/, staffGetSettings, 'manager'],
+  ['POST', /^\/staff\/settings$/, staffSaveSettings, 'manager'],
+];
+
+async function handleApi(request, env, url) {
+  if (!env.DB) return json({ error: 'The portal database is not connected yet.', code: 'no_db' }, 503);
+  await ensureSchema(env);
+  const c = {
+    request, env, url, user: null, tokenHash: '',
+    ip: request.headers.get('CF-Connecting-IP') || '',
+    secure: url.protocol === 'https:',
+  };
+  const method = request.method.toUpperCase();
+  const path = url.pathname.slice('/api/portal'.length);
+
+  if (method === 'POST') {
+    // browsers will not let another site attach this header, which is what stops
+    // a page elsewhere from quietly submitting forms as a signed-in person
+    if (request.headers.get('X-RW-Portal') !== '1') throw new HttpError(403, 'Request blocked.');
+    const origin = request.headers.get('Origin');
+    if (origin) {
+      let host = '';
+      try { host = new URL(origin).host; } catch (e) { /* not a URL */ }
+      if (host !== url.host) throw new HttpError(403, 'Request blocked.');
+    }
+  }
+
+  for (const [m, pattern, handler, who] of ROUTES) {
+    const match = path.match(pattern);
+    if (!match || m !== method) continue;
+    if (who === 'tenant') {
+      c.user = await sessionUser(c, 'tenant');
+      if (!c.user) throw new HttpError(401, 'Please sign in.', { code: 'signed_out' });
+    } else if (who) {
+      c.user = await sessionUser(c, 'staff');
+      if (!c.user) throw new HttpError(401, 'Please sign in.', { code: 'signed_out' });
+      if (c.user.must_change && who !== 'staff*') throw new HttpError(403, 'Choose a new password first.', { code: 'must_change' });
+      if (who === 'manager' && c.user.role !== 'manager') throw new HttpError(403, 'Only a manager can do that.');
+    }
+    return handler(c, match);
+  }
+  throw new HttpError(404, 'Not found');
+}
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    if (url.pathname === '/api/portal' || url.pathname.startsWith('/api/portal/')) {
+      try {
+        return await handleApi(request, env, url);
+      } catch (err) {
+        if (err instanceof HttpError) return json(Object.assign({ error: err.message }, err.extra), err.status);
+        console.error('portal error', err && err.stack ? err.stack : err);
+        return json({ error: 'Something went wrong on our side. Please try again.' }, 500);
+      }
+    }
+    if (env.ASSETS) return env.ASSETS.fetch(request);
+    return new Response('Not found', { status: 404 });
+  },
+};
