@@ -221,6 +221,8 @@
   .foot-col a:hover { color: var(--gold); }
   .foot-bottom { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-top: 28px; border-top: 1px solid var(--line); }
   .foot-bottom span { font-size: 0.72rem; letter-spacing: 0.08em; color: var(--ink-soft); }
+  .foot-bottom a { font-size: 0.72rem; font-weight: 400; letter-spacing: 0.08em; color: var(--ink-soft); text-decoration: none; border-bottom: 1px solid var(--gold); padding-bottom: 1px; }
+  .foot-bottom a:hover { color: var(--gold); }
 
   /* ---------- Modal / Lightbox ---------- */
   .ov { position: fixed; inset: 0; z-index: 90; background: color-mix(in srgb, var(--forest-deep) 78%, transparent); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 24px; }
@@ -415,6 +417,7 @@
         <span class="label">Office Hours</span>
         <p>Monday &ndash; Friday, 1pm &ndash; 5pm<br>Saturday &amp; Sunday, closed</p>
       </div>
+      <div class="menu-info-block"><span class="label">Residents</span><a href="https://ridgewoodapartments.org/portal/">Resident Portal &mdash; maintenance requests</a></div>
       <button class="btn btn-light js-open-tour" type="button" style="align-self:flex-start;">Schedule a Tour</button>
     </div>
   </div>
@@ -546,6 +549,7 @@
     </div>
     <div class="foot-bottom">
       <span>&copy; 2026 Ridgewood Apartments</span>
+      <a href="https://ridgewoodapartments.org/portal/">Resident Portal</a>
       <span>Equal Housing Opportunity</span>
     </div>
   </div>

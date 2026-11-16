@@ -119,6 +119,9 @@ def main():
         for aid, target in ARTIFACT.items():
             body = body.replace(f"https://claude.ai/code/artifact/{aid}", target)
         assert "claude.ai/code/artifact" not in body, f"{page}: artifact link left behind"
+        # the sources name the portal by its full address so the link also works
+        # from an artifact preview; on the site itself it is just a local path
+        body = body.replace(f"{SITE_URL}/portal/", "/portal/")
 
         # 3. strip any document scaffolding the source already had, so every
         #    page gets exactly one consistent head
