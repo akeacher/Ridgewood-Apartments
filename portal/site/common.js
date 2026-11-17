@@ -74,6 +74,44 @@
   };
   RW.input = function (name, attrs) { return h('input', Object.assign({ name: name, type: 'text' }, attrs || {})); };
   RW.textarea = function (name, attrs) { return h('textarea', Object.assign({ name: name }, attrs || {})); };
+
+  // The eye icons are built node by node rather than from markup, in keeping
+  // with the no-innerHTML rule above.
+  const EYE = ['M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z', 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'];
+  const EYE_OFF = ['M3 3l18 18', 'M10.6 5.1A10.9 10.9 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1',
+    'M6.5 6.6C3.6 8.5 2 12 2 12s3.6 7 10 7c2 0 3.8-.6 5.4-1.5', 'M9.9 9.9a3 3 0 0 0 4.2 4.2'];
+  function icon(paths) {
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(NS, 'svg');
+    const set = { viewBox: '0 0 24 24', width: '20', height: '20', fill: 'none', stroke: 'currentColor',
+      'stroke-width': '1.5', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true' };
+    for (const k of Object.keys(set)) svg.setAttribute(k, set[k]);
+    for (const d of paths) {
+      const p = document.createElementNS(NS, 'path');
+      p.setAttribute('d', d);
+      svg.append(p);
+    }
+    return svg;
+  }
+
+  /* A password box with an eye button that shows what has been typed.
+     It goes back to dots when the form is sent, so a password is never left
+     readable on screen, or handed to the browser as ordinary text. */
+  RW.password = function (name, attrs) {
+    const box = RW.input(name, Object.assign({ type: 'password' }, attrs || {}));
+    const btn = h('button', { type: 'button', class: 'pw-toggle' });
+    const show = (on) => {
+      box.type = on ? 'text' : 'password';
+      btn.replaceChildren(icon(on ? EYE_OFF : EYE));
+      btn.setAttribute('aria-label', on ? 'Hide password' : 'Show password');
+      btn.setAttribute('title', on ? 'Hide password' : 'Show password');
+      btn.setAttribute('aria-pressed', String(on));
+    };
+    box.hidePassword = () => show(false);
+    btn.addEventListener('click', () => { show(box.type === 'password'); box.focus(); });
+    show(false);
+    return h('span', { class: 'pw' }, box, btn);
+  };
   // options: [[value, label], …]
   RW.select = function (name, options, value) {
     const el = h('select', { name: name }, options.map((o) => h('option', { value: o[0] }, o[1])));
@@ -103,6 +141,7 @@
       ev.preventDefault();
       const btn = form.querySelector('button[type=submit]');
       msg.hidden = true;
+      for (const el of form.querySelectorAll('.pw input')) el.hidePassword();
       if (btn) btn.disabled = true;
       try {
         const note = await handler(RW.values(form), form);

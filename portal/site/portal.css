@@ -104,6 +104,16 @@ textarea { min-height: 110px; resize: vertical; }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
 .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .cols-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+/* password box with its show/hide eye */
+.pw { position: relative; display: block; }
+.pw input { padding-right: 50px; }
+.pw-toggle {
+  position: absolute; top: 1px; right: 1px; bottom: 1px; width: 46px; display: flex; align-items: center; justify-content: center;
+  appearance: none; background: none; border: 0; padding: 0; color: var(--ink-soft); cursor: pointer;
+}
+.pw-toggle:hover, .pw-toggle[aria-pressed="true"] { color: var(--ink); }
+.pw-toggle:focus-visible { outline-offset: -3px; }
+.pw input::-ms-reveal { display: none; }   /* Edge adds an eye of its own; one is enough */
 .check { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
 .check input { width: 19px; height: 19px; margin: 3px 0 0; accent-color: var(--gold); flex: none; }
 .choices { display: grid; gap: 8px; }

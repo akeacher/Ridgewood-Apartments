@@ -2,7 +2,7 @@
    apartment for the next technician, the resident roster, and the logs. */
 (function () {
   'use strict';
-  const { api, h, when, day, field, input, textarea, select, check, choices, onSubmit, chip, urgencyChip, tel } = window.RW;
+  const { api, h, when, day, field, input, password, textarea, select, check, choices, onSubmit, chip, urgencyChip, tel } = window.RW;
   const app = document.getElementById('app');
   const who = document.getElementById('who');
 
@@ -59,9 +59,9 @@
         'The one-time code that came with the portal.'),
       field('Your name', input('name', { autocomplete: 'name', required: true })),
       field('Your email', input('email', { type: 'email', autocomplete: 'username', autocapitalize: 'none', required: true })),
-      field('Choose a password', input('password', { type: 'password', autocomplete: 'new-password', required: true }),
+      field('Choose a password', password('password', { autocomplete: 'new-password', required: true }),
         'At least 10 characters. Pick one you do not use anywhere else.'),
-      field('Password again', input('again', { type: 'password', autocomplete: 'new-password', required: true })),
+      field('Password again', password('again', { autocomplete: 'new-password', required: true })),
       h('button', { class: 'btn', type: 'submit' }, 'Create manager account'),
       h('p', { class: 'msg', role: 'alert', hidden: true }));
     onSubmit(form, async (v) => {
@@ -81,7 +81,7 @@
         h('p', { class: 'lede' }, 'Work orders, completed records and apartment notes.')),
       notice ? h('p', { class: 'msg' }, notice) : null,
       field('Email', input('email', { type: 'email', autocomplete: 'username', autocapitalize: 'none', required: true })),
-      field('Password', input('password', { type: 'password', autocomplete: 'current-password', required: true })),
+      field('Password', password('password', { autocomplete: 'current-password', required: true })),
       h('button', { class: 'btn', type: 'submit' }, 'Sign in'),
       h('p', { class: 'msg', role: 'alert', hidden: true }),
       h('p', { class: 'fine' }, 'Forgotten your password? A manager can reset it under Team.'));
@@ -95,9 +95,9 @@
 
   function passwordFields() {
     return [
-      field('Current password', input('current', { type: 'password', autocomplete: 'current-password', required: true })),
-      field('New password', input('next', { type: 'password', autocomplete: 'new-password', required: true }), 'At least 10 characters.'),
-      field('New password again', input('again', { type: 'password', autocomplete: 'new-password', required: true })),
+      field('Current password', password('current', { autocomplete: 'current-password', required: true })),
+      field('New password', password('next', { autocomplete: 'new-password', required: true }), 'At least 10 characters.'),
+      field('New password again', password('again', { autocomplete: 'new-password', required: true })),
     ];
   }
   async function changePassword(v) {

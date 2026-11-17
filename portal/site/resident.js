@@ -1,7 +1,7 @@
 /* The resident side of the portal: sign in, ask for maintenance, follow it. */
 (function () {
   'use strict';
-  const { api, h, when, day, field, input, textarea, select, check, choices, onSubmit, chip, urgencyChip, tel, OFFICE } = window.RW;
+  const { api, h, when, day, field, input, password, textarea, select, check, choices, onSubmit, chip, urgencyChip, tel, OFFICE } = window.RW;
   const app = document.getElementById('app');
   const who = document.getElementById('who');
   let flash = '';
@@ -47,7 +47,7 @@
       field('Email address', input('email', { type: 'email', autocomplete: 'email', inputmode: 'email', autocapitalize: 'none', spellcheck: 'false', required: true })),
       field('Phone number', input('phone', { type: 'tel', autocomplete: 'tel', required: true })),
       field('Apartment number', input('unit', { autocomplete: 'off', autocapitalize: 'characters', required: true })),
-      field('Password', input('password', { type: 'password', autocomplete: 'current-password', required: true }),
+      field('Password', password('password', { autocomplete: 'current-password', required: true }),
         'The password the leasing office gave you.'),
       h('button', { class: 'btn', type: 'submit' }, 'Sign in'),
       h('p', { class: 'msg', role: 'alert', hidden: true }),
