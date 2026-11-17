@@ -154,9 +154,14 @@ def main():
 <link rel="icon" href="assets/img/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="assets/img/favicon.png">
 """
-        out = head + body.lstrip() + "\n</body>\n</html>\n"
+        # pages with a price slot load the script that fills it from the portal
+        tail = '<script src="assets/pricing.js" defer></script>\n' if "data-rw-price" in body else ""
+        out = head + body.lstrip() + "\n" + tail + "</body>\n</html>\n"
         open(os.path.join(DIST, page), "w", encoding="utf-8").write(out)
         report.append((page, before, len(out)))
+
+    # the script that shows the rents staff post from the portal
+    shutil.copy(os.path.join(SRC, "pricing.js"), os.path.join(DIST, "assets", "pricing.js"))
 
     # favicon + social preview from the assets we already have
     mark = os.path.join(ROOT, "assets", "logo-mark.png")

@@ -437,6 +437,12 @@
   .plan h3 { font-size: 1.7rem; font-weight: 400; line-height: 1.1; }
   .plan-meta { font-size: 0.66rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-soft); }
   .plan-sf { font-family: "Cormorant Garamond", serif; font-size: 1.15rem; font-style: italic; color: var(--gold); }
+  .plan-price { display: flex; flex-direction: column; gap: 5px; padding-top: 16px; border-top: 1px solid var(--line); }
+  /* Rent posted by staff from the portal; the slot stays hidden until one is. */
+  .rw-price-line { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+  .rw-price-from, .rw-price-per { font-size: 0.66rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-soft); }
+  .rw-price-amount { font-family: "Cormorant Garamond", Georgia, serif; font-size: 1.9rem; font-weight: 400; line-height: 1; color: var(--ink); }
+  .rw-price-note { font-size: 0.88rem; font-weight: 300; color: var(--ink-soft); }
   .plan p { font-size: 0.9rem; font-weight: 300; line-height: 1.72; color: var(--ink-soft); flex: 1; }
   .plan-foot { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
 
@@ -952,6 +958,7 @@
             <h3>The Wilson</h3>
             <span class="plan-meta">1 Bed &nbsp;|&nbsp; 1 Bath</span>
             <span class="plan-sf">Approximately 800 sq ft</span>
+            <span class="plan-price" data-rw-price="wilson" hidden></span>
             <p>The front door opens into a living room that runs the full depth of the home and steps out to a private balcony. The walk-in closet sits just off the entry.</p>
             <div class="plan-foot">
               <button class="link-ul js-view-plan" type="button" data-plan="wilson">View Details</button>
@@ -1107,6 +1114,7 @@
             <h3>The Battle Creek</h3>
             <span class="plan-meta">2 Bed &nbsp;|&nbsp; 1 Bath</span>
             <span class="plan-sf">Approximately 875 sq ft</span>
+            <span class="plan-price" data-rw-price="battlecreek" hidden></span>
             <p>Two bedrooms set along the outer wall, each with its own window and closet, off a living room that opens to a private balcony.</p>
             <div class="plan-foot">
               <button class="link-ul js-view-plan" type="button" data-plan="battlecreek">View Details</button>
@@ -1138,6 +1146,7 @@
             <h3>The Wakefield</h3>
             <span class="plan-meta">3 Bed &nbsp;|&nbsp; 1 Bath</span>
             <span class="plan-sf">Approximately 1,050 sq ft</span>
+            <span class="plan-price" data-rw-price="wakefield" hidden></span>
             <p>Our largest layout &mdash; three bedrooms and a full bath, with room for families and roommates alike.</p>
             <div class="plan-foot">
               <button class="link-ul js-view-plan" type="button" data-plan="wakefield">View Details</button>

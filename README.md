@@ -78,6 +78,13 @@ locks until staff unlock it after 30 in a day, and every attempt is in the staff
 *Activity log*. Passwords, resident and staff alike, are stored only as salted
 PBKDF2 hashes.
 
+**Rents on the main site.** A manager sets the rent for each floor plan under
+*Site pricing* in the staff portal. The home, Residences and Questions pages carry
+hidden slots (`data-rw-price="wilson"` and so on) that `website/pricing.js` fills
+from `/api/portal/pricing`. A plan with no rent entered shows no price, so the
+pages read as they always have until someone posts one. Never type a rent into
+the pages themselves.
+
 **Data** lives in a Cloudflare D1 database bound as `DB`. The Worker creates its
 own tables on first use and applies any later changes itself (`MIGRATIONS` in
 `portal/worker.js`), so there is nothing to run by hand.

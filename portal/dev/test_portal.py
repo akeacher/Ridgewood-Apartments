@@ -586,6 +586,46 @@ def run():
                                  "office_new_signup", "resident_signup", "resident_welcome"}, "email log lists every kind", kinds)
     check(j["emails"][0]["id"] > j["emails"][-1]["id"], "email log is newest first")
 
+    # ------------------------------------------------- rents on the main site
+    print("site pricing")
+    blank = {"rent": None, "from": False, "note": ""}
+    s, j = Client().get("/pricing")
+    check(s == 200 and j == {"plans": {"wilson": blank, "battlecreek": blank, "wakefield": blank}, "updated_at": None},
+          "the site is given no prices until staff enter some", j)
+    check(Client().get("/staff/pricing")[0] == 401 and Client().post("/staff/pricing", {})[0] == 401, "editing prices needs a staff session")
+    s, j = m.get("/staff/pricing")
+    check(s == 200 and j["plans"]["wilson"] == {"name": "The Wilson", "beds": "1 bedroom", "rent": None, "from": False, "note": ""}, "staff see each plan", j)
+    for bad in ("abc", "12.50", "-5", "0", "99999", "1150 a month"):
+        s, j = m.post("/staff/pricing", {"plans": {"wilson": {"rent": bad}}})
+        check(s == 400 and "The Wilson" in j.get("error", ""), "a rent of %r is refused" % bad, j)
+    check(Client().get("/pricing")[1]["plans"]["wilson"] == blank, "a refused edit changes nothing")
+    s, j = m.post("/staff/pricing", {"plans": {"wilson": {"rent": "$1,150", "from": True, "note": " Available December 1 "},
+                                               "battlecreek": {"rent": 1395, "from": False, "note": ""},
+                                               "wakefield": {"rent": "", "from": True, "note": ""}}})
+    check(s == 200 and j["changed"] == 2, "a manager posts rents", j)
+    s, j = Client().get("/pricing")
+    check(j["plans"] == {"wilson": {"rent": 1150, "from": True, "note": "Available December 1"},
+                         "battlecreek": {"rent": 1395, "from": False, "note": ""}, "wakefield": blank} and j["updated_at"],
+          "the site is given exactly what was posted", j)
+    check("updated_by" not in j and "name" not in j["plans"]["wilson"], "…and nothing about who posted it")
+    s, j = m.get("/staff/pricing")
+    check(j["updated_by"] == "Andrew Manager" and j["plans"]["battlecreek"]["rent"] == 1395, "staff see who last changed them", j)
+    check(m.post("/staff/pricing", {"plans": {"battlecreek": {"rent": 1425, "from": False, "note": ""}}})[1]["changed"] == 1,
+          "one plan can be changed on its own")
+    j = Client().get("/pricing")[1]["plans"]
+    check(j["battlecreek"]["rent"] == 1425 and j["wilson"]["rent"] == 1150, "…leaving the others as they were", j)
+    check(m.post("/staff/pricing", {"plans": {"battlecreek": {"rent": "1425", "from": False, "note": ""}}})[1]["changed"] == 0,
+          "saving the same figure again is not a change")
+    check(m.post("/staff/pricing", {"plans": {"wakefield": {"rent": "", "note": "<b>Waitlist</b> only"}}})[0] == 200
+          and Client().get("/pricing")[1]["plans"]["wakefield"] == {"rent": None, "from": False, "note": "<b>Waitlist</b> only"},
+          "a note can stand without a price, and is stored as plain text")
+    check(m.post("/staff/pricing", {"plans": {"wilson": {"rent": "", "from": True, "note": ""}}})[0] == 200
+          and Client().get("/pricing")[1]["plans"]["wilson"] == blank, "clearing a rent takes the price off the site")
+    log = [e["detail"] for e in m.get("/staff/activity")[1]["activity"] if e["event"] == "pricing_changed"]
+    check(len(log) == 4 and "The Battle Creek: $1,395 → $1,425" in log[2] and "The Wilson: no price → from $1,150 (Available December 1)" in log[3],
+          "every price change is in the activity log, old figure and new", log)
+    m.post("/staff/pricing", {"plans": {"wilson": {"rent": 1150, "from": True, "note": ""}}})
+
     # --------------------------------------------------------------- the team
     print("team")
     tech_new = {"name": "Sam Tech", "email": "sam@ridgewood.test", "password": "temporary pass 1", "role": "tech"}
@@ -609,6 +649,9 @@ def run():
     check(k.post("/staff/residents", maria)[0] == 403, "technician cannot edit the roster")
     check(k.post("/staff/team", tech_new)[0] == 403, "technician cannot add staff")
     check(k.post("/staff/settings", {"office_email": ""})[0] == 403, "technician cannot change settings")
+    check(k.get("/staff/pricing")[0] == 200, "technician can see the posted rents")
+    check(k.post("/staff/pricing", {"plans": {"wilson": {"rent": 1}}})[0] == 403 and Client().get("/pricing")[1]["plans"]["wilson"]["rent"] == 1150,
+          "technician cannot change them")
     Client().post("/signup", dict(new, email="wait@example.com", name="Wendy Waits", unit="130"))
     wid = sql("SELECT id FROM tenants WHERE email = 'wait@example.com'")[0]["id"]
     for action in ("approve", "decline", "reset-password"):

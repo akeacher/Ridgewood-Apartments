@@ -31,6 +31,13 @@ const OPEN_STATUSES = ['new', 'scheduled', 'in_progress', 'on_hold'];
 const STATUS_LABEL = { new: 'Received', scheduled: 'Scheduled', in_progress: 'In progress',
   on_hold: 'On hold', completed: 'Completed', cancelled: 'Cancelled' };
 const BUILDINGS = ['', '1871', '1885'];
+// The floor plans on the main site. Their ids match the data-rw-price slots in the pages.
+const PLANS = [
+  { id: 'wilson', name: 'The Wilson', beds: '1 bedroom' },
+  { id: 'battlecreek', name: 'The Battle Creek', beds: '2 bedrooms' },
+  { id: 'wakefield', name: 'The Wakefield', beds: '3 bedrooms' },
+];
+const MAX_RENT = 20000;
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS tenants (
@@ -1032,6 +1039,67 @@ async function staffSaveSettings(c) {
   await logActivity(c, 'staff', c.user.id, c.user.name, 'settings_changed', changes.map((x) => x[0]).join(', '));
   return json({ ok: true });
 }
+/* ------------------------------------------------- rents on the main site */
+
+// Kept as one small JSON value in settings. A plan with no rent and no note
+// shows nothing on the site, which is how every plan starts.
+const money = (n) => '$' + String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+function readPricing(settings) {
+  let saved = {};
+  try { saved = JSON.parse(settings.pricing || '{}') || {}; } catch (e) { saved = {}; }
+  const plans = {};
+  for (const p of PLANS) {
+    const v = (saved.plans && saved.plans[p.id]) || {};
+    const rent = Number.isInteger(v.rent) && v.rent > 0 && v.rent <= MAX_RENT ? v.rent : null;
+    plans[p.id] = { name: p.name, beds: p.beds, rent, from: rent ? !!v.from : false, note: str(v.note, 80) };
+  }
+  return { plans, updated_at: saved.updated_at || null, updated_by: saved.updated_by || null };
+}
+const describePrice = (v) => (v.rent ? (v.from ? 'from ' : '') + money(v.rent) : 'no price') + (v.note ? ` (${v.note})` : '');
+
+// Public: the main site reads this to fill in its price slots.
+async function publicPricing(c) {
+  const pricing = readPricing(await getSettings(c.env));
+  const plans = {};
+  for (const p of PLANS) {
+    const v = pricing.plans[p.id];
+    plans[p.id] = { rent: v.rent, from: v.from, note: v.note };
+  }
+  return json({ plans, updated_at: pricing.updated_at });
+}
+async function staffGetPricing(c) {
+  return json(readPricing(await getSettings(c.env)));
+}
+async function staffSavePricing(c) {
+  const b = await readBody(c);
+  const sent = b.plans && typeof b.plans === 'object' ? b.plans : {};
+  const before = readPricing(await getSettings(c.env));
+  const plans = {}, changes = [];
+  for (const p of PLANS) {
+    const v = sent[p.id] && typeof sent[p.id] === 'object' ? sent[p.id] : before.plans[p.id];
+    // "$1,150", "1150" and 1150 are all the same rent; blank means do not show one
+    const typed = String(v.rent === null || v.rent === undefined ? '' : v.rent).replace(/[$,\s]/g, '');
+    let rent = null;
+    if (typed !== '') {
+      if (!/^\d+$/.test(typed) || Number(typed) < 1 || Number(typed) > MAX_RENT) {
+        throw new HttpError(400, `Enter the rent for ${p.name} in whole dollars, like 1150, or leave it blank.`);
+      }
+      rent = Number(typed);
+    }
+    plans[p.id] = { rent, from: rent ? !!v.from : false, note: str(v.note, 80) };
+    const was = before.plans[p.id];
+    if (was.rent !== rent || was.from !== plans[p.id].from || was.note !== plans[p.id].note) {
+      changes.push(`${p.name}: ${describePrice(was)} → ${describePrice(plans[p.id])}`);
+    }
+  }
+  if (changes.length) {
+    await run(c.env, 'INSERT INTO settings (name, value) VALUES (?, ?) ON CONFLICT(name) DO UPDATE SET value = excluded.value',
+      'pricing', JSON.stringify({ plans, updated_at: nowIso(), updated_by: c.user.name }));
+    await logActivity(c, 'staff', c.user.id, c.user.name, 'pricing_changed', changes.join('; '));
+  }
+  return json({ ok: true, changed: changes.length });
+}
+
 async function staffEmails(c) {
   return json({ emails: await all(c.env,
     'SELECT id, created_at, to_addr, subject, body, kind, work_order_id, status, detail FROM email_log ORDER BY id DESC LIMIT 300') });
@@ -1050,6 +1118,7 @@ async function health(c) {
 // [method, path, handler, who may call it]
 const ROUTES = [
   ['GET', /^\/health$/, health],
+  ['GET', /^\/pricing$/, publicPricing],
   ['POST', /^\/login$/, tenantLogin],
   ['POST', /^\/logout$/, (c) => endSession(c, 'tenant')],
   ['GET', /^\/signup$/, signupInfo],
@@ -1087,6 +1156,8 @@ const ROUTES = [
   ['GET', /^\/staff\/team$/, staffTeam, 'manager'],
   ['POST', /^\/staff\/team$/, staffAddMember, 'manager'],
   ['POST', /^\/staff\/team\/(\d+)$/, staffEditMember, 'manager'],
+  ['GET', /^\/staff\/pricing$/, staffGetPricing, 'staff'],
+  ['POST', /^\/staff\/pricing$/, staffSavePricing, 'manager'],
   ['GET', /^\/staff\/settings$/, staffGetSettings, 'manager'],
   ['POST', /^\/staff\/settings$/, staffSaveSettings, 'manager'],
 ];

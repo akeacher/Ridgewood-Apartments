@@ -131,7 +131,7 @@
       h('button', { class: 'btn btn-sm btn-ghost', type: 'button', onclick: signOut }, 'Sign out'));
     const links = [['orders', 'Work orders'], ['records', 'Completed records'], ['unit', 'Apartment history'],
       ['residents', 'Residents'], ['emails', 'Email log']];
-    if (isManager()) links.push(null, ['activity', 'Activity log'], ['team', 'Team'], ['settings', 'Settings']);
+    if (isManager()) links.push(null, ['pricing', 'Site pricing'], ['activity', 'Activity log'], ['team', 'Team'], ['settings', 'Settings']);
     links.push(null, ['account', 'My account']);
     main = h('section', { id: 'main' });
     app.replaceChildren(h('div', { class: 'staff-shell' },
@@ -150,8 +150,8 @@
   }
 
   const VIEWS = { orders: ordersView, new: newOrderView, records: recordsView, unit: unitView, residents: residentsView,
-    emails: emailsView, activity: activityView, team: teamView, settings: settingsView, account: accountView };
-  const MANAGER_ONLY = ['activity', 'team', 'settings'];
+    emails: emailsView, pricing: pricingView, activity: activityView, team: teamView, settings: settingsView, account: accountView };
+  const MANAGER_ONLY = ['pricing', 'activity', 'team', 'settings'];
 
   async function route() {
     if (!S.me || !main) return;
@@ -561,7 +561,7 @@
     resident_removed: 'Removed a resident', resident_restored: 'Restored a resident', resident_edited: 'Edited a resident',
     resident_unlocked: 'Unlocked a resident', team_member_added: 'Added a team member', team_member_changed: 'Changed a team member',
     team_password_reset: 'Reset a password', password_changed: 'Changed their password', settings_changed: 'Changed settings',
-    records_exported: 'Downloaded records', portal_set_up: 'Set up the portal',
+    records_exported: 'Downloaded records', portal_set_up: 'Set up the portal', pricing_changed: 'Changed site pricing',
     account_created: 'Created an account', resident_approved: 'Approved an account', resident_declined: 'Declined a sign-up',
     resident_password_changed: 'Changed their password', resident_password_reset: 'Reset a resident password' };
   async function activityView() {
@@ -628,6 +628,56 @@
           } }, t.active ? 'Remove' : 'Restore')]));
     })));
     return nodes;
+  }
+
+  /* ---------------------------------------------- rents shown on the site */
+  const dollars = (n) => '$' + String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  async function pricingView() {
+    const d = await api('/staff/pricing');
+    const ids = Object.keys(d.plans);
+    const form = h('form', { class: 'stack', novalidate: true },
+      ids.map((id) => {
+        const p = d.plans[id];
+        return h('div', { class: 'card stack' },
+          h('div', { class: 'card-head' }, h('h3', {}, p.name), h('span', { class: 'fine' }, p.beds + ' · 1 bath')),
+          h('div', { class: 'cols' },
+            field('Monthly rent', h('span', { class: 'money' },
+              input(id + '_rent', { inputmode: 'numeric', autocomplete: 'off', value: p.rent || '', placeholder: 'No price shown' })),
+              'Whole dollars. Leave it blank to show no price for this plan.'),
+            field('Note under the price (optional)', input(id + '_note', { value: p.note, maxlength: 80, autocomplete: 'off',
+              placeholder: 'Available December 1' }))),
+          check(id + '_from', 'Show it as a starting price — “From $…”', p.from),
+          h('p', { class: 'msg ok preview', 'data-preview': id }));
+      }),
+      h('div', { class: 'actions' },
+        h('button', { class: 'btn', type: 'submit' }, 'Save and publish'),
+        h('a', { href: '/#residences', target: '_blank', rel: 'noopener' }, 'Open the main site')),
+      h('p', { class: 'msg', role: 'alert', hidden: true }));
+
+    // what each plan will read as on the site, as it is typed
+    const preview = () => ids.forEach((id) => {
+      const e = form.elements;
+      const typed = e[id + '_rent'].value.replace(/[$,\s]/g, '');
+      const note = e[id + '_note'].value.trim();
+      const price = /^\d+$/.test(typed) && Number(typed) > 0
+        ? (e[id + '_from'].checked ? 'From ' : '') + dollars(Number(typed)) + ' per month' : '';
+      form.querySelector('[data-preview="' + id + '"]').textContent = 'On the site: '
+        + (typed && !price ? 'that rent is not a whole dollar amount' : [price, note].filter(Boolean).join(' · ') || 'no price shown for this plan');
+    });
+    form.addEventListener('input', preview);
+    preview();
+
+    onSubmit(form, async (v) => {
+      const plans = {};
+      ids.forEach((id) => { plans[id] = { rent: v[id + '_rent'], from: v[id + '_from'] === 'on', note: v[id + '_note'] }; });
+      const out = await api('/staff/pricing', { plans: plans });
+      flash = out.changed ? 'Saved. The main site is showing the new pricing now.' : 'Nothing was changed.';
+      route();
+    });
+    return [pageHead('Site pricing', 'The rent shown for each floor plan on the main site — on the home page, the Residences page and the Questions page. '
+      + 'Changes go live as soon as you save.'),
+      d.updated_at ? h('p', { class: 'fine last-change' }, 'Last changed ' + when(d.updated_at) + (d.updated_by ? ' by ' + d.updated_by : '') + '.') : null,
+      form];
   }
 
   /* --------------------------------------------------------------- settings */

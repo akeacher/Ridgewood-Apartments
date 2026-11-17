@@ -226,6 +226,12 @@
   .pl-eyebrow { font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); }
   .pl-side h2 { margin-top: 14px; font-size: clamp(2rem, 4vw, 3rem); line-height: 1.1; }
   .pl-side > p { margin-top: 20px; font-size: 1rem; line-height: 1.8; color: var(--ink-soft); }
+  .pl-price { margin-top: 18px; display: flex; flex-direction: column; gap: 6px; }
+  /* Rent posted by staff from the portal; the slot stays hidden until one is. */
+  .rw-price-line { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+  .rw-price-from, .rw-price-per { font-size: 0.66rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-soft); }
+  .rw-price-amount { font-family: "Cormorant Garamond", Georgia, serif; font-size: 2.3rem; font-weight: 400; line-height: 1; color: var(--ink); }
+  .rw-price-note { font-size: 0.88rem; font-weight: 300; color: var(--ink-soft); }
 
   .pl-specs { display: flex; gap: 34px; flex-wrap: wrap; margin-top: 30px; padding-top: 26px; border-top: 1px solid var(--line); }
   .pl-specs div { display: flex; flex-direction: column; gap: 5px; }
@@ -647,6 +653,7 @@
         <div class="pl-side">
           <span class="pl-eyebrow">1 Bedroom</span>
           <h2>The Wilson</h2>
+          <div class="pl-price" data-rw-price="wilson" hidden></div>
           <p>The front door opens into a living room that runs the full depth of the home and steps out through a slider to a private balcony. A spacious walk-in closet sits just off the entry. The galley kitchen stays semi-open to the living room and opens at its far end into a dining area under a window.</p>
           <div class="pl-specs">
             <div><strong>1</strong><span>Bedroom</span></div>
@@ -805,6 +812,7 @@
         <div class="pl-side">
           <span class="pl-eyebrow">2 Bedrooms</span>
           <h2>The Battle Creek</h2>
+          <div class="pl-price" data-rw-price="battlecreek" hidden></div>
           <p>The entry opens into a living room that runs the depth of the home and steps out to a private balcony, with a spacious walk-in closet right beside the door. A galley kitchen sits in the middle, open at both ends. A hallway runs back to the bath and to both bedrooms, each on the outer wall with a window and its own closet.</p>
           <div class="pl-specs">
             <div><strong>2</strong><span>Bedrooms</span></div>
@@ -839,6 +847,7 @@
         <div class="pl-side">
           <span class="pl-eyebrow">3 Bedrooms</span>
           <h2>The Wakefield</h2>
+          <div class="pl-price" data-rw-price="wakefield" hidden></div>
           <p>Our largest layout &mdash; three bedrooms and a full bath, built for families and roommates who need room to spread out.</p>
           <div class="pl-specs">
             <div><strong>3</strong><span>Bedrooms</span></div>
