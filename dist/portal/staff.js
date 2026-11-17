@@ -192,7 +192,23 @@
     form.addEventListener('submit', (ev) => { ev.preventDefault(); onSearch(box.value.trim()); });
     return form;
   }
+  // an email address that has to wrap breaks after the @, not in the middle of a word
+  const addr = (e) => {
+    const at = String(e || '').lastIndexOf('@');
+    return at > 0 ? [e.slice(0, at + 1), h('wbr'), e.slice(at + 1)] : e;
+  };
+
+  // Every cell is labelled with its column heading. On a phone the tables are laid
+  // out as a stack of cards and those labels stand in for the header row (portal.css).
   function tableOf(heads, rows) {
+    for (const tr of rows) {
+      let last = null;
+      Array.from(tr.children).forEach((td, i) => {
+        if (heads[i]) td.setAttribute('data-label', heads[i]);
+        if (td.textContent.trim()) last = td; else td.classList.add('blank');
+      });
+      if (last) last.classList.add('end');
+    }
     return h('div', { class: 'table-wrap' }, h('table', {},
       h('thead', {}, h('tr', {}, heads.map((t) => h('th', { scope: 'col' }, t)))), h('tbody', {}, rows)));
   }
@@ -513,7 +529,7 @@
       h('td', { class: 'nowrap' }, r.unit + (r.building ? ' · ' + r.building : '')),
       h('td', {}, r.name, r.active ? null : h('span', { class: 'chip chip-off' }, 'Removed'),
         r.source === 'self' ? h('div', { class: 'fine' }, 'Signed up online') : null),
-      h('td', {}, r.email), h('td', { class: 'nowrap' }, tel(r.phone)),
+      h('td', {}, addr(r.email)), h('td', { class: 'nowrap' }, tel(r.phone)),
       h('td', { class: 'fine' }, r.has_password ? 'Their own' : 'Apartment number'),
       h('td', { class: 'nowrap' },
         r.active ? h('button', { class: 'link-btn', type: 'button', title: 'Clear a sign-in lock after too many wrong attempts',
@@ -548,7 +564,7 @@
       : e.status === 'failed' ? h('span', { class: 'chip chip-gold' }, 'Failed') : h('span', { class: 'chip chip-off' }, 'Not sent'));
     return [pageHead('Email log', 'Every notification the portal has produced, whether or not it could be delivered.'),
       list.length ? tableOf(['When', 'To', 'Message', 'Type', 'Delivery'], list.map((e) => h('tr', {},
-        h('td', { class: 'nowrap' }, when(e.created_at)), h('td', {}, e.to_addr),
+        h('td', { class: 'nowrap' }, when(e.created_at)), h('td', {}, addr(e.to_addr)),
         h('td', {}, h('details', {}, h('summary', {}, e.subject), h('p', { class: 'pre fine' }, e.body))),
         h('td', {}, EMAIL_KIND[e.kind] || e.kind),
         h('td', {}, state(e), e.detail ? h('div', { class: 'fine' }, e.detail) : null))))
@@ -616,7 +632,7 @@
       const self = t.id === S.me.id;
       return h('tr', { class: t.active ? '' : 'off' },
         h('td', {}, t.name, self ? h('span', { class: 'fine' }, ' (you)') : null, t.active ? null : h('span', { class: 'chip chip-off' }, 'Removed')),
-        h('td', {}, t.email), h('td', {}, t.role === 'manager' ? 'Manager' : 'Technician'),
+        h('td', {}, addr(t.email)), h('td', {}, t.role === 'manager' ? 'Manager' : 'Technician'),
         h('td', { class: 'nowrap' }, t.last_login_at ? when(t.last_login_at) : 'Never'),
         h('td', { class: 'nowrap' }, self ? null : [
           t.active ? h('button', { class: 'link-btn', type: 'button', onclick: () => act(t.id, { role: t.role === 'manager' ? 'tech' : 'manager' },

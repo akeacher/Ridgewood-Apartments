@@ -209,7 +209,7 @@ details.more[open] summary { margin-bottom: 12px; }
 .table-wrap { overflow-x: auto; background: var(--white); border: 1px solid var(--line); }
 table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
 th { text-align: left; font-size: 0.64rem; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft); padding: 12px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-td { padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; overflow-wrap: anywhere; }
+td { padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; overflow-wrap: break-word; }
 tr:last-child td { border-bottom: 0; }
 tr.off td { color: var(--ink-soft); }
 td.nowrap { white-space: nowrap; }
@@ -226,6 +226,30 @@ td .link-btn + .link-btn { margin-left: 12px; }
   .side a { border-left: 0; border-bottom: 3px solid transparent; white-space: nowrap; padding: 10px 12px; }
   .side a.on { border-bottom-color: var(--gold); background: none; }
   .side .side-gap { display: none; }
+
+  /* Tables become a stack of cards, one per row, each cell labelled with its
+     column. Five columns side by side do not fit a phone or small tablet: the
+     narrow ones were squeezed until an email address ran down the screen a
+     letter at a time. */
+  .table-wrap { overflow: visible; background: none; border: 0; }
+  .table-wrap table, .table-wrap tbody, .table-wrap tr, .table-wrap td { display: block; width: 100%; }
+  .table-wrap thead { display: none; }
+  .table-wrap tr { background: var(--white); border: 1px solid var(--line); padding: 2px 16px; }
+  .table-wrap tr + tr { margin-top: 10px; }
+  .table-wrap td { padding: 10px 0; overflow-wrap: anywhere; }
+  /* every card has its dividers, including the last one (desktop drops them on the last row) */
+  .table-wrap td, .table-wrap tr:last-child td { border-bottom: 1px solid var(--line); }
+  .table-wrap td.end, .table-wrap tr:last-child td.end { border-bottom: 0; }
+  .table-wrap td.blank { display: none; }
+  .table-wrap td.nowrap { white-space: normal; }
+  .table-wrap td[data-label] { position: relative; padding-left: 98px; }
+  .table-wrap td[data-label]::before {
+    content: attr(data-label); position: absolute; left: 0; top: 14px; width: 88px;
+    font-size: 0.6rem; font-weight: 500; letter-spacing: 0.14em; line-height: 1.3; text-transform: uppercase; color: var(--ink-soft);
+  }
+  /* the row's buttons, which have no column heading */
+  .table-wrap td:not([data-label]) { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+  .table-wrap td .link-btn + .link-btn { margin-left: 0; }
 }
 @media (max-width: 640px) {
   h1 { font-size: 1.9rem; } h2 { font-size: 1.5rem; }
