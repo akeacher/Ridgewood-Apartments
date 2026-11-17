@@ -67,15 +67,20 @@ notes that stay with an apartment for the next technician.
 | `portal/dev/` | Local test rig — nothing in it is deployed. |
 | `portal/SETUP-CODE.txt` | The one-time code for creating the first manager account. **Not in git.** |
 
-**How sign-in works.** A resident enters email, phone number and apartment number,
-which must match an entry staff have added under *Residents*; the password is the
-apartment number. Because that password is guessable, sign-in locks after 10 wrong
-tries in 15 minutes and locks until staff unlock it after 30 in a day, and every
-attempt is in the staff *Activity log*. Staff use an email and their own password
-(stored only as a salted PBKDF2 hash).
+**How sign-in works.** A resident signs in with email, phone number, apartment
+number and a password. Residents can create their own account at `/portal/`,
+choosing their own password; by default a manager approves each new account under
+*Residents* before it can sign in (*Settings* can make sign-up instant or switch it
+off). Residents added by staff start with their apartment number as the password
+and are prompted to choose their own; a manager can reset a forgotten password
+back to the apartment number. Sign-in locks after 10 wrong tries in 15 minutes and
+locks until staff unlock it after 30 in a day, and every attempt is in the staff
+*Activity log*. Passwords, resident and staff alike, are stored only as salted
+PBKDF2 hashes.
 
 **Data** lives in a Cloudflare D1 database bound as `DB`. The Worker creates its
-own tables on first use, so there are no migrations to run.
+own tables on first use and applies any later changes itself (`MIGRATIONS` in
+`portal/worker.js`), so there is nothing to run by hand.
 
 **Email.** Every notification is written to the *Email log*. They are only
 actually sent once a `RESEND_API_KEY` secret is added to the Worker in the

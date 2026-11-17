@@ -135,7 +135,8 @@
   /* Wire a form up: disables its button while the handler runs and shows what
      came back. The handler returns a sentence to show on success, or nothing. */
   RW.onSubmit = function (form, handler) {
-    let msg = form.querySelector('.msg');
+    // the form's own result line, not a notice that happens to sit above the fields
+    let msg = form.querySelector('.msg[role]');
     if (!msg) { msg = h('p', { class: 'msg', role: 'status', hidden: true }); form.append(msg); }
     form.addEventListener('submit', async (ev) => {
       ev.preventDefault();

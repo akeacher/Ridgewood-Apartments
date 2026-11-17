@@ -126,6 +126,28 @@ def main():
 def run():
     t0 = time.time()
 
+    # ------------------------------------------- upgrading a database in use
+    # The live database was created before residents could choose a password.
+    # Recreate that shape, with someone in it, and let the Worker upgrade it.
+    print("upgrade")
+    dev("sql", {"sql": """CREATE TABLE tenants (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        unit TEXT NOT NULL, unit_key TEXT NOT NULL, building TEXT NOT NULL DEFAULT '',
+        name TEXT NOT NULL, email TEXT NOT NULL, phone TEXT NOT NULL, phone_key TEXT NOT NULL,
+        active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)"""})
+    dev("sql", {"sql": "INSERT INTO tenants (unit, unit_key, building, name, email, phone, phone_key, active, created_at, updated_at) "
+                       "VALUES ('501','501','1871','Old Timer','old@example.com','651-555-0900','6515550900',1,'2026-11-16T00:00:00.000Z','2026-11-16T00:00:00.000Z')"})
+    check(Client().get("/health")[0] == 200, "the Worker starts against the older database")
+    row = sql("SELECT name, pw_hash, pending, source FROM tenants WHERE email = 'old@example.com'")[0]
+    check(row == {"name": "Old Timer", "pw_hash": None, "pending": 0, "source": "staff"}, "existing residents are kept and given the new fields", row)
+    check(sql("SELECT value FROM settings WHERE name = 'schema_version'")[0]["value"] == "2", "the upgrade is recorded")
+    check(Client().get("/health")[0] == 200 and len(sql("SELECT id FROM tenants")) == 1, "starting again does not repeat it")
+    old = Client()
+    check(tenant_login(old, "old@example.com", "651-555-0900", "501")[0] == 200, "a resident from before the upgrade still signs in with their apartment number")
+    check(old.get("/me")[1]["resident"]["has_password"] is False, "…and is shown as not having chosen a password yet")
+    dev("sql", {"sql": "DELETE FROM tenants"}); dev("sql", {"sql": "DELETE FROM sessions"})
+    dev("sql", {"sql": "DELETE FROM activity_log"}); dev("sql", {"sql": "DELETE FROM login_attempts"})
+
     # ------------------------------------------------------------ before setup
     print("before setup")
     a = Client()
@@ -232,7 +254,8 @@ def run():
     check(s == 200 and "rw_tenant" in t.cookies, "sign-in tolerates formatting differences", j)
     s, me = t.get("/me")
     check(s == 200 and me["resident"] == {"name": "Maria Lopez", "unit": "204", "building": "1871",
-                                          "email": "maria@example.com", "phone": "651-555-0101"}, "resident sees their own details", me)
+                                          "email": "maria@example.com", "phone": "651-555-0101", "has_password": False},
+          "resident sees their own details", me)
     check(me["requests"] == [] and "Plumbing" in me["categories"], "new resident has no requests")
     check(t.get("/staff/workorders")[0] == 401, "a resident session does not open the staff side")
 
@@ -267,6 +290,97 @@ def run():
     check(tenant_login(ipc, "ipcap@example.com", "651-555-0107", "307")[0] == 429, "a device guessing across many addresses is cut off")
     ipc2 = Client()
     check(tenant_login(ipc2, "ipcap@example.com", "651-555-0107", "307")[0] == 200, "…without locking out the real resident elsewhere")
+
+    # --------------------------------------------------------- resident sign-up
+    print("resident sign-up")
+    check(Client().get("/signup")[1] == {"mode": "approval"}, "sign-up is offered, with approval, unless the office says otherwise")
+    su = Client()
+    new = {"name": "Nora Quinn", "email": "Nora@Example.com", "phone": "651 555 0110", "unit": "118", "building": "1885",
+           "password": "nora-chosen-pass"}
+    for bad, why in ((dict(new, password="short"), "a real password"), (dict(new, email="x"), "a valid email"),
+                     (dict(new, phone="123"), "a phone number"), (dict(new, name=""), "a name"),
+                     (dict(new, unit=""), "an apartment number"), (dict(new, building=""), "a building")):
+        check(su.post("/signup", bad)[0] == 400, "sign-up needs " + why)
+    check(su.post("/signup", dict(new, email="maria@example.com"))[0] == 409, "sign-up refuses an email that already has an account")
+    s, j = su.post("/signup", new)
+    check(s == 200 and j == {"ok": True, "pending": True} and "rw_tenant" not in su.cookies, "sign-up creates an account that waits for approval", j)
+    check(su.post("/signup", new)[0] == 409, "the same sign-up twice is refused")
+    row = sql("SELECT * FROM tenants WHERE email = 'nora@example.com'")[0]
+    check(row["pending"] == 1 and row["source"] == "self" and row["pw_hash"].startswith("pbkdf2") and row["phone"] == "651-555-0110"
+          and "nora-chosen" not in json.dumps(row), "the chosen password is stored only as a salted hash", row)
+    s, j = tenant_login(su, "nora@example.com", "651-555-0110", "118", "nora-chosen-pass")
+    check(s == 403 and j.get("code") == "pending" and "rw_tenant" not in su.cookies, "a waiting account cannot sign in yet", j)
+    check(tenant_login(su, "nora@example.com", "651-555-0110", "118", "wrong-password")[0] == 401, "…and a wrong password is told nothing about it")
+    check(tenant_login(su, "nora@example.com", "651-555-0110", "118", "118")[0] == 401, "the apartment number is not the password for a self-made account")
+    kinds = [x["kind"] for x in sql("SELECT kind FROM email_log ORDER BY id DESC LIMIT 2")]
+    check(sorted(kinds) == ["office_new_signup", "resident_signup"], "the office and the resident are both told (and it is logged)", kinds)
+    check(m.get("/staff/me")[1]["pending_residents"] == 1 and m.get("/staff/workorders")[1]["pending_residents"] == 1, "staff are shown that someone is waiting")
+    first = m.get("/staff/residents")[1]["residents"][0]
+    check(first["email"] == "nora@example.com" and first["pending"] is True and first["source"] == "self" and first["has_password"] is True,
+          "waiting accounts head the roster", first)
+    maria_row = [r for r in m.get("/staff/residents")[1]["residents"] if r["email"] == "maria@example.com"][0]
+    check(maria_row["pending"] is False and maria_row["source"] == "staff" and maria_row["has_password"] is False, "office-added residents are marked as such", maria_row)
+    check(m.post("/staff/residents/%d/approve" % ids["maria@example.com"])[0] == 404, "only a waiting account can be approved")
+    check(m.post("/staff/residents/%d/approve" % first["id"])[0] == 200, "a manager approves the account")
+    check(m.post("/staff/residents/%d/approve" % first["id"])[0] == 404, "…once")
+    check(sql("SELECT kind, to_addr FROM email_log ORDER BY id DESC LIMIT 1")[0] == {"kind": "resident_welcome", "to_addr": "nora@example.com"},
+          "the resident is told their account is ready")
+    check(tenant_login(su, "nora@example.com", "651 555 0110", "apt 118", "nora-chosen-pass")[0] == 200, "an approved resident signs in with the password they chose")
+    check(su.get("/me")[1]["resident"] == {"name": "Nora Quinn", "unit": "118", "building": "1885", "email": "nora@example.com",
+                                           "phone": "651-555-0110", "has_password": True}, "…and sees their own account")
+    check(new_request(su, description="Bedroom window will not latch.", category="Doors, locks & windows")[0] == 200, "…and can send a request")
+    check(m.get("/staff/me")[1]["pending_residents"] == 0, "nobody is left waiting")
+
+    stranger = Client()
+    stranger.post("/signup", dict(new, email="stranger@example.com", name="Not A Resident", unit="999"))
+    sid = sql("SELECT id FROM tenants WHERE email = 'stranger@example.com'")[0]["id"]
+    check(m.post("/staff/residents/%d/decline" % ids["maria@example.com"])[0] == 404, "only a waiting account can be declined")
+    check(m.post("/staff/residents/%d/decline" % sid)[0] == 200, "a manager declines a sign-up")
+    check(sql("SELECT COUNT(*) AS n FROM tenants WHERE email = 'stranger@example.com'")[0]["n"] == 0, "…which removes it")
+    check(tenant_login(stranger, "stranger@example.com", "651-555-0110", "999", "nora-chosen-pass")[0] == 401, "…so it can never sign in")
+
+    # residents changing their password
+    check(su.post("/password", {"current": "wrong-one", "next": "nora-second-pass"})[0] == 401, "changing a password needs the current one")
+    check(su.post("/password", {"current": "nora-chosen-pass", "next": "short"})[0] == 400, "a new password must be long enough")
+    check(su.post("/password", {"current": "nora-chosen-pass", "next": "nora-chosen-pass"})[0] == 400, "a new password must differ")
+    su2 = Client()
+    tenant_login(su2, "nora@example.com", "651-555-0110", "118", "nora-chosen-pass")
+    check(su.post("/password", {"current": "nora-chosen-pass", "next": "nora-second-pass"})[0] == 200, "a resident changes their password")
+    check(su.get("/me")[0] == 200 and su2.get("/me")[0] == 401, "…which signs out their other devices only")
+    check(tenant_login(Client(), "nora@example.com", "651-555-0110", "118", "nora-chosen-pass")[0] == 401, "…and retires the old password")
+    check(tenant_login(Client(), "nora@example.com", "651-555-0110", "118", "nora-second-pass")[0] == 200, "…in favour of the new one")
+    check(Client().post("/password", {"current": "x", "next": "whatever-long"})[0] == 401, "changing a password needs a session")
+
+    # a resident the office added swaps the apartment-number password for their own
+    check(ipc2.post("/password", {"current": "307", "next": "my-own-pass-307"})[0] == 200, "an office-added resident chooses their own password")
+    check(tenant_login(Client(), "ipcap@example.com", "651-555-0107", "307")[0] == 401, "…after which the apartment number no longer works")
+    check(tenant_login(Client(), "ipcap@example.com", "651-555-0107", "307", "my-own-pass-307")[0] == 200, "…and their own password does")
+    check(m.post("/staff/residents/%d/reset-password" % ids["ipcap@example.com"])[0] == 200, "a manager resets a forgotten password")
+    check(ipc2.get("/me")[0] == 401, "…which signs the resident out")
+    check(tenant_login(Client(), "ipcap@example.com", "651-555-0107", "307", "my-own-pass-307")[0] == 401, "…retires the forgotten password")
+    check(tenant_login(Client(), "ipcap@example.com", "651-555-0107", "307")[0] == 200, "…and puts the apartment number back until they choose again")
+    check(m.post("/staff/residents/99999/reset-password")[0] == 404, "missing resident is 404")
+
+    # the office decides how accounts are created
+    check(m.post("/staff/settings", {"signup_mode": "anything"})[0] == 400, "the sign-up setting is validated")
+    check(m.post("/staff/settings", {"signup_mode": "open"})[0] == 200 and m.get("/staff/settings")[1]["signup_mode"] == "open", "approval can be switched off")
+    op = Client()
+    s, j = op.post("/signup", dict(new, email="open@example.com", name="Olu Open", unit="119"))
+    check(s == 200 and j["pending"] is False and op.get("/me")[0] == 200, "…and then a new account works at once", j)
+    check(m.post("/staff/settings", {"signup_mode": "off"})[0] == 200 and Client().get("/signup")[1] == {"mode": "off"}, "sign-up can be switched off")
+    s, j = Client().post("/signup", dict(new, email="late@example.com"))
+    check(s == 403 and "leasing office" in j.get("error", ""), "…and then only the office creates accounts", j)
+    check(m.post("/staff/settings", {"signup_mode": "approval"})[0] == 200, "back to approval")
+
+    # one connection cannot mass-produce accounts
+    rl = Client()
+    codes = [rl.post("/signup", dict(new, email="rl%d@example.com" % i, unit="12%d" % i))[0] for i in range(6)]
+    check(codes == [200] * 5 + [429], "five sign-ups an hour from one connection", codes)
+    rl.offset = 61 * MIN
+    check(rl.post("/signup", dict(new, email="rl9@example.com", unit="129"))[0] == 200, "…and more after the hour")
+    waiting = [r for r in m.get("/staff/residents")[1]["residents"] if r["pending"]]
+    check(len(waiting) == 6 and all(m.post("/staff/residents/%d/decline" % r["id"])[0] == 200 for r in waiting), "the manager clears them out", len(waiting))
+    check(m.get("/staff/me")[1]["pending_residents"] == 0, "…leaving nobody waiting")
 
     # ------------------------------------------------------- resident requests
     print("resident requests")
@@ -439,11 +553,15 @@ def run():
     # ------------------------------------------------------------------ email
     print("email")
     s, j = m.get("/staff/settings")
-    check(j == {"office_email": "", "mail_from": "", "delivery_on": False, "provider_key_set": False}, "settings start empty", j)
+    check(j == {"office_email": "", "mail_from": "", "signup_mode": "approval", "delivery_on": False, "provider_key_set": False},
+          "settings start empty", j)
     check(m.post("/staff/settings", {"office_email": "not an email"})[0] == 400, "office address is validated")
     check(m.post("/staff/settings", {"office_email": "Office@Ridgewood.test", "mail_from": "Ridgewood <portal@ridgewood.test>"})[0] == 200, "save settings")
     dev("mail-mode", {"mode": "ok"})
     check(m.get("/staff/settings")[1]["delivery_on"] is True, "delivery shows as on once a key and from-address exist")
+    check(m.post("/staff/settings", {"signup_mode": "open"})[0] == 200 and m.get("/staff/settings")[1]["office_email"] == "office@ridgewood.test",
+          "saving one setting leaves the others alone")
+    m.post("/staff/settings", {"signup_mode": "approval"})
     s, j = new_request(pr, description="Oven light is out.", category="Appliance")
     box = dev("outbox")["outbox"]
     sent = [json.loads(x["body"]) for x in box]
@@ -464,7 +582,8 @@ def run():
     dev("mail-mode", {"mode": "off"})
     s, j = m.get("/staff/emails")
     kinds = set(e["kind"] for e in j["emails"])
-    check(s == 200 and kinds == {"office_new_request", "resident_received", "resident_update", "resident_completed"}, "email log lists every kind", kinds)
+    check(s == 200 and kinds == {"office_new_request", "resident_received", "resident_update", "resident_completed",
+                                 "office_new_signup", "resident_signup", "resident_welcome"}, "email log lists every kind", kinds)
     check(j["emails"][0]["id"] > j["emails"][-1]["id"], "email log is newest first")
 
     # --------------------------------------------------------------- the team
@@ -490,6 +609,11 @@ def run():
     check(k.post("/staff/residents", maria)[0] == 403, "technician cannot edit the roster")
     check(k.post("/staff/team", tech_new)[0] == 403, "technician cannot add staff")
     check(k.post("/staff/settings", {"office_email": ""})[0] == 403, "technician cannot change settings")
+    Client().post("/signup", dict(new, email="wait@example.com", name="Wendy Waits", unit="130"))
+    wid = sql("SELECT id FROM tenants WHERE email = 'wait@example.com'")[0]["id"]
+    for action in ("approve", "decline", "reset-password"):
+        check(k.post("/staff/residents/%d/%s" % (wid, action))[0] == 403, "technician cannot " + action + " a resident account")
+    check(m.post("/staff/residents/%d/decline" % wid)[0] == 200, "(manager declines it)")
     check(k.get("/staff/residents")[0] == 200 and k.get("/staff/emails")[0] == 200, "technician can read the roster and email log")
     check(k.post("/staff/workorders/%d/complete" % r2, {"work_done": "Replaced the hall light ballast."})[0] == 200, "technician completes a job")
     check(m.get("/staff/workorders/%d" % r2)[1]["order"]["completed_by_name"] == "Sam Tech", "…and it is recorded under their name")
@@ -557,16 +681,19 @@ def run():
     events = [e["event"] for e in j["activity"]]
     for ev in ("portal_set_up", "sign_in", "sign_in_failed", "request_created", "request_cancelled", "order_completed",
                "order_updated", "resident_added", "residents_imported", "resident_removed", "resident_unlocked",
-               "team_member_added", "team_password_reset", "password_changed", "settings_changed", "records_exported"):
+               "team_member_added", "team_password_reset", "password_changed", "settings_changed", "records_exported",
+               "account_created", "resident_approved", "resident_declined", "resident_password_changed", "resident_password_reset"):
         check(ev in events, "activity log records " + ev)
     failed_rows = [e for e in j["activity"] if e["event"] == "sign_in_failed" and e["actor_kind"] == "tenant"]
     check(any("Tried apartment 204" in e["detail"] and "651-555-9999" in e["detail"] and e["actor_label"] == "maria@example.com"
               for e in failed_rows), "failed resident sign-ins show the email, phone and apartment tried", failed_rows[:2])
     ok_rows = [e for e in j["activity"] if e["event"] == "sign_in" and e["actor_kind"] == "tenant"]
     check(any("maria@example.com" in e["detail"] and "651-555-0101" in e["detail"] for e in ok_rows), "resident sign-ins record email and phone", ok_rows[:2])
-    dump = json.dumps(sql("SELECT * FROM activity_log") + sql("SELECT * FROM email_log") + sql("SELECT * FROM staff"))
-    check(not any(p in dump for p in ("a brand new password", "my own password 9", "reset by manager 3", "temporary pass 1")),
-          "no staff password appears in any table")
+    dump = json.dumps(sql("SELECT * FROM activity_log") + sql("SELECT * FROM email_log") + sql("SELECT * FROM staff")
+                      + sql("SELECT * FROM tenants"))
+    check(not any(p in dump for p in ("a brand new password", "my own password 9", "reset by manager 3", "temporary pass 1",
+                                      "nora-chosen-pass", "nora-second-pass", "my-own-pass-307")),
+          "no staff or resident password appears in any table")
 
     # ------------------------------------------------------------ odds and ends
     s, j = m.post("/staff/workorders", b"{not json")

@@ -16,6 +16,12 @@ const LOCK_DAY_FAILS = 30;         // per email address in 24 hours, then the of
 const MAX_REQUESTS_PER_DAY = 10;   // per resident
 const PBKDF2_ITERATIONS = 100000;  // the most Workers' Web Crypto will accept
 const MIN_STAFF_PASSWORD = 10;
+const MIN_RESIDENT_PASSWORD = 8;
+const MAX_SIGNUPS_PER_HOUR = 5;    // new accounts from one connection
+const MAX_PENDING_SIGNUPS = 50;    // accounts waiting for approval at once
+// who may create a resident account: 'approval' = residents, once staff confirm them;
+// 'open' = residents, straight away; 'off' = only staff
+const SIGNUP_MODES = ['approval', 'open', 'off'];
 
 const CATEGORIES = ['Plumbing', 'Heating & cooling', 'Electrical', 'Appliance',
   'Doors, locks & windows', 'Walls, floors & ceilings', 'Pest control',
@@ -126,10 +132,38 @@ const all = async (env, sql, ...p) => (await stmt(env, sql, p).all()).results ||
 const one = (env, sql, ...p) => stmt(env, sql, p).first();
 const run = async (env, sql, ...p) => (await stmt(env, sql, p).run()).meta || {};
 
+// Changes made after the portal first went live. The tables above stay exactly
+// as they were first created; each step here is applied once, in order, so a
+// database that is already in use is brought up to date without losing a row.
+const MIGRATIONS = [
+  // residents choosing their own password and creating their own account
+  [2, [
+    'ALTER TABLE tenants ADD COLUMN pw_hash TEXT',
+    'ALTER TABLE tenants ADD COLUMN pending INTEGER NOT NULL DEFAULT 0',
+    "ALTER TABLE tenants ADD COLUMN source TEXT NOT NULL DEFAULT 'staff'",
+  ]],
+];
+
 let schemaReady = false;
 async function ensureSchema(env) {
   if (schemaReady) return;
   await env.DB.batch(SCHEMA.map((s) => env.DB.prepare(s)));
+  const version = async () => Number(
+    ((await env.DB.prepare("SELECT value FROM settings WHERE name = 'schema_version'").first()) || {}).value || 1);
+  let at = await version();
+  for (const [target, steps] of MIGRATIONS) {
+    if (at >= target) continue;
+    try {
+      // one transaction: either the whole step lands and is recorded, or none of it
+      await env.DB.batch(steps.map((sql) => env.DB.prepare(sql)).concat([env.DB.prepare(
+        "INSERT INTO settings (name, value) VALUES ('schema_version', ?) ON CONFLICT(name) DO UPDATE SET value = excluded.value")
+        .bind(String(target))]));
+    } catch (e) {
+      // two copies of the Worker can start at the same moment; if the other one got there first, carry on
+      if (await version() < target) throw e;
+    }
+    at = target;
+  }
   schemaReady = true;
 }
 
@@ -212,8 +246,9 @@ async function sessionUser(c, kind) {
   if (!s) return null;
   const table = kind === 'tenant' ? 'tenants' : 'staff';
   const user = await one(c.env, `SELECT * FROM ${table} WHERE id = ? AND active = 1`, s.user_id);
-  if (user) c.tokenHash = hash;
-  return user || null;
+  if (!user || (kind === 'tenant' && user.pending)) return null;
+  c.tokenHash = hash;
+  return user;
 }
 async function endSession(c, kind) {
   const token = readCookie(c.request, cookieName(c, kind));
@@ -367,23 +402,111 @@ async function addNote(c, o, kind, author, body, visible) {
 async function tenantLogin(c) {
   const b = await readBody(c);
   const email = normEmail(b.email), phoneKey = normPhone(b.phone);
-  const unitKey = normUnit(b.unit), passKey = normUnit(b.password);
-  if (!email || !phoneKey || !unitKey || !passKey) {
+  const unitKey = normUnit(b.unit), typed = String(b.password || '').slice(0, 200);
+  if (!email || !phoneKey || !unitKey || !typed.trim()) {
     throw new HttpError(400, 'Enter your email, phone number, apartment number and password.');
   }
   await guardAttempts(c, 'tenant', email);
   const t = await one(c.env,
     'SELECT * FROM tenants WHERE active = 1 AND email = ? AND phone_key = ? AND unit_key = ? LIMIT 1', email, phoneKey, unitKey);
-  // the password is the apartment number, as the office hands it out
-  const ok = !!t && passKey === t.unit_key;
+  // A resident who has chosen a password signs in with it. One who has not —
+  // added by the office and never changed it — uses their apartment number.
+  // The hash is checked either way, so every attempt takes the same time.
+  const hashOk = await verifyPassword(typed, t && t.pw_hash ? t.pw_hash : DUMMY_HASH);
+  const ok = !!t && (t.pw_hash ? hashOk : normUnit(typed) === t.unit_key);
   await recordAttempt(c, 'tenant', email, ok);
   if (!ok) {
     await logActivity(c, 'tenant', null, email, 'sign_in_failed', `Tried apartment ${str(b.unit, 20)} · phone ${str(b.phone, 30)}`);
     throw new HttpError(401, 'Those details do not match our records. Check them and try again, or call the leasing office.');
   }
+  if (t.pending) {
+    throw new HttpError(403, 'Your account is waiting for the leasing office to confirm it. You will be able to sign in as soon as they have.',
+      { code: 'pending' });
+  }
   const token = await createSession(c, 'tenant', t.id, TENANT_SESSION_HOURS);
   await logActivity(c, 'tenant', t.id, `${t.name} · Apt ${t.unit}`, 'sign_in', `${t.email} · ${t.phone}`);
   return json({ ok: true }, 200, [sessionCookie(c, 'tenant', token, TENANT_SESSION_HOURS)]);
+}
+
+const signupMode = (settings) => (SIGNUP_MODES.includes(settings.signup_mode) ? settings.signup_mode : 'approval');
+function checkResidentPassword(pw) {
+  pw = String(pw || '');
+  if (pw.length < MIN_RESIDENT_PASSWORD) throw new HttpError(400, `Choose a password of at least ${MIN_RESIDENT_PASSWORD} characters.`);
+  if (pw.length > 200) throw new HttpError(400, 'That password is too long.');
+  return pw;
+}
+
+// lets the sign-in page know whether to offer "create an account"
+async function signupInfo(c) {
+  return json({ mode: signupMode(await getSettings(c.env)) });
+}
+
+async function emailSignup(c, settings, t, pending) {
+  const where = `Apartment ${t.unit}${t.building ? ` (${t.building} Wilson Ave)` : ''}`;
+  await sendEmail(c, settings, {
+    to: settings.office_email || '', missing: 'No office address is set under Settings', kind: 'office_new_signup',
+    subject: `New resident account — Apt ${t.unit}${pending ? ' (needs approval)' : ''}`,
+    body: `${t.name}\n${where}\nPhone: ${t.phone}\nEmail: ${t.email}\n\n` +
+      (pending ? 'They cannot sign in until you approve the account.' : 'They can sign in straight away.') +
+      `\n\nResidents: ${c.url.origin}/portal/staff`,
+  });
+  await sendEmail(c, settings, {
+    to: t.email, kind: pending ? 'resident_signup' : 'resident_welcome',
+    subject: pending ? 'We received your Ridgewood resident account request' : 'Your Ridgewood resident account is ready',
+    body: `Hello ${t.name},\n\n` +
+      (pending ? 'Thank you for signing up. The leasing office will confirm your account, and you will be able to sign in once they have.'
+        : 'Your resident account is ready. You can sign in and send maintenance requests any time.') +
+      `\n\n${c.url.origin}/portal\n\nRidgewood Apartments · 651-578-0498`,
+  });
+}
+
+async function tenantSignup(c) {
+  const settings = await getSettings(c.env);
+  const mode = signupMode(settings);
+  if (mode === 'off') throw new HttpError(403, 'Resident accounts are set up by the leasing office. Please call 651-578-0498.');
+  const b = await readBody(c);
+  const f = tenantFields(b);
+  if (!f.building) throw new HttpError(400, 'Choose your building.');
+  const pw = checkResidentPassword(b.password);
+
+  const recent = await one(c.env, "SELECT COUNT(*) AS n FROM login_attempts WHERE kind = 'signup' AND ip = ? AND at > ?",
+    c.ip, new Date(Date.now() - 3600e3).toISOString());
+  if (recent.n >= MAX_SIGNUPS_PER_HOUR) {
+    throw new HttpError(429, 'Too many accounts have been created from this connection. Please try again later, or call the leasing office.');
+  }
+  if ((await one(c.env, 'SELECT COUNT(*) AS n FROM tenants WHERE pending = 1')).n >= MAX_PENDING_SIGNUPS) {
+    throw new HttpError(429, 'We cannot take new sign-ups online right now. Please call the leasing office at 651-578-0498.');
+  }
+  if (await one(c.env, 'SELECT id FROM tenants WHERE email = ? LIMIT 1', f.email)) {
+    throw new HttpError(409, 'There is already an account for that email address. Try signing in, or call the leasing office.');
+  }
+
+  const now = nowIso(), pending = mode === 'approval' ? 1 : 0;
+  const meta = await run(c.env,
+    `INSERT INTO tenants (unit, unit_key, building, name, email, phone, phone_key, active, created_at, updated_at, pw_hash, pending, source)
+     VALUES (?,?,?,?,?,?,?,1,?,?,?,?,'self')`,
+    f.unit, normUnit(f.unit), f.building, f.name, f.email, f.phone, normPhone(f.phone), now, now, await hashPassword(pw), pending);
+  await run(c.env, "INSERT INTO login_attempts (at, kind, ident, ip, ok) VALUES (?, 'signup', ?, ?, 1)", now, f.email, c.ip);
+  await logActivity(c, 'tenant', meta.last_row_id, `${f.name} · Apt ${f.unit}`, 'account_created',
+    `${f.email} · ${f.phone}${pending ? ' · waiting for approval' : ''}`);
+  await emailSignup(c, settings, f, pending);
+  if (pending) return json({ ok: true, pending: true });
+  const token = await createSession(c, 'tenant', meta.last_row_id, TENANT_SESSION_HOURS);
+  return json({ ok: true, pending: false }, 200, [sessionCookie(c, 'tenant', token, TENANT_SESSION_HOURS)]);
+}
+
+async function tenantChangePassword(c) {
+  const b = await readBody(c);
+  const t = c.user, current = String(b.current || '');
+  const ok = t.pw_hash ? await verifyPassword(current, t.pw_hash) : normUnit(current) === t.unit_key;
+  if (!ok) throw new HttpError(401, 'Your current password is not right.');
+  const pw = checkResidentPassword(b.next);
+  if (pw === current) throw new HttpError(400, 'Choose a password different from the current one.');
+  await run(c.env, 'UPDATE tenants SET pw_hash = ?, updated_at = ? WHERE id = ?', await hashPassword(pw), nowIso(), t.id);
+  // every other device signed in as this resident is signed out
+  await run(c.env, "DELETE FROM sessions WHERE kind = 'tenant' AND user_id = ? AND token_hash != ?", t.id, c.tokenHash);
+  await logActivity(c, 'tenant', t.id, `${t.name} · Apt ${t.unit}`, 'resident_password_changed', '');
+  return json({ ok: true });
 }
 
 const tenantView = (o, notes) => ({
@@ -407,7 +530,8 @@ async function tenantMe(c) {
       WHERE work_order_id IN (SELECT id FROM work_orders WHERE tenant_id = ?)
         AND (visible_to_tenant = 1 OR author_kind = 'tenant') ORDER BY created_at ASC`, t.id);
   return json({
-    resident: { name: t.name, unit: t.unit, building: t.building, email: t.email, phone: t.phone },
+    resident: { name: t.name, unit: t.unit, building: t.building, email: t.email, phone: t.phone,
+      has_password: !!t.pw_hash },
     categories: CATEGORIES,
     requests: orders.map((o) => tenantView(o, notes.filter((n) => n.work_order_id === o.id))),
   });
@@ -519,9 +643,11 @@ async function staffLogin(c) {
   return json({ ok: true, must_change: !!s.must_change }, 200, [sessionCookie(c, 'staff', token, STAFF_SESSION_HOURS)]);
 }
 
+const pendingCount = async (env) => (await one(env, 'SELECT COUNT(*) AS n FROM tenants WHERE pending = 1 AND active = 1')).n;
 async function staffMe(c) {
   const team = await all(c.env, 'SELECT id, name FROM staff WHERE active = 1 ORDER BY name');
-  return json({ me: staffView(c.user), team, categories: CATEGORIES, buildings: BUILDINGS, status_labels: STATUS_LABEL });
+  return json({ me: staffView(c.user), team, categories: CATEGORIES, buildings: BUILDINGS, status_labels: STATUS_LABEL,
+    pending_residents: await pendingCount(c.env) });
 }
 
 async function staffChangePassword(c) {
@@ -563,7 +689,7 @@ async function staffOrders(c) {
     `${ORDER_SELECT} ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY ${order} LIMIT 300`, ...args);
   const counts = {};
   for (const r of await all(c.env, 'SELECT status, COUNT(*) AS n FROM work_orders GROUP BY status')) counts[r.status] = r.n;
-  return json({ orders: rows.map(orderView), counts });
+  return json({ orders: rows.map(orderView), counts, pending_residents: await pendingCount(c.env) });
 }
 
 async function getOrder(c, id) {
@@ -602,7 +728,7 @@ async function staffUnit(c) {
   const building = asked === null || asked === 'any' ? null : str(asked, 10);
   if (!unitKey) throw new HttpError(400, 'Enter an apartment number.');
   const residents = await all(c.env,
-    `SELECT id, name, email, phone, unit, building, active FROM tenants
+    `SELECT id, name, email, phone, unit, building, active, pending FROM tenants
       WHERE unit_key = ? AND (? = 1 OR building = ?) ORDER BY active DESC, name`,
     unitKey, building === null ? 1 : 0, building || '');
   return json(Object.assign({ unit: unitKey, building: building === null ? 'any' : building, residents },
@@ -728,7 +854,7 @@ function tenantFields(b) {
   const unit = str(b.unit, 12), name = str(b.name, 80), email = normEmail(b.email), phone = fmtPhone(b.phone);
   const building = str(b.building, 10);
   if (!normUnit(unit)) throw new HttpError(400, 'Enter the apartment number.');
-  if (name.length < 2) throw new HttpError(400, "Enter the resident's name.");
+  if (name.length < 2) throw new HttpError(400, 'Enter a full name.');
   if (!validEmail(email)) throw new HttpError(400, `"${email || 'blank'}" is not a valid email address.`);
   if (normPhone(phone).length < 10) throw new HttpError(400, 'Enter a ten-digit phone number.');
   if (!BUILDINGS.includes(building)) throw new HttpError(400, 'Choose 1871 or 1885 for the building, or leave it blank.');
@@ -745,8 +871,43 @@ async function insertTenant(c, f) {
 
 async function staffTenants(c) {
   const rows = await all(c.env,
-    'SELECT id, unit, building, name, email, phone, active, created_at FROM tenants ORDER BY active DESC, building, unit_key, name LIMIT 2000');
-  return json({ residents: rows.map((r) => Object.assign(r, { active: !!r.active })) });
+    `SELECT id, unit, building, name, email, phone, active, pending, source, created_at, (pw_hash IS NOT NULL) AS has_password
+       FROM tenants ORDER BY pending DESC, active DESC, building, unit_key, name LIMIT 2000`);
+  return json({ residents: rows.map((r) => Object.assign(r, { active: !!r.active, pending: !!r.pending, has_password: !!r.has_password })) });
+}
+async function pendingTenant(c, id) {
+  const t = await one(c.env, 'SELECT * FROM tenants WHERE id = ? AND pending = 1', id);
+  if (!t) throw new HttpError(404, 'That account is not waiting for approval.');
+  return t;
+}
+async function staffApproveTenant(c, m) {
+  const t = await pendingTenant(c, m[1]);
+  await run(c.env, 'UPDATE tenants SET pending = 0, updated_at = ? WHERE id = ?', nowIso(), t.id);
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'resident_approved', `${t.name} · Apt ${t.unit}`);
+  await sendEmail(c, await getSettings(c.env), {
+    to: t.email, kind: 'resident_welcome', subject: 'Your Ridgewood resident account is ready',
+    body: `Hello ${t.name},\n\nThe leasing office has confirmed your account. You can now sign in and send maintenance requests.\n\n` +
+      `${c.url.origin}/portal\n\nRidgewood Apartments · 651-578-0498`,
+  });
+  return json({ ok: true });
+}
+// A sign-up that was never approved has no history, so declining simply removes it.
+async function staffDeclineTenant(c, m) {
+  const t = await pendingTenant(c, m[1]);
+  await run(c.env, 'DELETE FROM tenants WHERE id = ? AND pending = 1', t.id);
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'resident_declined', `${t.name} · Apt ${t.unit} · ${t.email}`);
+  return json({ ok: true });
+}
+// For a resident who has forgotten theirs: the password goes back to the
+// apartment number, and they choose a new one after signing in.
+async function staffResetTenantPassword(c, m) {
+  const t = await one(c.env, 'SELECT * FROM tenants WHERE id = ?', m[1]);
+  if (!t) throw new HttpError(404, 'That resident does not exist.');
+  await run(c.env, 'UPDATE tenants SET pw_hash = NULL, updated_at = ? WHERE id = ?', nowIso(), t.id);
+  await run(c.env, "DELETE FROM sessions WHERE kind = 'tenant' AND user_id = ?", t.id);
+  await run(c.env, "DELETE FROM login_attempts WHERE kind = 'tenant' AND ident = ? AND ok = 0", t.email);
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'resident_password_reset', `${t.name} · Apt ${t.unit}`);
+  return json({ ok: true });
 }
 async function staffAddTenant(c) {
   const f = tenantFields(await readBody(c));
@@ -848,17 +1009,27 @@ async function staffEditMember(c, m) {
 
 async function staffGetSettings(c) {
   const s = await getSettings(c.env);
-  return json({ office_email: s.office_email || '', mail_from: s.mail_from || '', delivery_on: !!(c.env.RESEND_API_KEY && s.mail_from) ,
-    provider_key_set: !!c.env.RESEND_API_KEY });
+  return json({ office_email: s.office_email || '', mail_from: s.mail_from || '', signup_mode: signupMode(s),
+    delivery_on: !!(c.env.RESEND_API_KEY && s.mail_from), provider_key_set: !!c.env.RESEND_API_KEY });
 }
+// Only the settings that are sent are changed, so each form on the page saves its own.
 async function staffSaveSettings(c) {
   const b = await readBody(c);
-  const office = normEmail(b.office_email), from = str(b.mail_from, 200);
-  if (office && !validEmail(office)) throw new HttpError(400, 'The office address is not a valid email.');
-  for (const [name, value] of [['office_email', office], ['mail_from', from]]) {
+  const changes = [];
+  if (b.office_email !== undefined) {
+    const office = normEmail(b.office_email);
+    if (office && !validEmail(office)) throw new HttpError(400, 'The office address is not a valid email.');
+    changes.push(['office_email', office]);
+  }
+  if (b.mail_from !== undefined) changes.push(['mail_from', str(b.mail_from, 200)]);
+  if (b.signup_mode !== undefined) {
+    if (!SIGNUP_MODES.includes(b.signup_mode)) throw new HttpError(400, 'Choose how resident accounts are created.');
+    changes.push(['signup_mode', b.signup_mode]);
+  }
+  for (const [name, value] of changes) {
     await run(c.env, 'INSERT INTO settings (name, value) VALUES (?, ?) ON CONFLICT(name) DO UPDATE SET value = excluded.value', name, value);
   }
-  await logActivity(c, 'staff', c.user.id, c.user.name, 'settings_changed', '');
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'settings_changed', changes.map((x) => x[0]).join(', '));
   return json({ ok: true });
 }
 async function staffEmails(c) {
@@ -881,6 +1052,9 @@ const ROUTES = [
   ['GET', /^\/health$/, health],
   ['POST', /^\/login$/, tenantLogin],
   ['POST', /^\/logout$/, (c) => endSession(c, 'tenant')],
+  ['GET', /^\/signup$/, signupInfo],
+  ['POST', /^\/signup$/, tenantSignup],
+  ['POST', /^\/password$/, tenantChangePassword, 'tenant'],
   ['GET', /^\/me$/, tenantMe, 'tenant'],
   ['POST', /^\/requests$/, tenantCreate, 'tenant'],
   ['POST', /^\/requests\/(\d+)\/note$/, tenantAddNote, 'tenant'],
@@ -905,6 +1079,9 @@ const ROUTES = [
   ['POST', /^\/staff\/residents\/bulk$/, staffBulkTenants, 'manager'],
   ['POST', /^\/staff\/residents\/(\d+)$/, staffEditTenant, 'manager'],
   ['POST', /^\/staff\/residents\/(\d+)\/unlock$/, staffUnlockTenant, 'staff'],
+  ['POST', /^\/staff\/residents\/(\d+)\/approve$/, staffApproveTenant, 'manager'],
+  ['POST', /^\/staff\/residents\/(\d+)\/decline$/, staffDeclineTenant, 'manager'],
+  ['POST', /^\/staff\/residents\/(\d+)\/reset-password$/, staffResetTenantPassword, 'manager'],
   ['GET', /^\/staff\/emails$/, staffEmails, 'staff'],
   ['GET', /^\/staff\/activity$/, staffActivity, 'manager'],
   ['GET', /^\/staff\/team$/, staffTeam, 'manager'],

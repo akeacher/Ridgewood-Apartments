@@ -7,7 +7,7 @@
   const who = document.getElementById('who');
 
   const S = { me: null, team: [], categories: [], buildings: [], labels: {},
-    view: 'open', q: '', recordsQ: '', unit: '', unitBuilding: 'any', editResident: null, resetMember: null };
+    view: 'open', q: '', recordsQ: '', unit: '', unitBuilding: 'any', editResident: null, resetMember: null, pending: 0 };
   const OPEN = ['new', 'scheduled', 'in_progress', 'on_hold'];
   const URGENCY = [['routine', 'Routine'], ['soon', 'Soon'], ['urgent', 'Urgent']];
   let main = null, flash = '', painted = '', ticket = 0;
@@ -35,7 +35,8 @@
     if (st.me.must_change) return mustChangeView(st.me);
     try {
       const me = await api('/staff/me');
-      Object.assign(S, { me: me.me, team: me.team, categories: me.categories, buildings: me.buildings, labels: me.status_labels });
+      Object.assign(S, { me: me.me, team: me.team, categories: me.categories, buildings: me.buildings, labels: me.status_labels,
+        pending: me.pending_residents || 0 });
     } catch (e) {
       return gate('We hit a snag', e.message);
     }
@@ -137,6 +138,15 @@
       h('nav', { class: 'side', 'aria-label': 'Staff sections' },
         links.map((l) => (l ? h('a', { href: '#/' + l[0], 'data-nav': l[0] }, l[1]) : h('span', { class: 'side-gap' })))),
       main));
+    setPending(S.pending);
+  }
+
+  // resident accounts waiting for approval: kept in the menu so they are not missed
+  function setPending(n) {
+    S.pending = n || 0;
+    const link = app.querySelector('.side a[data-nav="residents"]');
+    if (!link) return;
+    link.replaceChildren('Residents', S.pending ? h('span', { class: 'nav-count', title: 'Waiting for approval' }, S.pending) : '');
   }
 
   const VIEWS = { orders: ordersView, new: newOrderView, records: recordsView, unit: unitView, residents: residentsView,
@@ -204,6 +214,7 @@
   async function ordersView() {
     const data = await api('/staff/workorders?view=' + S.view + (S.q ? '&q=' + encodeURIComponent(S.q) : ''));
     const c = data.counts;
+    setPending(data.pending_residents);
     const seg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Which work orders' },
       [['open', 'Open'], ['mine', 'Assigned to me'], ['all', 'Everything']].map((v) =>
         h('button', { type: 'button', class: S.view === v[0] ? 'on' : '', 'aria-pressed': String(S.view === v[0]),
@@ -213,6 +224,9 @@
       : S.view === 'all' ? 'No work orders yet.' : 'No open work orders.';
     return [
       pageHead('Work orders', 'Open maintenance requests, most urgent first.', h('a', { class: 'btn btn-sm', href: '#/new' }, 'New work order')),
+      S.pending ? h('p', { class: 'notice' },
+        h('strong', {}, S.pending === 1 ? '1 resident account is waiting for approval. ' : S.pending + ' resident accounts are waiting for approval. '),
+        h('a', { href: '#/residents' }, isManager() ? 'Review' : 'See who')) : null,
       h('div', { class: 'stats' }, stat(c.new || 0, 'New'), stat(c.scheduled || 0, 'Scheduled'),
         stat(c.in_progress || 0, 'In progress'), stat(c.on_hold || 0, 'On hold')),
       h('div', { class: 'toolbar' }, seg, searchForm(S.q, 'Apartment, name or keyword', (q) => { S.q = q; route(); })),
@@ -410,7 +424,7 @@
       h('div', { class: 'card' }, h('h3', {}, 'Work orders'), previousList(d.previous, 'No work orders for this apartment.')),
       h('div', { class: 'card' }, h('h3', {}, 'Residents on file'),
         d.residents.length ? h('dl', { class: 'kv' }, d.residents.map((r) => [
-          h('dt', {}, r.name + (r.active ? '' : ' (removed)')),
+          h('dt', {}, r.name + (r.pending ? ' (waiting for approval)' : r.active ? '' : ' (removed)')),
           h('dd', {}, tel(r.phone), ' · ' + r.email + (r.building ? ' · ' + r.building : ''))]))
           : h('p', { class: 'muted' }, 'Nobody is listed for this apartment.'))];
   }
@@ -434,8 +448,26 @@
       try { await api(path, body); flash = done; } catch (e) { flash = e.message; }
       route();
     };
-    const nodes = [pageHead('Residents', 'Residents sign in with the email, phone number and apartment number listed here. '
-      + 'Their password is their apartment number — tell them when they move in.')];
+    const nodes = [pageHead('Residents', 'Residents can create their own account from the resident portal, or you can add them here. '
+      + 'Anyone you add signs in with their apartment number as the password until they choose their own.')];
+    const waiting = list.filter((r) => r.pending);
+    setPending(waiting.length);
+    if (waiting.length) {
+      nodes.push(h('div', { class: 'card card-accent' },
+        h('div', { class: 'card-head' }, h('h3', {}, 'Waiting for approval'),
+          h('span', { class: 'fine' }, isManager() ? 'Check each one against your rent roll before approving.' : 'A manager approves these.')),
+        waiting.map((r) => h('div', { class: 'handoff-item waiting' },
+          h('div', {},
+            h('p', {}, h('strong', {}, r.name), ' — Apt ' + r.unit + (r.building ? ', ' + r.building + ' Wilson Ave' : '')),
+            h('p', { class: 'by' }, tel(r.phone), ' · ' + r.email + ' · signed up ' + when(r.created_at))),
+          isManager() ? h('div', { class: 'actions' },
+            h('button', { class: 'btn btn-sm', type: 'button',
+              onclick: () => act('/staff/residents/' + r.id + '/approve', {}, r.name + ' can now sign in.') }, 'Approve'),
+            h('button', { class: 'btn btn-sm btn-ghost', type: 'button', onclick: () => {
+              if (!window.confirm('Decline ' + r.name + '? The sign-up is deleted and they will not be able to sign in.')) return;
+              act('/staff/residents/' + r.id + '/decline', {}, 'The sign-up from ' + r.name + ' was declined.');
+            } }, 'Decline')) : null))));
+    }
 
     if (isManager()) {
       const editing = list.find((r) => r.id === S.editResident);
@@ -476,29 +508,40 @@
       }
     }
 
-    const rows = list.map((r) => h('tr', { class: r.active ? '' : 'off' },
+    const filed = list.filter((r) => !r.pending);
+    const rows = filed.map((r) => h('tr', { class: r.active ? '' : 'off' },
       h('td', { class: 'nowrap' }, r.unit + (r.building ? ' · ' + r.building : '')),
-      h('td', {}, r.name, r.active ? null : h('span', { class: 'chip chip-off' }, 'Removed')),
+      h('td', {}, r.name, r.active ? null : h('span', { class: 'chip chip-off' }, 'Removed'),
+        r.source === 'self' ? h('div', { class: 'fine' }, 'Signed up online') : null),
       h('td', {}, r.email), h('td', { class: 'nowrap' }, tel(r.phone)),
+      h('td', { class: 'fine' }, r.has_password ? 'Their own' : 'Apartment number'),
       h('td', { class: 'nowrap' },
         r.active ? h('button', { class: 'link-btn', type: 'button', title: 'Clear a sign-in lock after too many wrong attempts',
           onclick: () => act('/staff/residents/' + r.id + '/unlock', {}, r.name + ' can try signing in again.') }, 'Unlock') : null,
         isManager() && r.active ? h('button', { class: 'link-btn', type: 'button',
           onclick: () => { S.editResident = r.id; route(); window.scrollTo({ top: 0 }); } }, 'Edit') : null,
+        isManager() && r.active && r.has_password ? h('button', { class: 'link-btn', type: 'button',
+          title: 'For a forgotten password: puts it back to the apartment number', onclick: () => {
+            if (!window.confirm('Reset the password for ' + r.name + '? It goes back to their apartment number (' + r.unit
+              + '), and they choose a new one after signing in.')) return;
+            act('/staff/residents/' + r.id + '/reset-password', {}, r.name + ' can now sign in with their apartment number and choose a new password.');
+          } }, 'Reset password') : null,
         isManager() ? h('button', { class: 'link-btn', type: 'button', onclick: () => {
           if (r.active && !window.confirm('Remove ' + r.name + '? They will no longer be able to sign in. Their work orders are kept.')) return;
           act('/staff/residents/' + r.id, { active: !r.active }, r.active ? r.name + ' was removed.' : r.name + ' was restored.');
         } }, r.active ? 'Remove' : 'Restore') : null)));
     nodes.push(h('div', { class: 'card-head' }, h('h2', {}, 'On file'),
-      h('span', { class: 'fine' }, list.filter((r) => r.active).length + ' active')),
-    list.length ? tableOf(['Apartment', 'Name', 'Email', 'Phone', ''], rows)
-      : h('div', { class: 'empty' }, 'No residents yet. Add them above so they can sign in.'));
+      h('span', { class: 'fine' }, filed.filter((r) => r.active).length + ' active')),
+    filed.length ? tableOf(['Apartment', 'Name', 'Email', 'Phone', 'Password', ''], rows)
+      : h('div', { class: 'empty' }, 'No residents yet. Add them above, or let them create their own accounts.'));
     return nodes;
   }
 
   /* ------------------------------------------------------------------- logs */
   const EMAIL_KIND = { office_new_request: 'New request → office', resident_received: 'Confirmation → resident',
-    resident_update: 'Update → resident', resident_completed: 'Completed → resident' };
+    resident_update: 'Update → resident', resident_completed: 'Completed → resident',
+    office_new_signup: 'New account → office', resident_signup: 'Sign-up received → resident',
+    resident_welcome: 'Account ready → resident' };
   async function emailsView() {
     const list = (await api('/staff/emails')).emails;
     const state = (e) => (e.status === 'sent' ? h('span', { class: 'chip chip-solid' }, 'Sent')
@@ -518,7 +561,9 @@
     resident_removed: 'Removed a resident', resident_restored: 'Restored a resident', resident_edited: 'Edited a resident',
     resident_unlocked: 'Unlocked a resident', team_member_added: 'Added a team member', team_member_changed: 'Changed a team member',
     team_password_reset: 'Reset a password', password_changed: 'Changed their password', settings_changed: 'Changed settings',
-    records_exported: 'Downloaded records', portal_set_up: 'Set up the portal' };
+    records_exported: 'Downloaded records', portal_set_up: 'Set up the portal',
+    account_created: 'Created an account', resident_approved: 'Approved an account', resident_declined: 'Declined a sign-up',
+    resident_password_changed: 'Changed their password', resident_password_reset: 'Reset a resident password' };
   async function activityView() {
     const list = (await api('/staff/activity')).activity;
     return [pageHead('Activity log', 'Who signed in and what was changed — including sign-in attempts that failed.'),
@@ -598,10 +643,24 @@
       await api('/staff/settings', { office_email: v.office_email, mail_from: v.mail_from });
       flash = 'Settings saved.'; route();
     });
-    const status = s.delivery_on ? 'Email delivery is on. Notifications are sent and recorded in the email log.'
+    const status = s.delivery_on ? 'Notifications are sent and recorded in the email log.'
       : s.provider_key_set ? 'An email service is connected, but there is no “send from” address yet — add one below to start sending.'
-      : 'Email delivery is off. Every notification is still recorded in the email log, but nothing is sent until an email service key is added to the site in Cloudflare.';
-    return [pageHead('Settings'), h('p', { class: 'notice' }, h('strong', {}, s.delivery_on ? 'On. ' : 'Off. '), status), form];
+      : 'Every notification is still recorded in the email log, but nothing is sent until an email service key is added to the site in Cloudflare.';
+    const accounts = h('form', { class: 'card stack' }, h('h3', {}, 'Resident accounts'),
+      choices('signup_mode', [
+        ['approval', 'Residents create their own account, and staff approve it',
+          'A new account cannot sign in until a manager approves it under Residents.'],
+        ['open', 'Residents create their own account and can use it straight away',
+          'Nobody checks first, so anyone who finds the page can sign up as a resident of any apartment.'],
+        ['off', 'Only staff create resident accounts', 'The “Create an account” option is hidden from the resident portal.'],
+      ], s.signup_mode),
+      h('button', { class: 'btn btn-sm', type: 'submit' }, 'Save'));
+    onSubmit(accounts, async (v) => {
+      await api('/staff/settings', { signup_mode: v.signup_mode });
+      flash = 'Resident account setting saved.'; route();
+    });
+    return [pageHead('Settings'), accounts,
+      h('p', { class: 'notice notice-gap' }, h('strong', {}, s.delivery_on ? 'Email is on. ' : 'Email is off. '), status), form];
   }
 
   async function accountView() {

@@ -48,16 +48,67 @@
       field('Phone number', input('phone', { type: 'tel', autocomplete: 'tel', required: true })),
       field('Apartment number', input('unit', { autocomplete: 'off', autocapitalize: 'characters', required: true })),
       field('Password', password('password', { autocomplete: 'current-password', required: true }),
-        'The password the leasing office gave you.'),
+        'The one you chose when you created your account, or the one the leasing office gave you.'),
       h('button', { class: 'btn', type: 'submit' }, 'Sign in'),
       h('p', { class: 'msg', role: 'alert', hidden: true }),
-      h('p', { class: 'fine' }, 'Use the email address and phone number the leasing office has on file for you. Trouble signing in? Call ', tel(OFFICE), '.'));
+      h('p', { class: 'fine' }, 'Use the same email address, phone number and apartment number as on your account. Trouble signing in? Call ', tel(OFFICE), '.'));
     onSubmit(form, async (v) => {
       await api('/login', { email: v.email, phone: v.phone, unit: v.unit, password: v.password });
       await boot();
     });
     app.replaceChildren(form);
     form.querySelector('input').focus();
+    // offered only while the office allows residents to create accounts
+    api('/signup').then((info) => {
+      if (info.mode === 'off' || !form.isConnected) return;
+      form.querySelector('.lede').after(h('p', { class: 'fine' }, 'New to the portal? ',
+        h('button', { class: 'link-btn', type: 'button', onclick: () => signUp(info.mode) }, 'Create an account')));
+      form.after(h('div', { class: 'card card-narrow under-card' },
+        h('p', {}, h('strong', {}, 'New to the portal? '), 'Residents can create their own account.'),
+        h('button', { class: 'btn btn-ghost', type: 'button', onclick: () => signUp(info.mode) }, 'Create an account')));
+    }).catch(() => { /* the sign-in form works without it */ });
+  }
+
+  /* ------------------------------------------------------ create an account */
+  function signUp(mode) {
+    who.replaceChildren();
+    const form = h('form', { class: 'card card-narrow stack', novalidate: true },
+      h('div', {},
+        h('p', { class: 'label label-gold' }, 'Resident Portal'),
+        h('h1', {}, 'Create your account'),
+        h('p', { class: 'lede' }, mode === 'approval'
+          ? 'For Ridgewood residents. The leasing office confirms each new account before it can be used.'
+          : 'For Ridgewood residents. It takes a minute.')),
+      field('Full name', input('name', { autocomplete: 'name', required: true, maxlength: 80 })),
+      field('Email address', input('email', { type: 'email', autocomplete: 'email', inputmode: 'email', autocapitalize: 'none', spellcheck: 'false', required: true })),
+      field('Phone number', input('phone', { type: 'tel', autocomplete: 'tel', required: true })),
+      h('div', { class: 'cols' },
+        field('Apartment number', input('unit', { autocomplete: 'off', autocapitalize: 'characters', required: true, maxlength: 12 })),
+        field('Building', select('building', [['', 'Choose…'], ['1871', '1871 Wilson Ave'], ['1885', '1885 Wilson Ave']], ''))),
+      field('Choose a password', password('password', { autocomplete: 'new-password', required: true }), 'At least 8 characters.'),
+      field('Password again', password('again', { autocomplete: 'new-password', required: true })),
+      h('button', { class: 'btn', type: 'submit' }, 'Create account'),
+      h('p', { class: 'msg', role: 'alert', hidden: true }),
+      h('p', { class: 'fine' }, 'You will sign in with this email address, phone number, apartment number and password. ',
+        h('button', { class: 'link-btn', type: 'button', onclick: () => signIn() }, 'I already have an account')));
+    onSubmit(form, async (v) => {
+      if (v.password !== v.again) throw new Error('The two passwords do not match.');
+      const made = await api('/signup', { name: v.name, email: v.email, phone: v.phone, unit: v.unit, building: v.building, password: v.password });
+      if (!made.pending) {
+        flash = 'Welcome — your account is ready.';
+        return boot();
+      }
+      app.replaceChildren(h('div', { class: 'card card-narrow stack' },
+        h('p', { class: 'label label-gold' }, 'Resident Portal'),
+        h('h1', {}, 'Thank you, ' + v.name.trim().split(' ')[0]),
+        h('p', {}, 'Your account has been created. The leasing office confirms each new account, and you will be able to sign in as soon as they have.'),
+        h('p', {}, 'If your request cannot wait, call the leasing office at ', tel(OFFICE), '.'),
+        h('button', { class: 'btn btn-sm', type: 'button', onclick: () => signIn() }, 'Back to sign in')));
+      window.scrollTo({ top: 0 });
+    });
+    app.replaceChildren(form);
+    form.querySelector('input').focus();
+    window.scrollTo({ top: 0 });
   }
 
   /* ----------------------------------------------------------- dashboard */
@@ -81,8 +132,11 @@
         'for fire, a gas smell or immediate danger, call 911. For anything else urgent, call the leasing office at ', tel(OFFICE),
         ' as well as sending a request — this page is not watched around the clock.'),
       flash ? h('p', { class: 'notice', role: 'status' }, flash) : null,
+      r.has_password ? null : h('p', { class: 'notice' },
+        h('strong', {}, 'Your password is still your apartment number. '),
+        'Choose one of your own under “Change your password” below.'),
       h('div', { class: 'two' },
-        requestForm(data),
+        h('div', {}, requestForm(data), passwordCard(r)),
         h('section', { 'aria-label': 'Your requests' },
           h('div', { class: 'card-head' }, h('h2', {}, 'Your requests'),
             h('span', { class: 'fine' }, open.length ? open.length + ' open' : 'Nothing open')),
@@ -94,6 +148,24 @@
                 closed.map(requestCard)) : null])),
     ].filter(Boolean));
     flash = '';
+  }
+
+  function passwordCard(r) {
+    const form = h('form', { class: 'stack' },
+      field('Current password', password('current', { autocomplete: 'current-password', required: true }),
+        r.has_password ? null : 'Your apartment number, until you change it here.'),
+      field('New password', password('next', { autocomplete: 'new-password', required: true }), 'At least 8 characters.'),
+      field('New password again', password('again', { autocomplete: 'new-password', required: true })),
+      h('button', { class: 'btn btn-sm', type: 'submit' }, 'Change password'),
+      h('p', { class: 'msg', role: 'alert', hidden: true }));
+    onSubmit(form, async (v) => {
+      if (v.next !== v.again) throw new Error('The two new passwords do not match.');
+      await api('/password', { current: v.current, next: v.next });
+      flash = 'Your password has been changed.';
+      await boot();
+      window.scrollTo({ top: 0 });
+    });
+    return h('div', { class: 'card' }, h('details', { class: 'more flush' }, h('summary', {}, 'Change your password'), form));
   }
 
   function requestForm(data) {
