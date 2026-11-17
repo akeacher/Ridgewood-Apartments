@@ -208,12 +208,19 @@ details.more[open] summary { margin-bottom: 12px; }
 .prev:hover .ref { color: var(--gold); }
 .table-wrap { overflow-x: auto; background: var(--white); border: 1px solid var(--line); }
 table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
-th { text-align: left; font-size: 0.64rem; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft); padding: 12px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-td { padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; overflow-wrap: break-word; }
+th { text-align: left; font-size: 0.64rem; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft); padding: 12px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 11px 12px; border-bottom: 1px solid var(--line); vertical-align: top; overflow-wrap: break-word; }
 tr:last-child td { border-bottom: 0; }
 tr.off td { color: var(--ink-soft); }
 td.nowrap { white-space: nowrap; }
-td .link-btn + .link-btn { margin-left: 12px; }
+/* an email address never breaks inside a table row (Chrome still breaks at a
+   <wbr> in nowrap text, so the break point after the @ is switched off here) */
+td.addr { white-space: nowrap; }
+td.addr wbr { display: none; }
+/* A row's buttons. The column is kept narrow so the buttons wrap onto a second
+   line rather than squeezing the names and email addresses beside them. */
+td.row-actions { width: 150px; }
+td.row-actions .link-btn { white-space: nowrap; margin: 2px 14px 2px 0; }
 .count { font-family: "Cormorant Garamond", Georgia, serif; font-size: 2rem; line-height: 1; }
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
 .stat { background: var(--white); border: 1px solid var(--line); padding: 14px 16px; }
@@ -226,30 +233,6 @@ td .link-btn + .link-btn { margin-left: 12px; }
   .side a { border-left: 0; border-bottom: 3px solid transparent; white-space: nowrap; padding: 10px 12px; }
   .side a.on { border-bottom-color: var(--gold); background: none; }
   .side .side-gap { display: none; }
-
-  /* Tables become a stack of cards, one per row, each cell labelled with its
-     column. Five columns side by side do not fit a phone or small tablet: the
-     narrow ones were squeezed until an email address ran down the screen a
-     letter at a time. */
-  .table-wrap { overflow: visible; background: none; border: 0; }
-  .table-wrap table, .table-wrap tbody, .table-wrap tr, .table-wrap td { display: block; width: 100%; }
-  .table-wrap thead { display: none; }
-  .table-wrap tr { background: var(--white); border: 1px solid var(--line); padding: 2px 16px; }
-  .table-wrap tr + tr { margin-top: 10px; }
-  .table-wrap td { padding: 10px 0; overflow-wrap: anywhere; }
-  /* every card has its dividers, including the last one (desktop drops them on the last row) */
-  .table-wrap td, .table-wrap tr:last-child td { border-bottom: 1px solid var(--line); }
-  .table-wrap td.end, .table-wrap tr:last-child td.end { border-bottom: 0; }
-  .table-wrap td.blank { display: none; }
-  .table-wrap td.nowrap { white-space: normal; }
-  .table-wrap td[data-label] { position: relative; padding-left: 98px; }
-  .table-wrap td[data-label]::before {
-    content: attr(data-label); position: absolute; left: 0; top: 14px; width: 88px;
-    font-size: 0.6rem; font-weight: 500; letter-spacing: 0.14em; line-height: 1.3; text-transform: uppercase; color: var(--ink-soft);
-  }
-  /* the row's buttons, which have no column heading */
-  .table-wrap td:not([data-label]) { display: flex; flex-wrap: wrap; gap: 8px 20px; }
-  .table-wrap td .link-btn + .link-btn { margin-left: 0; }
 }
 @media (max-width: 640px) {
   h1 { font-size: 1.9rem; } h2 { font-size: 1.5rem; }
@@ -268,4 +251,41 @@ td .link-btn + .link-btn { margin-left: 12px; }
   /* the deep green all but disappears on a dark page, so give it an edge */
   .chip-solid { border-color: var(--ink-soft); }
   .msg.ok { border-left-color: var(--ink-soft); }
+}
+
+/* Staff tables need about 860px across. Wherever the content column is
+   narrower than that (a phone, a tablet, a small laptop window) each row is laid
+   out as a card instead, its cells labelled with their column headings: squeezed
+   into less room, the columns pushed names and email addresses onto second lines,
+   and on a phone ran an address down the screen a letter at a time. */
+#main { container-type: inline-size; }
+@container (max-width: 859px) {
+  .table-wrap { overflow: visible; background: none; border: 0; }
+  .table-wrap table, .table-wrap tbody, .table-wrap tr, .table-wrap td { display: block; width: 100%; }
+  .table-wrap thead { display: none; }
+  .table-wrap tr { background: var(--white); border: 1px solid var(--line); padding: 2px 16px; }
+  .table-wrap tr + tr { margin-top: 10px; }
+  .table-wrap td { padding: 10px 0; overflow-wrap: anywhere; }
+  /* every card has its dividers, including the last one (desktop drops them on the last row) */
+  .table-wrap td, .table-wrap tr:last-child td { border-bottom: 1px solid var(--line); }
+  .table-wrap td.end, .table-wrap tr:last-child td.end { border-bottom: 0; }
+  .table-wrap td.nowrap { white-space: normal; }
+  .table-wrap td[data-label] { position: relative; padding-left: 132px; }
+  .table-wrap td[data-label]::before {
+    content: attr(data-label); position: absolute; left: 0; top: 14px; width: 120px;
+    font-size: 0.6rem; font-weight: 500; letter-spacing: 0.14em; line-height: 1.3; text-transform: uppercase; color: var(--ink-soft);
+  }
+  /* the row's buttons, which have no column heading */
+  .table-wrap td:not([data-label]) { display: flex; flex-wrap: wrap; gap: 8px 20px; width: 100%; }
+  .table-wrap td .link-btn, .table-wrap td.row-actions .link-btn { margin: 0; }
+  /* a cell with nothing in it, such as the buttons on your own row in Team */
+  .table-wrap tr td.blank { display: none; }
+  .table-wrap td.addr { white-space: normal; }
+  .table-wrap td.addr wbr { display: inline; }
+}
+/* and in a narrow column each label sits above its value, so the value has the
+   card's full width and an email address stays on one line */
+@container (max-width: 520px) {
+  .table-wrap td[data-label] { padding-left: 0; }
+  .table-wrap td[data-label]::before { position: static; display: block; width: auto; margin-bottom: 4px; }
 }
