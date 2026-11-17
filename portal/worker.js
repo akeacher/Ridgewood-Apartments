@@ -11,8 +11,8 @@
 const TENANT_SESSION_HOURS = 24 * 7;
 const STAFF_SESSION_HOURS = 12;
 const LOCK_WINDOW_MIN = 15;        // failed sign-ins are counted over this window
-const LOCK_MAX_FAILS = 5;          // per email address; per-IP allows 4x for shared wifi
-const LOCK_DAY_FAILS = 15;         // per email address in 24 hours, then the office has to unlock it
+const LOCK_MAX_FAILS = 10;         // per email address; per-IP allows 4x for shared wifi
+const LOCK_DAY_FAILS = 30;         // per email address in 24 hours, then the office has to unlock it
 const MAX_REQUESTS_PER_DAY = 10;   // per resident
 const PBKDF2_ITERATIONS = 100000;  // the most Workers' Web Crypto will accept
 const MIN_STAFF_PASSWORD = 10;

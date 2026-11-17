@@ -158,8 +158,8 @@ def run():
     # setup code guessing is rate limited per visitor
     g = Client()
     codes = [g.post("/staff/setup", {"code": "guess%d" % i, "name": "X Y", "email": "x@y.com", "password": "1234567890"})[0]
-             for i in range(6)]
-    check(codes == [401] * 5 + [429], "setup code guessing locks after five tries", codes)
+             for i in range(11)]
+    check(codes == [401] * 10 + [429], "setup code guessing locks after ten tries", codes)
     s, j = g.post("/staff/setup", {"code": CODE, "name": "X Y", "email": "x@y.com", "password": "1234567890"})
     check(s == 429, "…even with the right code, from that visitor", j)
 
@@ -236,33 +236,33 @@ def run():
     check(me["requests"] == [] and "Plumbing" in me["categories"], "new resident has no requests")
     check(t.get("/staff/workorders")[0] == 401, "a resident session does not open the staff side")
 
-    # lockout: five misses, then even the right details wait fifteen minutes
+    # lockout: ten misses, then even the right details wait fifteen minutes
     lk = Client()
-    codes = [tenant_login(lk, "lock@example.com", "651-555-0105", "305", "000")[0] for _ in range(5)]
+    codes = [tenant_login(lk, "lock@example.com", "651-555-0105", "305", "000")[0] for _ in range(10)]
     s, j = tenant_login(lk, "lock@example.com", "651-555-0105", "305")
-    check(codes == [401] * 5 and s == 429 and j.get("code") == "locked", "five wrong tries lock the address", (codes, s, j))
+    check(codes == [401] * 10 and s == 429 and j.get("code") == "locked", "ten wrong tries lock the address", (codes, s, j))
     other = Client()
     check(tenant_login(other, "lock@example.com", "651-555-0105", "305")[0] == 429, "the lock follows the email, not the device")
     check(tenant_login(other, "james@example.com", "651-555-0102", "310")[0] == 200, "other residents are unaffected")
     lk.offset = 16 * MIN
     check(tenant_login(lk, "lock@example.com", "651-555-0105", "305")[0] == 200, "the lock lifts after fifteen minutes")
 
-    # daily cap: fifteen misses in a day and the office has to unlock it
+    # daily cap: thirty misses in a day and the office has to unlock it
     dc = Client()
     codes = []
     for window in range(3):
         dc.offset = window * 16 * MIN
-        codes += [tenant_login(dc, "daycap@example.com", "651-555-0106", "306", "111")[0] for _ in range(5)]
+        codes += [tenant_login(dc, "daycap@example.com", "651-555-0106", "306", "111")[0] for _ in range(10)]
     dc.offset = 3 * 16 * MIN
     s, j = tenant_login(dc, "daycap@example.com", "651-555-0106", "306")
-    check(codes == [401] * 15 and s == 429 and "leasing office" in j.get("error", ""), "fifteen misses in a day lock it until the office steps in", (codes, s, j))
+    check(codes == [401] * 30 and s == 429 and "leasing office" in j.get("error", ""), "thirty misses in a day lock it until the office steps in", (codes, s, j))
     check(m.post("/staff/residents/%d/unlock" % ids["daycap@example.com"])[0] == 200, "staff can unlock a resident")
     check(tenant_login(dc, "daycap@example.com", "651-555-0106", "306")[0] == 200, "unlocked resident can sign in")
 
     # one device hammering many addresses
     ipc = Client()
     for n in range(5):
-        for _ in range(4):
+        for _ in range(8):
             tenant_login(ipc, "ghost%d@example.com" % n, "651-555-0000", "1")
     check(tenant_login(ipc, "ipcap@example.com", "651-555-0107", "307")[0] == 429, "a device guessing across many addresses is cut off")
     ipc2 = Client()
@@ -518,8 +518,8 @@ def run():
     s2, j2b = Client().post("/staff/login", {"email": "sam@ridgewood.test", "password": "whatever it is"})
     check(s == 401 and s2 == 401 and j == j2b, "unknown staff email and wrong password look identical", (j, j2b))
     bf = Client()
-    codes = [bf.post("/staff/login", {"email": "manager@ridgewood.test", "password": "guess %d" % i})[0] for i in range(6)]
-    check(codes == [401] * 5 + [429], "staff sign-in locks after five wrong passwords", codes)
+    codes = [bf.post("/staff/login", {"email": "manager@ridgewood.test", "password": "guess %d" % i})[0] for i in range(11)]
+    check(codes == [401] * 10 + [429], "staff sign-in locks after ten wrong passwords", codes)
     bf.offset = 16 * MIN
     check(bf.post("/staff/login", {"email": "manager@ridgewood.test", "password": "a brand new password"})[0] == 200, "…and reopens after fifteen minutes")
 

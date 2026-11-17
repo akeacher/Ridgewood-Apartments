@@ -69,8 +69,8 @@ notes that stay with an apartment for the next technician.
 
 **How sign-in works.** A resident enters email, phone number and apartment number,
 which must match an entry staff have added under *Residents*; the password is the
-apartment number. Because that password is guessable, sign-in locks after 5 wrong
-tries in 15 minutes and locks until staff unlock it after 15 in a day, and every
+apartment number. Because that password is guessable, sign-in locks after 10 wrong
+tries in 15 minutes and locks until staff unlock it after 30 in a day, and every
 attempt is in the staff *Activity log*. Staff use an email and their own password
 (stored only as a salted PBKDF2 hash).
 
