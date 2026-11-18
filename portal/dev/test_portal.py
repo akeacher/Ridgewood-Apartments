@@ -154,7 +154,7 @@ def run():
     check(Client().get("/health")[0] == 200, "the Worker starts against the older database")
     row = sql("SELECT name, pw_hash, pending, source FROM tenants WHERE email = 'old@example.com'")[0]
     check(row == {"name": "Old Timer", "pw_hash": None, "pending": 0, "source": "staff"}, "existing residents are kept and given the new fields", row)
-    check(sql("SELECT value FROM settings WHERE name = 'schema_version'")[0]["value"] == "3", "the upgrades are recorded")
+    check(sql("SELECT value FROM settings WHERE name = 'schema_version'")[0]["value"] == "4", "the upgrades are recorded")
     row = sql("SELECT alt_phone, emergency_name, emergency_phone, contact_updated_at, contact_updated_by FROM tenants WHERE email = 'old@example.com'")[0]
     check(row == {"alt_phone": "", "emergency_name": "", "emergency_phone": "", "contact_updated_at": None, "contact_updated_by": ""},
           "existing residents get the new contact fields, empty", row)
@@ -836,6 +836,106 @@ def run():
     changed = [e["detail"] for e in m.get("/staff/activity")[1]["activity"] if e["event"] == "special_changed"]
     check(any('changed headline, floor plans (was "First month free")' in x for x in changed), "edits say what changed", changed[:3])
 
+    # ------------------------------------------------------------- turnovers
+    print("turnovers")
+    check(Client().get("/staff/turnovers")[0] == 401 and Client().post("/staff/turnovers", {"unit": "1"})[0] == 401,
+          "turnovers need a staff session")
+    s, j = m.get("/staff/turnovers")
+    check(s == 200 and j["turnovers"] == [] and j["mine_open"] == 0 and j["checklist_size"] >= 80, "no turnovers to start with", j)
+    for bad, why in (({"unit": ""}, "an apartment"), ({"unit": "310", "building": "1999"}, "a real building"),
+                     ({"unit": "310", "ready_by": "soon"}, "a real ready-by date"), ({"unit": "310", "move_out_on": "2026-02-30"}, "a real move-out date")):
+        check(m.post("/staff/turnovers", bad)[0] == 400, "a turnover needs " + why)
+    s, j = m.post("/staff/turnovers", {"unit": "Apt 310", "building": "1871", "move_out_on": "2026-11-30", "ready_by": "2026-12-10",
+                                       "notes": "Long-term resident: plan on a full paint."})
+    check(s == 200 and j["id"], "a manager starts a turnover", j)
+    tid = j["id"]
+    s, j = m.post("/staff/turnovers", {"unit": "310", "building": "1871"})
+    check(s == 409 and j.get("id") == tid, "an apartment can only have one turnover in progress", j)
+    s, d = m.get("/staff/turnovers/%d" % tid)
+    tasks = d["tasks"]
+    cats = list(dict.fromkeys(x["category"] for x in tasks))
+    check(len(tasks) == m.get("/staff/turnovers")[1]["checklist_size"] >= 80, "it comes with the full checklist", len(tasks))
+    check(cats[0] == "Move-out & walk-through" and cats[-1] == "Final inspection" and "Walls, ceilings & paint" in cats
+          and cats.index("Walls, ceilings & paint") < cats.index("Cleaning"), "…in the order the work is done", cats)
+    check(all(x["status"] == "todo" and x["assignee"] is None for x in tasks), "every task starts to do and unassigned")
+    tv = d["turnover"]
+    check((tv["unit"], tv["building"], tv["move_out_on"], tv["ready_by"], tv["status"], tv["created_by"]) ==
+          ("310", "1871", "2026-11-30", "2026-12-10", "open", "Andrew Manager"), "the details are kept, apartment number tidied", tv)
+    check([x["name"] for x in d["team"]] == ["Andrew Manager"], "the page lists the team to assign from", d["team"])
+
+    paint = [x for x in tasks if x["category"] == "Walls, ceilings & paint"]
+    s, j = m.post("/staff/turnovers/%d/assign" % tid, {"category": "Walls, ceilings & paint", "assigned_name": "Twin Cities Painting"})
+    check(s == 200 and j["changed"] == len(paint), "a manager hands a whole section to an outside painter", j)
+    k1, k2, k3 = tasks[0]["id"], tasks[1]["id"], tasks[2]["id"]
+    s, j = m.post("/staff/turnover-tasks/%d" % k1, {"assigned_to": my_id})
+    check(s == 200 and j["task"]["assignee"] == "Andrew Manager" and j["task"]["assigned_to"] == my_id, "…and one task to a team member", j)
+    check(m.post("/staff/turnover-tasks/%d" % k1, {"assigned_to": 9999})[0] == 400, "tasks go only to people on the team, or a named outsider")
+    check(m.post("/staff/turnover-tasks/%d" % k1, {"status": "bogus"})[0] == 400, "a task is to do, done or not needed")
+    s, j = m.post("/staff/turnover-tasks/%d" % k1, {"status": "done"})
+    check(j["task"]["status"] == "done" and j["task"]["done_by"] == "Andrew Manager" and j["task"]["done_at"], "ticking a task off records who and when", j)
+    s, j = m.post("/staff/turnover-tasks/%d" % k2, {"status": "skipped", "note": "Resident never had a garage."})
+    check((j["task"]["status"], j["task"]["note"], j["task"]["done_by"]) == ("skipped", "Resident never had a garage.", "Andrew Manager"),
+          "a task can be marked not needed, with a note", j)
+    s, j = m.post("/staff/turnover-tasks/%d" % k1, {"status": "todo"})
+    check(j["task"]["status"] == "todo" and j["task"]["done_at"] is None and j["task"]["done_by"] == "", "unticking puts it back to do", j)
+    m.post("/staff/turnover-tasks/%d" % k1, {"status": "done"})
+    m.post("/staff/turnover-tasks/%d" % k3, {"assigned_to": my_id})
+    row = m.get("/staff/turnovers")[1]
+    r0 = row["turnovers"][0]
+    check((r0["total"], r0["finished"], r0["mine_open"]) == (len(tasks), 2, 1) and row["mine_open"] == 1,
+          "the list shows progress and what is waiting on you", r0)
+    check(sorted(r0["crew"]) == ["Andrew Manager", "Twin Cities Painting"] and r0["unassigned_open"] == len(tasks) - len(paint) - 3,
+          "…who is on the crew, and how much is still unassigned", r0)
+    s, j = m.get("/staff/turnovers/mine")
+    check([x["id"] for x in j["tasks"]] == [k1, k3] and j["turnovers"][0]["unit"] == "310", "my tasks lists what is assigned to me", j)
+    check(m.get("/staff/me")[1]["turnover_tasks"] == 1, "…and the menu can show how many are still to do")
+
+    s, j = m.post("/staff/turnovers/%d/tasks" % tid, {"category": "Walls, ceilings & paint", "title": "Paint the <b>bedroom accent wall</b> back to white"})
+    check(s == 200 and j["task"]["category"] == "Walls, ceilings & paint", "a manager adds a task to a section", j)
+    custom = j["task"]["id"]
+    order = [x["id"] for x in m.get("/staff/turnovers/%d" % tid)[1]["tasks"]]
+    check(order.index(custom) == order.index(paint[-1]["id"]) + 1, "…and it lands at the end of that section")
+    s, j = m.post("/staff/turnovers/%d/tasks" % tid, {"category": "Garage", "title": "Repaint the garage door number"})
+    check(s == 200 and m.get("/staff/turnovers/%d" % tid)[1]["tasks"][-1]["title"] == "Repaint the garage door number",
+          "a task in a new section goes at the end")
+    check(m.post("/staff/turnovers/%d/tasks" % tid, {"category": "Garage", "title": ""})[0] == 400, "a task needs a description")
+    check(m.post("/staff/turnover-tasks/%d/delete" % j["task"]["id"])[0] == 200 and len(m.get("/staff/turnovers/%d" % tid)[1]["tasks"]) == len(tasks) + 1,
+          "a manager removes a task")
+    check(m.post("/staff/turnover-tasks/%d/delete" % j["task"]["id"])[0] == 404, "…once")
+
+    check(m.post("/staff/turnovers/%d" % tid, {"ready_by": "2026-12-12", "notes": "Full paint confirmed."})[0] == 200
+          and m.get("/staff/turnovers/%d" % tid)[1]["turnover"]["ready_by"] == "2026-12-12", "a manager changes the details")
+    check(m.post("/staff/turnovers/%d" % tid, {"status": "done"})[0] == 400, "a turnover is either in progress or ready")
+    check(m.post("/staff/turnovers/%d" % tid, {"status": "ready"})[0] == 200, "a manager marks the apartment ready")
+    tv = m.get("/staff/turnovers/%d" % tid)[1]["turnover"]
+    check(tv["status"] == "ready" and tv["completed_by"] == "Andrew Manager" and tv["completed_at"], "…recorded with who and when", tv)
+    check(m.get("/staff/turnovers")[1]["turnovers"] == [] and [x["id"] for x in m.get("/staff/turnovers?view=ready")[1]["turnovers"]] == [tid],
+          "it moves from in progress to completed")
+    check(m.get("/staff/turnovers/mine")[1]["tasks"] == [] and m.get("/staff/me")[1]["turnover_tasks"] == 0,
+          "tasks in a finished turnover leave my list")
+    check(m.post("/staff/turnovers", {"unit": "310", "building": "1871"})[0] == 200, "once it is ready, the apartment can start a new turnover")
+    second = m.get("/staff/turnovers")[1]["turnovers"][0]["id"]
+    check(m.post("/staff/turnovers/%d" % tid, {"status": "open"})[0] == 409, "…and the old one cannot be reopened beside it")
+    check(m.post("/staff/turnovers/%d/delete" % second)[0] == 200, "a manager deletes a turnover")
+    check(sql("SELECT COUNT(*) AS n FROM turnover_tasks WHERE turnover_id = ?", second)[0]["n"] == 0, "…and its tasks go with it")
+    check(m.post("/staff/turnovers/%d" % tid, {"status": "open"})[0] == 200
+          and m.get("/staff/turnovers/%d" % tid)[1]["turnover"]["completed_at"] is None, "a ready turnover can be reopened")
+
+    s, j = m.post("/staff/turnovers", {"unit": "204", "building": "1871"})
+    d = m.get("/staff/turnovers/%d" % j["id"])[1]
+    check(len(d["handoff"]) == 2 and any("Moen 1225" in n["body"] for n in d["handoff"]),
+          "a turnover shows the notes earlier technicians left for that apartment", d["handoff"])
+    check(m.post("/staff/turnovers/%d" % j["id"], {"unit": "310", "building": "1871"})[0] == 409,
+          "a turnover cannot be moved onto an apartment that already has one going")
+    m.post("/staff/turnovers/%d/delete" % j["id"])
+    s, j = m.post("/staff/turnovers/%d/assign" % tid, {"assigned_name": ""})
+    check(s == 200 and j["changed"] == len(tasks) + 1, "a whole checklist can be unassigned at once", j)
+    m.post("/staff/turnovers/%d/assign" % tid, {"category": "Walls, ceilings & paint", "assigned_name": "Twin Cities Painting"})
+    events = [e["event"] for e in m.get("/staff/activity")[1]["activity"]]
+    for ev in ("turnover_started", "turnover_assigned", "turnover_changed", "turnover_ready", "turnover_reopened", "turnover_deleted"):
+        check(ev in events, "the activity log records " + ev)
+    tk = [x for x in m.get("/staff/turnovers/%d" % tid)[1]["tasks"] if x["category"] == "Cleaning"][0]["id"]
+
     # --------------------------------------------------------------- the team
     print("team")
     tech_new = {"name": "Sam Tech", "email": "sam@ridgewood.test", "password": "temporary pass 1", "role": "tech"}
@@ -867,6 +967,18 @@ def run():
     check(k.post("/staff/pricing", {"plans": {"wakefield": {"available": True}}})[0] == 403 and Client().get("/pricing")[1]["plans"]["wakefield"]["available"] is None,
           "…or availability")
     check(k.get("/staff/specials")[0] == 403 and k.post("/staff/specials", {"title": "Tech special"})[0] == 403, "…or specials")
+    check(m.post("/staff/turnover-tasks/%d" % tk, {"assigned_to": tech_id})[0] == 200, "a manager assigns a turnover task to a technician")
+    s, j = k.get("/staff/turnovers/mine")
+    check([x["id"] for x in j["tasks"]] == [tk] and k.get("/staff/me")[1]["turnover_tasks"] == 1, "the technician sees it in their tasks", j)
+    check(k.get("/staff/turnovers/%d" % tid)[0] == 200, "…and can open the whole checklist")
+    s, j = k.post("/staff/turnover-tasks/%d" % tk, {"status": "done", "note": "Degreased the hood too."})
+    check(s == 200 and (j["task"]["done_by"], j["task"]["note"]) == ("Sam Tech", "Degreased the hood too."), "…ticks it off with a note", j)
+    check(k.post("/staff/turnover-tasks/%d" % tk, {"assigned_name": "Someone"})[0] == 403, "a technician cannot assign tasks")
+    check(k.post("/staff/turnovers", {"unit": "999"})[0] == 403 and k.post("/staff/turnovers/%d" % tid, {"status": "ready"})[0] == 403
+          and k.post("/staff/turnovers/%d/assign" % tid, {"assigned_name": "x"})[0] == 403
+          and k.post("/staff/turnovers/%d/tasks" % tid, {"category": "Garage", "title": "Something"})[0] == 403
+          and k.post("/staff/turnover-tasks/%d/delete" % tk)[0] == 403 and k.post("/staff/turnovers/%d/delete" % tid)[0] == 403,
+          "a technician cannot start, finish, assign, add to or delete from a turnover")
     Client().post("/signup", dict(new, email="wait@example.com", name="Wendy Waits", unit="130"))
     wid = sql("SELECT id FROM tenants WHERE email = 'wait@example.com'")[0]["id"]
     for action in ("approve", "decline", "reset-password"):

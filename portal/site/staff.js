@@ -7,7 +7,8 @@
   const who = document.getElementById('who');
 
   const S = { me: null, team: [], categories: [], buildings: [], labels: {},
-    view: 'open', q: '', recordsQ: '', unit: '', unitBuilding: 'any', editResident: null, editReturn: null, resetMember: null, editSpecial: null, pending: 0,
+    view: 'open', q: '', recordsQ: '', unit: '', unitBuilding: 'any', editResident: null, editReturn: null, resetMember: null, editSpecial: null, pending: 0, myTurnTasks: 0,
+    turnView: 'open', turnFilter: 'all', newTurnover: false, editTurnover: false,
     sheet: { q: '', building: 'all', removed: false, sort: 'unit', dir: 1 } };
   const OPEN = ['new', 'scheduled', 'in_progress', 'on_hold'];
   const URGENCY = [['routine', 'Routine'], ['soon', 'Soon'], ['urgent', 'Urgent']];
@@ -37,7 +38,7 @@
     try {
       const me = await api('/staff/me');
       Object.assign(S, { me: me.me, team: me.team, categories: me.categories, buildings: me.buildings, labels: me.status_labels,
-        pending: me.pending_residents || 0 });
+        pending: me.pending_residents || 0, myTurnTasks: me.turnover_tasks || 0 });
     } catch (e) {
       return gate('We hit a snag', e.message);
     }
@@ -130,7 +131,7 @@
     who.replaceChildren(
       h('span', { class: 'who' }, S.me.name, h('small', {}, isManager() ? 'Manager' : 'Maintenance')),
       h('button', { class: 'btn btn-sm btn-ghost', type: 'button', onclick: signOut }, 'Sign out'));
-    const links = [['orders', 'Work orders'], ['records', 'Completed records'], ['unit', 'Apartment history'],
+    const links = [['orders', 'Work orders'], ['records', 'Completed records'], ['turnovers', 'Turnovers'], ['unit', 'Apartment history'],
       ['residents', 'Residents'], ['contacts', 'Contact sheet'], ['emails', 'Email log']];
     if (isManager()) links.push(null, ['pricing', 'Pricing & availability'], ['specials', 'Specials'], ['activity', 'Activity log'], ['team', 'Team'], ['settings', 'Settings']);
     links.push(null, ['account', 'My account']);
@@ -140,17 +141,25 @@
         links.map((l) => (l ? h('a', { href: '#/' + l[0], 'data-nav': l[0] }, l[1]) : h('span', { class: 'side-gap' })))),
       main));
     setPending(S.pending);
+    setMyTurnTasks(S.myTurnTasks);
   }
 
   // resident accounts waiting for approval: kept in the menu so they are not missed
+  // a small count beside a menu item
+  function navCount(nav, label, n, title) {
+    const link = app.querySelector('.side a[data-nav="' + nav + '"]');
+    if (link) link.replaceChildren(label, n ? h('span', { class: 'nav-count', title: title }, n) : '');
+  }
   function setPending(n) {
     S.pending = n || 0;
-    const link = app.querySelector('.side a[data-nav="residents"]');
-    if (!link) return;
-    link.replaceChildren('Residents', S.pending ? h('span', { class: 'nav-count', title: 'Waiting for approval' }, S.pending) : '');
+    navCount('residents', 'Residents', S.pending, 'Waiting for approval');
+  }
+  function setMyTurnTasks(n) {
+    S.myTurnTasks = n || 0;
+    navCount('turnovers', 'Turnovers', S.myTurnTasks, 'Turnover tasks assigned to you');
   }
 
-  const VIEWS = { orders: ordersView, new: newOrderView, records: recordsView, unit: unitView, residents: residentsView, contacts: contactsView,
+  const VIEWS = { orders: ordersView, new: newOrderView, records: recordsView, unit: unitView, residents: residentsView, contacts: contactsView, turnovers: turnoversView,
     emails: emailsView, pricing: pricingView, specials: specialsView, activity: activityView, team: teamView, settings: settingsView, account: accountView };
   const MANAGER_ONLY = ['pricing', 'specials', 'activity', 'team', 'settings'];
 
@@ -159,14 +168,14 @@
     const parts = location.hash.replace(/^#\/?/, '').split('/');
     let name = VIEWS[parts[0]] ? parts[0] : 'orders';
     if (MANAGER_ONLY.includes(name) && !isManager()) name = 'orders';
-    const id = name === 'orders' && /^\d+$/.test(parts[1] || '') ? Number(parts[1]) : 0;
+    const id = (name === 'orders' || name === 'turnovers') && /^\d+$/.test(parts[1] || '') ? Number(parts[1]) : 0;
     const nav = name === 'new' ? 'orders' : name === 'orders' && id && S.from === 'records' ? 'records' : name;
     for (const a of app.querySelectorAll('.side a')) a.classList.toggle('on', a.getAttribute('data-nav') === nav);
     const mine = ++ticket;
     const key = name + '/' + id;
     if (key !== painted) main.replaceChildren(h('p', { class: 'loading' }, 'Loading…'));
     try {
-      const nodes = id ? await detailView(id) : await VIEWS[name]();
+      const nodes = id ? await (name === 'turnovers' ? turnoverDetailView(id) : detailView(id)) : await VIEWS[name]();
       if (mine !== ticket) return;
       main.replaceChildren(flash ? h('p', { class: 'notice', role: 'status' }, flash) : '', ...nodes.filter(Boolean));
       if (key !== painted || flash) window.scrollTo({ top: 0 });
@@ -703,6 +712,8 @@
     contact_updated: 'Updated contact details', contacts_exported: 'Downloaded the contact sheet',
     special_created: 'Added a special', special_changed: 'Changed a special', special_turned_on: 'Turned a special on',
     special_turned_off: 'Turned a special off', special_deleted: 'Deleted a special',
+    turnover_started: 'Started a turnover', turnover_changed: 'Changed a turnover', turnover_ready: 'Marked a turnover ready',
+    turnover_reopened: 'Reopened a turnover', turnover_deleted: 'Deleted a turnover', turnover_assigned: 'Assigned turnover tasks',
     account_created: 'Created an account', resident_approved: 'Approved an account', resident_declined: 'Declined a sign-up',
     resident_password_changed: 'Changed their password', resident_password_reset: 'Reset a resident password' };
   async function activityView() {
@@ -882,6 +893,389 @@
       h('h2', { class: 'section-title' }, 'Rents'),
       h('p', { class: 'fine section-lede' }, 'Changes to rents go live when you press “Save and publish”.'),
       form];
+  }
+
+  /* -------------------------------------------------------------- turnovers */
+  // Getting an apartment ready for its next resident: one checklist per
+  // apartment, a person (or outside company) on each task, ticked off as it goes.
+  const wholeDays = (iso) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    if (!m) return null;
+    const now = new Date();
+    return Math.round((new Date(+m[1], +m[2] - 1, +m[3]) - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+  };
+  const aptOf = (t) => 'Apt ' + t.unit + (t.building ? ' · ' + t.building : '');
+  // "5 days left", "Due today", "2 days late" — as a chip
+  const dueChip = (t) => {
+    if (t.status === 'ready') return h('span', { class: 'chip chip-solid' }, 'Ready');
+    const n = wholeDays(t.ready_by);
+    if (n === null) return h('span', { class: 'chip chip-off' }, 'No ready-by date');
+    const text = n > 1 ? n + ' days left' : n === 1 ? 'Due tomorrow' : n === 0 ? 'Due today' : -n + (n === -1 ? ' day late' : ' days late');
+    return h('span', { class: 'chip ' + (n < 0 ? 'chip-gold' : n <= 3 ? 'chip-goldline' : 'chip-ink') }, text);
+  };
+  // the bar's width is set through the style property: the page's security
+  // policy blocks inline style attributes
+  const progressBar = (done, total) => {
+    const fill = h('span', {});
+    const bar = h('div', { class: 'progress', role: 'progressbar', 'aria-valuemin': '0' }, fill);
+    bar.set = (d, tot) => {
+      fill.style.width = (tot ? Math.round((100 * d) / tot) : 0) + '%';
+      bar.setAttribute('aria-valuemax', String(tot)); bar.setAttribute('aria-valuenow', String(d));
+    };
+    bar.set(done, total);
+    return bar;
+  };
+  const turnDates = (t) => [t.move_out_on ? 'Move-out ' + longDate(t.move_out_on) : '', t.ready_by ? 'Ready by ' + longDate(t.ready_by) : '']
+    .filter(Boolean).join(' · ') || 'No dates set';
+
+  async function turnoversView() {
+    const view = ['open', 'mine', 'ready'].includes(S.turnView) ? S.turnView : 'open';
+    const seg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Which turnovers' },
+      [['open', 'In progress'], ['mine', 'My tasks'], ['ready', 'Completed']].map((v) =>
+        h('button', { type: 'button', class: view === v[0] ? 'on' : '', 'aria-pressed': String(view === v[0]),
+          onclick: () => { S.turnView = v[0]; route(); } }, v[1])));
+    const head = pageHead('Turnovers', 'Getting each apartment ready for its next resident: the full checklist from move-out to final '
+      + 'inspection, and who is doing each part.',
+      isManager() && view !== 'mine' ? h('button', { class: 'btn btn-sm', type: 'button',
+        onclick: () => { S.newTurnover = !S.newTurnover; route(); } }, S.newTurnover ? 'Cancel' : 'Start a turnover') : null);
+    if (view === 'mine') return [head, h('div', { class: 'toolbar' }, seg), ...await myTurnTasksView()];
+
+    const d = await api('/staff/turnovers?view=' + view);
+    setMyTurnTasks(d.mine_open);
+    const nodes = [head];
+    if (isManager() && S.newTurnover) nodes.push(newTurnoverForm(d.checklist_size));
+    nodes.push(h('div', { class: 'toolbar' }, seg,
+      h('span', { class: 'fine' }, d.mine_open ? d.mine_open + (d.mine_open === 1 ? ' task is' : ' tasks are') + ' assigned to you' : '')));
+    if (!d.turnovers.length) {
+      nodes.push(h('div', { class: 'empty' }, view === 'ready' ? 'No completed turnovers yet.'
+        : 'No turnovers in progress.' + (isManager() ? ' Start one when a resident gives notice or moves out.' : '')));
+      return nodes;
+    }
+    nodes.push(h('div', {}, d.turnovers.map((t) => h('a', { class: 'order-row turn-row', href: '#/turnovers/' + t.id },
+      h('div', { class: 'or-top' }, h('strong', {}, aptOf(t)), dueChip(t),
+        t.mine_open ? h('span', { class: 'chip chip-goldline' }, t.mine_open + ' for you') : null),
+      h('p', { class: 'or-title' }, turnDates(t)),
+      h('div', { class: 'turn-progress' }, progressBar(t.finished, t.total),
+        h('span', { class: 'fine' }, t.finished + ' of ' + t.total + ' done')),
+      h('div', { class: 'or-meta' },
+        h('span', {}, t.crew.length ? 'Crew: ' + t.crew.join(', ') : 'Nobody assigned yet'),
+        t.status === 'open' && t.unassigned_open ? h('span', {}, t.unassigned_open + ' unassigned') : null,
+        t.status === 'ready' && t.completed_by ? h('span', {}, 'Marked ready by ' + t.completed_by) : null)))));
+    return nodes;
+  }
+
+  function turnoverFields(t) {
+    t = t || {};
+    return [h('div', { class: 'cols' },
+      field('Apartment number', input('unit', { required: true, maxlength: 12, autocomplete: 'off', value: t.unit || '' })),
+      field('Building', select('building', buildingOptions(), t.building || ''))),
+    h('div', { class: 'cols' },
+      field('Move-out date', input('move_out_on', { type: 'date', value: t.move_out_on || '' })),
+      field('Ready by', input('ready_by', { type: 'date', value: t.ready_by || '' }), 'When it should be ready to show or for the next move-in.')),
+    field('Notes (optional)', textarea('notes', { maxlength: 2000, rows: 3,
+      placeholder: 'Anything the crew should know: condition, special work, how to get in.' }))];
+  }
+  const turnoverBody = (v) => ({ unit: v.unit, building: v.building, move_out_on: v.move_out_on, ready_by: v.ready_by, notes: v.notes });
+
+  function newTurnoverForm(size) {
+    const form = h('form', { class: 'card card-accent stack', novalidate: true }, h('h3', {}, 'Start a turnover'), turnoverFields(),
+      h('p', { class: 'fine' }, 'It starts with the full Ridgewood checklist — ' + size + ' tasks from move-out to final inspection, '
+        + 'in the order they are usually done. You can add, remove or mark tasks not needed afterwards.'),
+      h('button', { class: 'btn btn-sm', type: 'submit' }, 'Start turnover'),
+      h('p', { class: 'msg', role: 'alert', hidden: true }));
+    onSubmit(form, async (v) => {
+      const out = await api('/staff/turnovers', turnoverBody(v));
+      S.newTurnover = false;
+      flash = 'Turnover started. Assign each section to whoever is doing it.';
+      location.hash = '#/turnovers/' + out.id;
+    });
+    return form;
+  }
+
+  // One checklist line: tick it off, say it is not needed, leave a note, and
+  // (for a manager) choose who does it. Saved the moment it changes.
+  function taskRow(x, ctx) {
+    const box = h('input', { type: 'checkbox' });
+    const meta = h('p', { class: 'task-meta fine' });
+    const noteText = h('p', { class: 'task-note' });
+    const err = h('p', { class: 'task-err fine', hidden: true });
+    const na = h('button', { type: 'button', class: 'link-btn' });
+    const noteInput = h('input', { type: 'text', maxlength: 500, 'aria-label': 'Note on: ' + x.title, placeholder: 'Add a note' });
+    const noteForm = h('form', { class: 'task-note-form', hidden: true }, noteInput, h('button', { class: 'btn btn-sm', type: 'submit' }, 'Save'));
+    const noteBtn = h('button', { type: 'button', class: 'link-btn', onclick: () => {
+      noteForm.hidden = !noteForm.hidden; noteInput.value = x.note || '';
+      if (!noteForm.hidden) noteInput.focus();
+    } }, 'Note');
+    let assign;
+    if (ctx.canAssign) {
+      assign = h('select', { class: 'task-assign', 'aria-label': 'Who does: ' + x.title });
+      assign.addEventListener('change', async () => {
+        const v = assign.value;
+        if (v === '__other') {
+          const name = (window.prompt('Who is doing this? An outside company or someone not on the team:') || '').trim();
+          if (!name) { paint(); return; }
+          await save({ assigned_to: null, assigned_name: name });
+          ctx.vendorAdded(name);
+          return;
+        }
+        await save(v.slice(0, 2) === 's:' ? { assigned_to: Number(v.slice(2)) } : { assigned_to: null, assigned_name: v.slice(2) });
+      });
+    } else {
+      // on someone's own task list the name would just be theirs, every line
+      assign = h('span', { class: 'task-assignee fine', hidden: !!ctx.ownList });
+    }
+    const row = h('div', { class: 'task' },
+      h('label', { class: 'task-check' }, box, h('span', { class: 'task-title' }, ctx.showWhere ? [h('span', { class: 'task-cat' }, x.category + ' · '), x.title] : x.title)),
+      h('div', { class: 'task-side' }, assign, h('span', { class: 'task-actions' }, noteBtn, na,
+        ctx.canAssign ? h('button', { type: 'button', class: 'link-btn', onclick: async () => {
+          if (!window.confirm('Remove “' + x.title + '” from this checklist? (If it just does not apply here, mark it not needed instead.)')) return;
+          try { await api('/staff/turnover-tasks/' + x.id + '/delete', {}); ctx.removed(x); } catch (e) { err.textContent = e.message; err.hidden = false; }
+        } }, 'Remove') : null)),
+      meta, noteText, noteForm, err);
+
+    const fillAssign = () => {
+      if (!ctx.canAssign) {
+        assign.textContent = x.assignee || 'Unassigned';
+        return;
+      }
+      const opts = [['', 'Unassigned']].concat(ctx.team.map((m) => ['s:' + m.id, m.name]));
+      if (x.assigned_to && !ctx.team.some((m) => m.id === x.assigned_to)) opts.push(['s:' + x.assigned_to, (x.assignee || 'Former staff') + ' (not on the team)']);
+      for (const v of ctx.vendors()) opts.push(['v:' + v, v]);
+      opts.push(['__other', 'Someone else…']);
+      assign.replaceChildren(...opts.map((o) => h('option', { value: o[0] }, o[1])));
+      assign.value = x.assigned_to ? 's:' + x.assigned_to : x.assigned_name ? 'v:' + x.assigned_name : '';
+    };
+    function paint() {
+      row.setAttribute('data-status', x.status);
+      box.checked = x.status === 'done';
+      box.setAttribute('aria-label', (x.status === 'done' ? 'Done: ' : 'Mark done: ') + x.title);
+      na.textContent = x.status === 'skipped' ? 'Needed after all' : 'Not needed';
+      na.hidden = x.status === 'done';
+      meta.textContent = x.status === 'todo' ? '' : (x.status === 'done' ? 'Done' : 'Marked not needed') + (x.done_by ? ' by ' + x.done_by : '')
+        + (x.done_at ? ' · ' + when(x.done_at) : '');
+      meta.hidden = !meta.textContent;
+      noteText.textContent = x.note || '';
+      noteText.hidden = !x.note;
+      fillAssign();
+    }
+    async function save(body) {
+      err.hidden = true;
+      row.classList.add('saving');
+      try {
+        const out = await api('/staff/turnover-tasks/' + x.id, body);
+        Object.assign(x, out.task);
+        ctx.changed(x);
+      } catch (e) {
+        err.textContent = e.message; err.hidden = false;
+        if (e.status === 401 && e.code === 'signed_out') RW.onAuthError(e);
+      } finally {
+        row.classList.remove('saving');
+        paint();
+      }
+    }
+    box.addEventListener('change', () => save({ status: box.checked ? 'done' : 'todo' }));
+    na.addEventListener('click', () => save({ status: x.status === 'skipped' ? 'todo' : 'skipped' }));
+    noteForm.addEventListener('submit', (ev) => { ev.preventDefault(); noteForm.hidden = true; save({ note: noteInput.value }); });
+    row.repaint = paint;
+    row.task = x;
+    paint();
+    return row;
+  }
+
+  async function myTurnTasksView() {
+    const d = await api('/staff/turnovers/mine');
+    const open = d.tasks.filter((x) => x.status === 'todo').length;
+    setMyTurnTasks(open);
+    if (!d.tasks.length) return [h('div', { class: 'empty' }, 'Nothing is assigned to you on the turnovers in progress.')];
+    const count = h('p', { class: 'fine' });
+    const recount = () => {
+      const n = d.tasks.filter((x) => x.status === 'todo').length;
+      count.textContent = n ? n + ' still to do' : 'All done — nice work.';
+      setMyTurnTasks(n);
+    };
+    const ctx = { canAssign: false, showWhere: true, ownList: true, team: [], vendors: () => [], changed: recount,
+      removed: () => route(), vendorAdded: () => {} };
+    const nodes = [count];
+    for (const t of d.turnovers) {
+      const mine = d.tasks.filter((x) => x.turnover_id === t.id);
+      nodes.push(h('section', { class: 'card turn-section' },
+        h('div', { class: 'turn-section-head' },
+          h('h3', {}, h('a', { href: '#/turnovers/' + t.id }, aptOf(t))), dueChip(t),
+          h('span', { class: 'fine' }, turnDates(t))),
+        h('div', { class: 'task-list' }, mine.map((x) => taskRow(x, ctx)))));
+    }
+    recount();
+    return nodes;
+  }
+
+  async function turnoverDetailView(id) {
+    const d = await api('/staff/turnovers/' + id);
+    const t = d.turnover;
+    const tasks = d.tasks;
+    const vendorSet = new Set(tasks.filter((x) => !x.assigned_to && x.assigned_name).map((x) => x.assigned_name));
+    const sections = [];
+    const sectionOf = {};
+    const overallBar = progressBar(0, 0);
+    const overallText = h('span', { class: 'fine' });
+    const empty = h('div', { class: 'empty', hidden: true }, 'Nothing here with this filter.');
+    const ctx = {
+      canAssign: isManager(), showWhere: false, team: d.team, vendors: () => [...vendorSet].sort(),
+      changed: () => refresh(),
+      removed: (x) => { const i = tasks.indexOf(x); if (i >= 0) tasks.splice(i, 1); route(); },
+      vendorAdded: (name) => { vendorSet.add(name); for (const r of rows) r.repaint(); refresh(); },
+    };
+    const rows = [];
+    // keep the menu's "assigned to you" count right as tasks here are ticked off
+    const mineHere = () => (t.status === 'open' ? tasks.filter((x) => x.assigned_to === S.me.id && x.status === 'todo').length : 0);
+    const mineElsewhere = Math.max(0, S.myTurnTasks - mineHere());
+
+    // the checklist, section by section, in order
+    for (const x of tasks) {
+      if (!sectionOf[x.category]) {
+        const list = h('div', { class: 'task-list' });
+        const count = h('span', { class: 'fine' });
+        const sec = { name: x.category, list, count, rows: [] };
+        let bulk = null;
+        if (isManager()) {
+          bulk = h('select', { class: 'task-assign', 'aria-label': 'Assign every task in ' + x.category });
+          bulk.addEventListener('change', async () => {
+            const v = bulk.value;
+            if (!v) return;
+            let body;
+            if (v === '__other') {
+              const name = (window.prompt('Who is doing ' + sec.name + '? An outside company or someone not on the team:') || '').trim();
+              if (!name) { bulk.value = ''; return; }
+              body = { assigned_name: name };
+            } else if (v === '__none') body = { assigned_name: '' };
+            else body = v.slice(0, 2) === 's:' ? { assigned_to: Number(v.slice(2)) } : { assigned_name: v.slice(2) };
+            try {
+              await api('/staff/turnovers/' + t.id + '/assign', Object.assign({ category: sec.name }, body));
+              route();
+            } catch (e) { window.alert(e.message); bulk.value = ''; }
+          });
+          sec.fillBulk = () => {
+            const opts = [['', 'Assign this section…']].concat(d.team.map((m) => ['s:' + m.id, m.name]),
+              ctx.vendors().map((v) => ['v:' + v, v]), [['__other', 'Someone else…'], ['__none', 'Unassign the section']]);
+            bulk.replaceChildren(...opts.map((o) => h('option', { value: o[0] }, o[1])));
+          };
+          sec.fillBulk();
+        }
+        sec.el = h('section', { class: 'card turn-section' },
+          h('div', { class: 'turn-section-head' }, h('h3', {}, x.category), count, bulk), list);
+        sectionOf[x.category] = sec;
+        sections.push(sec);
+      }
+      const row = taskRow(x, ctx);
+      rows.push(row);
+      sectionOf[x.category].rows.push(row);
+      sectionOf[x.category].list.append(row);
+    }
+
+    const visible = (x) => S.turnFilter === 'todo' ? x.status === 'todo'
+      : S.turnFilter === 'mine' ? x.assigned_to === S.me.id
+      : S.turnFilter === 'unassigned' ? !x.assigned_to && !x.assigned_name : true;
+    function refresh() {
+      const finished = tasks.filter((x) => x.status !== 'todo').length;
+      overallBar.set(finished, tasks.length);
+      overallText.textContent = finished + ' of ' + tasks.length + ' done' + (tasks.length ? ' (' + Math.round((100 * finished) / tasks.length) + '%)' : '');
+      let shown = 0;
+      for (const sec of sections) {
+        const all = sec.rows.map((r) => r.task);
+        sec.count.textContent = all.filter((x) => x.status !== 'todo').length + ' of ' + all.length + ' done';
+        let n = 0;
+        for (const r of sec.rows) { const v = visible(r.task); r.hidden = !v; if (v) n++; }
+        sec.el.hidden = n === 0;
+        shown += n;
+        if (sec.fillBulk) sec.fillBulk();
+      }
+      empty.hidden = shown > 0;
+      setMyTurnTasks(mineElsewhere + mineHere());
+    }
+    const filterSeg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Show tasks' },
+      [['all', 'All tasks'], ['todo', 'To do'], ['mine', 'Mine'], ['unassigned', 'Unassigned']].map((v) => {
+        const b = h('button', { type: 'button', class: S.turnFilter === v[0] ? 'on' : '', 'aria-pressed': String(S.turnFilter === v[0]) }, v[1]);
+        b.addEventListener('click', () => {
+          S.turnFilter = v[0];
+          for (const x of b.parentNode.children) { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', String(x === b)); }
+          refresh();
+        });
+        return b;
+      }));
+
+    // details, and the manager's controls
+    let manage = null;
+    if (isManager()) {
+      const remaining = () => tasks.filter((x) => x.status === 'todo').length;
+      const setStatus = async (status) => {
+        if (status === 'ready' && remaining() && !window.confirm(remaining() + ' tasks are still to do. Mark ' + aptOf(t) + ' ready anyway?')) return;
+        try { await api('/staff/turnovers/' + t.id, { status }); flash = status === 'ready' ? aptOf(t) + ' is marked ready.' : 'Reopened.'; }
+        catch (e) { flash = e.message; }
+        route();
+      };
+      manage = h('div', { class: 'actions' },
+        t.status === 'open' ? h('button', { class: 'btn btn-sm btn-gold', type: 'button', onclick: () => setStatus('ready') }, 'Mark ready')
+          : h('button', { class: 'btn btn-sm btn-ghost', type: 'button', onclick: () => setStatus('open') }, 'Reopen'),
+        h('button', { class: 'link-btn', type: 'button', onclick: () => { S.editTurnover = !S.editTurnover; route(); } },
+          S.editTurnover ? 'Cancel editing' : 'Edit details'),
+        h('button', { class: 'link-btn', type: 'button', onclick: async () => {
+          if (!window.confirm('Delete the turnover for ' + aptOf(t) + ' and its whole checklist? This cannot be undone.')) return;
+          try { await api('/staff/turnovers/' + t.id + '/delete', {}); flash = 'Deleted the turnover for ' + aptOf(t) + '.'; location.hash = '#/turnovers'; }
+          catch (e) { flash = e.message; route(); }
+        } }, 'Delete'));
+    }
+    let editForm = null;
+    if (isManager() && S.editTurnover) {
+      editForm = h('form', { class: 'card card-accent stack', novalidate: true }, h('h3', {}, 'Edit details'), turnoverFields(t),
+        h('div', { class: 'actions' }, h('button', { class: 'btn btn-sm', type: 'submit' }, 'Save'),
+          h('button', { class: 'link-btn', type: 'button', onclick: () => { S.editTurnover = false; route(); } }, 'Cancel')),
+        h('p', { class: 'msg', role: 'alert', hidden: true }));
+      editForm.elements.notes.value = t.notes || '';
+      onSubmit(editForm, async (v) => { await api('/staff/turnovers/' + t.id, turnoverBody(v)); S.editTurnover = false; flash = 'Saved.'; route(); });
+    }
+    let addForm = null;
+    if (isManager()) {
+      const listId = 'turnCats' + t.id;
+      addForm = h('form', { class: 'card stack', novalidate: true }, h('h3', {}, 'Add a task'),
+        h('div', { class: 'cols' },
+          field('Section', input('category', { list: listId, required: true, maxlength: 60, autocomplete: 'off', placeholder: 'Pick one or type a new section' })),
+          field('Task', input('title', { required: true, maxlength: 160, autocomplete: 'off', placeholder: 'Replace the bedroom closet door' }))),
+        h('datalist', { id: listId }, sections.map((sec) => h('option', { value: sec.name }))),
+        h('button', { class: 'btn btn-sm', type: 'submit' }, 'Add task'),
+        h('p', { class: 'msg', role: 'alert', hidden: true }));
+      onSubmit(addForm, async (v) => {
+        await api('/staff/turnovers/' + t.id + '/tasks', { category: v.category, title: v.title });
+        flash = 'Added “' + v.title.trim() + '” to ' + v.category.trim() + '.';
+        route();
+      });
+    }
+
+    refresh();
+    return [
+      h('a', { class: 'back', href: '#/turnovers' }, '← Turnovers'),
+      h('div', { class: 'page-head' }, h('div', {},
+        h('p', { class: 'or-top' }, dueChip(t)),
+        h('h1', {}, aptOf(t) + ' turnover'),
+        h('p', {}, turnDates(t))), manage),
+      editForm,
+      // what to know before starting, then the checklist at full width
+      h('div', { class: 'turn-info' },
+        h('div', { class: 'card card-accent' }, h('div', { class: 'card-head' }, h('h3', {}, 'Notes for the next technician'),
+          h('span', { class: 'fine' }, 'Apartment ' + t.unit)),
+          d.handoff.length ? d.handoff.map((n) => h('div', { class: 'handoff-item' }, h('p', { class: 'pre' }, n.body),
+            h('p', { class: 'by' }, n.author_name + ' · ' + day(n.created_at) + ' · ', h('a', { href: '#/orders/' + n.work_order_id }, n.ref))))
+            : h('p', { class: 'muted' }, 'Nobody has left notes for this apartment yet.')),
+        h('div', { class: 'card stack' }, h('h3', {}, 'About this turnover'),
+          t.notes ? h('p', { class: 'pre' }, t.notes) : null,
+          h('dl', { class: 'kv' },
+            h('dt', {}, 'Started'), h('dd', {}, day(t.created_at) + (t.created_by ? ' by ' + t.created_by : '')),
+            t.status === 'ready' ? [h('dt', {}, 'Ready'), h('dd', {}, day(t.completed_at) + (t.completed_by ? ' by ' + t.completed_by : ''))] : null,
+            h('dt', {}, 'Crew'), h('dd', {}, [...new Set(tasks.map((x) => x.assignee).filter(Boolean))].join(', ') || 'Nobody assigned yet')))),
+      h('div', { class: 'card turn-summary' }, h('div', { class: 'turn-progress' }, overallBar, overallText)),
+      h('div', { class: 'toolbar' }, filterSeg),
+      empty,
+      ...sections.map((sec) => sec.el),
+      addForm,
+    ];
   }
 
   /* ------------------------------------------------ specials and promotions */

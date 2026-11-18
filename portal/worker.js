@@ -158,6 +158,23 @@ const MIGRATIONS = [
     'ALTER TABLE tenants ADD COLUMN contact_updated_at TEXT',
     "ALTER TABLE tenants ADD COLUMN contact_updated_by TEXT NOT NULL DEFAULT ''",
   ]],
+  // unit turnovers: the checklist for getting an apartment ready for its next resident
+  [4, [
+    `CREATE TABLE IF NOT EXISTS turnovers (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       unit TEXT NOT NULL, unit_key TEXT NOT NULL, building TEXT NOT NULL DEFAULT '',
+       move_out_on TEXT NOT NULL DEFAULT '', ready_by TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '',
+       status TEXT NOT NULL DEFAULT 'open', created_at TEXT NOT NULL, created_by TEXT NOT NULL DEFAULT '',
+       updated_at TEXT NOT NULL, completed_at TEXT, completed_by TEXT NOT NULL DEFAULT '')`,
+    'CREATE INDEX IF NOT EXISTS idx_turnovers_status ON turnovers (status, ready_by)',
+    `CREATE TABLE IF NOT EXISTS turnover_tasks (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       turnover_id INTEGER NOT NULL, position INTEGER NOT NULL, category TEXT NOT NULL, title TEXT NOT NULL,
+       status TEXT NOT NULL DEFAULT 'todo', assigned_to INTEGER, assigned_name TEXT NOT NULL DEFAULT '',
+       note TEXT NOT NULL DEFAULT '', done_at TEXT, done_by TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL)`,
+    'CREATE INDEX IF NOT EXISTS idx_tt_turnover ON turnover_tasks (turnover_id, position)',
+    'CREATE INDEX IF NOT EXISTS idx_tt_assignee ON turnover_tasks (assigned_to, status)',
+  ]],
 ];
 
 let schemaReady = false;
@@ -748,7 +765,7 @@ const pendingCount = async (env) => (await one(env, 'SELECT COUNT(*) AS n FROM t
 async function staffMe(c) {
   const team = await all(c.env, 'SELECT id, name FROM staff WHERE active = 1 ORDER BY name');
   return json({ me: staffView(c.user), team, categories: CATEGORIES, buildings: BUILDINGS, status_labels: STATUS_LABEL,
-    pending_residents: await pendingCount(c.env) });
+    pending_residents: await pendingCount(c.env), turnover_tasks: (await one(c.env, OPEN_TASKS_FOR, c.user.id)).n });
 }
 
 async function staffChangePassword(c) {
@@ -1349,6 +1366,326 @@ async function staffDeleteSpecial(c, m) {
   return json({ ok: true });
 }
 
+/* --------------------------------------------------------- unit turnovers */
+
+// Every turnover starts with this checklist, in the order the work is done:
+// out with the old resident, repairs and paint, then the final clean and
+// inspection. Tasks can be added, removed or marked not needed per apartment.
+const TURNOVER_CHECKLIST = [
+  ['Move-out & walk-through', [
+    'Collect every key: entry, mailbox, garage and storage',
+    'Walk through and photograph every room',
+    'Note damage beyond normal wear for the security deposit',
+    'Get a forwarding address for the deposit return',
+    'Confirm the electric account is out of the resident’s name',
+    'Remove anything the resident left behind',
+  ]],
+  ['Trash-out & prep', [
+    'Haul out trash, furniture and debris',
+    'Clear any assigned storage or garage space',
+    'Pull nails, hooks, anchors and adhesive from the walls',
+    'Remove contact paper and shelf liner',
+  ]],
+  ['Pest control', [
+    'Inspect for signs of pests: droppings, roaches, bed bugs',
+    'Treat the apartment if needed',
+  ]],
+  ['Walls, ceilings & paint', [
+    'Patch nail holes and small dings',
+    'Repair damaged drywall',
+    'Re-secure loose baseboards and trim',
+    'Caulk gaps at trim, baseboards and counters',
+    'Prime patches, stains, and any water or smoke marks',
+    'Paint the ceilings',
+    'Paint the walls',
+    'Paint trim, baseboards and doors',
+    'Touch up paint once all other work is done',
+  ]],
+  ['Doors, locks & keys', [
+    'Rekey or replace the entry lock',
+    'Cut and label new keys: entry, mailbox, garage',
+    'Check every door latches, closes and does not rub',
+    'Check hinges, door stops and handles',
+    'Check the entry door weatherstripping, sweep and peephole',
+    'Check the balcony door slides, locks and has a good screen',
+  ]],
+  ['Windows & blinds', [
+    'Check every window opens, closes and locks',
+    'Replace torn or missing screens',
+    'Replace broken or missing blinds',
+    'Check window caulking and seals for drafts',
+  ]],
+  ['Electrical & lighting', [
+    'Test every outlet and switch',
+    'Test the GFCI outlets in the kitchen and bath',
+    'Replace burned-out bulbs, matching type and color',
+    'Replace cracked or missing outlet and switch covers',
+    'Check light fixtures and ceiling fans; clean the globes',
+  ]],
+  ['Safety', [
+    'Test the smoke detectors and replace the batteries',
+    'Test the carbon monoxide detector and replace the batteries',
+    'Check the fire extinguisher is in place, charged and in date',
+    'Check the balcony railing is solid',
+  ]],
+  ['Heating & cooling', [
+    'Test the heat and the thermostat',
+    'Check the radiators or heaters in every room',
+    'Test the air conditioner, if installed, and clean its filter',
+    'Vacuum vents, registers and returns',
+  ]],
+  ['Plumbing', [
+    'Check every faucet for drips and leaks',
+    'Check under the sinks for leaks and water damage',
+    'Check the toilet: running, rocking, leaks at the base, flapper',
+    'Check hot water and pressure at every tap',
+    'Clear slow drains in the kitchen, bathroom sink and tub',
+    'Clean or replace faucet aerators and the showerhead',
+    'Re-caulk the tub and shower',
+    'Test the garbage disposal, if there is one',
+  ]],
+  ['Kitchen & appliances', [
+    'Test every range burner, the oven and the broiler',
+    'Replace the burner drip pans',
+    'Check refrigerator and freezer temperatures and door seals',
+    'Run the dishwasher through a full cycle, if there is one',
+    'Test the range hood fan and light; replace the filter',
+    'Check cabinet doors, hinges and drawer slides',
+    'Check the countertops; re-caulk the backsplash',
+  ]],
+  ['Bathroom', [
+    'Test the exhaust fan',
+    'Check the towel bars, paper holder and medicine cabinet are secure',
+    'Check tub and shower tile and grout; regrout where needed',
+    'Check the vanity, sink and mirror',
+  ]],
+  ['Flooring', [
+    'Inspect all flooring for damage',
+    'Repair or replace damaged flooring',
+    'Clean or replace carpet, if carpeted',
+    'Clean, buff or refinish hard floors',
+    'Re-secure transition strips',
+  ]],
+  ['Cleaning', [
+    'Dust ceiling fans, light fixtures and vents',
+    'Wipe down walls, doors, frames and switch plates',
+    'Clean every cabinet and drawer, inside and out',
+    'Clean the refrigerator and freezer, inside and out',
+    'Clean the oven, range and range hood',
+    'Clean the kitchen sink, faucet and countertops',
+    'Clean and disinfect the toilet, tub, shower, sink and mirror',
+    'Clean closet shelves and rods',
+    'Clean windows, sills and tracks',
+    'Clean the blinds',
+    'Sweep and clean the balcony',
+    'Vacuum and mop every floor',
+    'Clean the entry door and threshold',
+  ]],
+  ['Final inspection', [
+    'Final walk-through: every item above is done',
+    'Photograph the finished apartment',
+    'Set the thermostat for a vacant apartment',
+    'Leave the keys and move-in inspection form ready for the office',
+    'Tell the office the apartment is ready to show and lease',
+  ]],
+];
+const CHECKLIST_SIZE = TURNOVER_CHECKLIST.reduce((n, cat) => n + cat[1].length, 0);
+const TASK_STATUSES = ['todo', 'done', 'skipped'];
+const OPEN_TASKS_FOR = `SELECT COUNT(*) AS n FROM turnover_tasks k JOIN turnovers t ON t.id = k.turnover_id
+  WHERE t.status = 'open' AND k.status = 'todo' AND k.assigned_to = ?`;
+const TASK_SELECT = `SELECT k.id, k.turnover_id, k.position, k.category, k.title, k.status, k.assigned_to, k.assigned_name,
+    k.note, k.done_at, k.done_by, COALESCE(s.name, NULLIF(k.assigned_name, '')) AS assignee
+  FROM turnover_tasks k LEFT JOIN staff s ON s.id = k.assigned_to`;
+const aptLabel = (t) => `Apt ${t.unit}${t.building ? ` · ${t.building}` : ''}`;
+
+function turnoverFields(b, before) {
+  const pick = (k, max) => (b[k] === undefined ? (before ? before[k] : '') : str(b[k], max));
+  const unit = b.unit === undefined && before ? before.unit : normUnit(b.unit);
+  const building = pick('building', 10), notes = pick('notes', 2000);
+  const move_out_on = pick('move_out_on', 10), ready_by = pick('ready_by', 10);
+  if (!unit) throw new HttpError(400, 'Enter the apartment number.');
+  if (!BUILDINGS.includes(building)) throw new HttpError(400, 'Choose 1871 or 1885 for the building, or leave it blank.');
+  for (const [d, label] of [[move_out_on, 'move-out'], [ready_by, 'ready-by']]) {
+    if (d && !validDate(d)) throw new HttpError(400, `Enter the ${label} date as a date, or leave it blank.`);
+  }
+  return { unit, building, notes, move_out_on, ready_by };
+}
+// one turnover in progress per apartment, so nobody works from the wrong list
+async function checkNoOtherOpen(c, f, exceptId) {
+  const other = await one(c.env, "SELECT id FROM turnovers WHERE status = 'open' AND unit_key = ? AND building = ? AND id != ?",
+    f.unit, f.building, exceptId || 0);
+  if (other) throw new HttpError(409, `${aptLabel(f)} already has a turnover in progress.`, { id: other.id });
+}
+// a team member by id, or anyone else (a vendor, a cleaning company) by name
+async function resolveAssignee(c, b) {
+  const id = b.assigned_to === undefined || b.assigned_to === null || b.assigned_to === '' ? null : Number(b.assigned_to);
+  if (id) {
+    const who = await one(c.env, 'SELECT id, name FROM staff WHERE id = ? AND active = 1', id);
+    if (!who) throw new HttpError(400, 'That person is not on the team.');
+    return { assigned_to: who.id, assigned_name: '', label: who.name };
+  }
+  const name = str(b.assigned_name, 80);
+  return { assigned_to: null, assigned_name: name, label: name || 'nobody' };
+}
+
+async function staffTurnovers(c) {
+  const asked = c.url.searchParams.get('view');
+  const view = asked === 'ready' || asked === 'all' ? asked : 'open';
+  const rows = await all(c.env,
+    `SELECT t.*, COUNT(k.id) AS total,
+            COALESCE(SUM(CASE WHEN k.status != 'todo' THEN 1 ELSE 0 END), 0) AS finished,
+            COALESCE(SUM(CASE WHEN k.status = 'todo' AND k.assigned_to = ? THEN 1 ELSE 0 END), 0) AS mine_open,
+            COALESCE(SUM(CASE WHEN k.status = 'todo' AND k.assigned_to IS NULL AND k.assigned_name = '' THEN 1 ELSE 0 END), 0) AS unassigned_open,
+            GROUP_CONCAT(DISTINCT COALESCE(s.name, NULLIF(k.assigned_name, ''))) AS crew
+       FROM turnovers t
+       LEFT JOIN turnover_tasks k ON k.turnover_id = t.id
+       LEFT JOIN staff s ON s.id = k.assigned_to
+      ${view === 'all' ? '' : 'WHERE t.status = ?'}
+      GROUP BY t.id
+      ORDER BY ${view === 'ready' ? 't.completed_at DESC' : "CASE WHEN t.ready_by = '' THEN 1 ELSE 0 END, t.ready_by, t.created_at"}
+      LIMIT 200`, ...[c.user.id].concat(view === 'all' ? [] : [view]));
+  const counts = {};
+  for (const r of await all(c.env, 'SELECT status, COUNT(*) AS n FROM turnovers GROUP BY status')) counts[r.status] = r.n;
+  return json({
+    turnovers: rows.map((t) => Object.assign(t, { crew: t.crew ? String(t.crew).split(',') : [] })),
+    counts, mine_open: (await one(c.env, OPEN_TASKS_FOR, c.user.id)).n, checklist_size: CHECKLIST_SIZE,
+  });
+}
+// everything assigned to the signed-in person, across the turnovers in progress
+async function staffMyTurnoverTasks(c) {
+  const tasks = await all(c.env,
+    `${TASK_SELECT} JOIN turnovers t ON t.id = k.turnover_id
+      WHERE t.status = 'open' AND k.assigned_to = ?
+      ORDER BY CASE WHEN t.ready_by = '' THEN 1 ELSE 0 END, t.ready_by, t.id, k.position, k.id LIMIT 500`, c.user.id);
+  const ids = [...new Set(tasks.map((k) => k.turnover_id))];
+  const turnovers = ids.length ? await all(c.env,
+    `SELECT id, unit, building, move_out_on, ready_by, status FROM turnovers WHERE id IN (${ids.map(() => '?').join(',')})`, ...ids) : [];
+  return json({ tasks, turnovers });
+}
+async function staffCreateTurnover(c) {
+  const f = turnoverFields(await readBody(c), null);
+  await checkNoOtherOpen(c, f, 0);
+  const now = nowIso();
+  const meta = await run(c.env,
+    `INSERT INTO turnovers (unit, unit_key, building, move_out_on, ready_by, notes, status, created_at, created_by, updated_at)
+     VALUES (?,?,?,?,?,?,'open',?,?,?)`, f.unit, f.unit, f.building, f.move_out_on, f.ready_by, f.notes, now, c.user.name, now);
+  const id = meta.last_row_id;
+  const add = c.env.DB.prepare(
+    "INSERT INTO turnover_tasks (turnover_id, position, category, title, status, updated_at) VALUES (?,?,?,?,'todo',?)");
+  const rows = [];
+  let pos = 0;
+  for (const [category, titles] of TURNOVER_CHECKLIST) {
+    for (const title of titles) { pos += 100; rows.push(add.bind(id, pos, category, title, now)); }
+  }
+  await c.env.DB.batch(rows);   // one batch counts as one query, however many rows it holds
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'turnover_started', `${aptLabel(f)} · ${rows.length} tasks`);
+  return json({ ok: true, id });
+}
+async function getTurnover(c, id) {
+  const t = await one(c.env, 'SELECT * FROM turnovers WHERE id = ?', id);
+  if (!t) throw new HttpError(404, 'That turnover does not exist.');
+  return t;
+}
+async function staffTurnoverDetail(c, m) {
+  const t = await getTurnover(c, m[1]);
+  const tasks = await all(c.env, `${TASK_SELECT} WHERE k.turnover_id = ? ORDER BY k.position, k.id`, t.id);
+  // what earlier technicians left for whoever works in this apartment next
+  const { handoff } = await unitHistory(c, t.unit_key, t.building || null, 0);
+  const team = await all(c.env, 'SELECT id, name FROM staff WHERE active = 1 ORDER BY name');
+  return json({ turnover: t, tasks, handoff, team });
+}
+async function staffUpdateTurnover(c, m) {
+  const t = await getTurnover(c, m[1]);
+  const b = await readBody(c);
+  const f = turnoverFields(b, t);
+  let status = t.status;
+  if (b.status !== undefined) {
+    if (!['open', 'ready'].includes(b.status)) throw new HttpError(400, 'A turnover is either in progress or ready.');
+    status = b.status;
+  }
+  if (status === 'open') await checkNoOtherOpen(c, f, t.id);
+  const now = nowIso();
+  const finishing = status === 'ready' && t.status !== 'ready';
+  await run(c.env,
+    `UPDATE turnovers SET unit = ?, unit_key = ?, building = ?, move_out_on = ?, ready_by = ?, notes = ?, status = ?,
+            completed_at = ?, completed_by = ?, updated_at = ? WHERE id = ?`,
+    f.unit, f.unit, f.building, f.move_out_on, f.ready_by, f.notes, status,
+    status === 'ready' ? (finishing ? now : t.completed_at) : null, status === 'ready' ? (finishing ? c.user.name : t.completed_by) : '',
+    now, t.id);
+  const event = finishing ? 'turnover_ready' : status === 'open' && t.status === 'ready' ? 'turnover_reopened' : 'turnover_changed';
+  await logActivity(c, 'staff', c.user.id, c.user.name, event, aptLabel(f));
+  return json({ ok: true });
+}
+async function staffDeleteTurnover(c, m) {
+  const t = await getTurnover(c, m[1]);
+  await c.env.DB.batch([
+    c.env.DB.prepare('DELETE FROM turnover_tasks WHERE turnover_id = ?').bind(t.id),
+    c.env.DB.prepare('DELETE FROM turnovers WHERE id = ?').bind(t.id),
+  ]);
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'turnover_deleted', aptLabel(t));
+  return json({ ok: true });
+}
+async function staffAddTurnoverTask(c, m) {
+  const t = await getTurnover(c, m[1]);
+  const b = await readBody(c);
+  const title = str(b.title, 160), category = str(b.category, 60);
+  if (title.length < 3) throw new HttpError(400, 'Describe the task.');
+  if (category.length < 2) throw new HttpError(400, 'Choose the section it belongs in, or name a new one.');
+  // after the last task of its section, or at the very end for a new section
+  const inCat = await one(c.env, 'SELECT MAX(position) AS p FROM turnover_tasks WHERE turnover_id = ? AND category = ?', t.id, category);
+  const last = await one(c.env, 'SELECT MAX(position) AS p FROM turnover_tasks WHERE turnover_id = ?', t.id);
+  const position = inCat && inCat.p !== null ? inCat.p + 1 : ((last && last.p) || 0) + 100;
+  const meta = await run(c.env,
+    "INSERT INTO turnover_tasks (turnover_id, position, category, title, status, updated_at) VALUES (?,?,?,?,'todo',?)",
+    t.id, position, category, title, nowIso());
+  return json({ ok: true, task: await one(c.env, `${TASK_SELECT} WHERE k.id = ?`, meta.last_row_id) });
+}
+// Assign a whole section (or the whole checklist) in one go.
+async function staffAssignTurnover(c, m) {
+  const t = await getTurnover(c, m[1]);
+  const b = await readBody(c);
+  const category = str(b.category, 60);
+  const who = await resolveAssignee(c, b);
+  const meta = await run(c.env,
+    `UPDATE turnover_tasks SET assigned_to = ?, assigned_name = ?, updated_at = ?
+      WHERE turnover_id = ? AND (? = '' OR category = ?)`,
+    who.assigned_to, who.assigned_name, nowIso(), t.id, category, category);
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'turnover_assigned',
+    `${aptLabel(t)} · ${category || 'every task'} → ${who.label} (${meta.changes || 0} tasks)`);
+  return json({ ok: true, changed: meta.changes || 0 });
+}
+// Ticking off, marking not needed, notes: anyone on staff. Assigning: managers.
+async function staffUpdateTurnoverTask(c, m) {
+  const k = await one(c.env, 'SELECT * FROM turnover_tasks WHERE id = ?', m[1]);
+  if (!k) throw new HttpError(404, 'That task does not exist.');
+  const b = await readBody(c);
+  const sets = [];
+  if (b.status !== undefined && b.status !== k.status) {
+    if (!TASK_STATUSES.includes(b.status)) throw new HttpError(400, 'A task is to do, done, or not needed.');
+    sets.push(['status = ?', b.status]);
+    if (b.status === 'todo') sets.push(['done_at = ?', null], ['done_by = ?', '']);
+    else sets.push(['done_at = ?', nowIso()], ['done_by = ?', c.user.name]);
+  }
+  if (b.note !== undefined) sets.push(['note = ?', str(b.note, 500)]);
+  if (b.assigned_to !== undefined || b.assigned_name !== undefined) {
+    if (c.user.role !== 'manager') throw new HttpError(403, 'Only a manager can assign tasks.');
+    const who = await resolveAssignee(c, b);
+    sets.push(['assigned_to = ?', who.assigned_to], ['assigned_name = ?', who.assigned_name]);
+  }
+  if (sets.length) {
+    sets.push(['updated_at = ?', nowIso()]);
+    await run(c.env, `UPDATE turnover_tasks SET ${sets.map((x) => x[0]).join(', ')} WHERE id = ?`,
+      ...sets.map((x) => x[1]), k.id);
+  }
+  return json({ ok: true, task: await one(c.env, `${TASK_SELECT} WHERE k.id = ?`, k.id) });
+}
+async function staffDeleteTurnoverTask(c, m) {
+  const k = await one(c.env, 'SELECT id FROM turnover_tasks WHERE id = ?', m[1]);
+  if (!k) throw new HttpError(404, 'That task does not exist.');
+  await run(c.env, 'DELETE FROM turnover_tasks WHERE id = ?', k.id);
+  return json({ ok: true });
+}
+
 async function staffEmails(c) {
   return json({ emails: await all(c.env,
     'SELECT id, created_at, to_addr, subject, body, kind, work_order_id, status, detail FROM email_log ORDER BY id DESC LIMIT 300') });
@@ -1409,6 +1746,16 @@ const ROUTES = [
   ['POST', /^\/staff\/team\/(\d+)$/, staffEditMember, 'manager'],
   ['GET', /^\/staff\/pricing$/, staffGetPricing, 'staff'],
   ['POST', /^\/staff\/pricing$/, staffSavePricing, 'manager'],
+  ['GET', /^\/staff\/turnovers$/, staffTurnovers, 'staff'],
+  ['GET', /^\/staff\/turnovers\/mine$/, staffMyTurnoverTasks, 'staff'],
+  ['POST', /^\/staff\/turnovers$/, staffCreateTurnover, 'manager'],
+  ['GET', /^\/staff\/turnovers\/(\d+)$/, staffTurnoverDetail, 'staff'],
+  ['POST', /^\/staff\/turnovers\/(\d+)$/, staffUpdateTurnover, 'manager'],
+  ['POST', /^\/staff\/turnovers\/(\d+)\/delete$/, staffDeleteTurnover, 'manager'],
+  ['POST', /^\/staff\/turnovers\/(\d+)\/tasks$/, staffAddTurnoverTask, 'manager'],
+  ['POST', /^\/staff\/turnovers\/(\d+)\/assign$/, staffAssignTurnover, 'manager'],
+  ['POST', /^\/staff\/turnover-tasks\/(\d+)$/, staffUpdateTurnoverTask, 'staff'],
+  ['POST', /^\/staff\/turnover-tasks\/(\d+)\/delete$/, staffDeleteTurnoverTask, 'manager'],
   ['GET', /^\/staff\/specials$/, staffGetSpecials, 'manager'],
   ['POST', /^\/staff\/specials$/, staffCreateSpecial, 'manager'],
   ['POST', /^\/staff\/specials\/([0-9a-f]{8})$/, staffUpdateSpecial, 'manager'],

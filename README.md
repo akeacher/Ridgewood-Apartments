@@ -78,6 +78,15 @@ locks until staff unlock it after 30 in a day, and every attempt is in the staff
 *Activity log*. Passwords, resident and staff alike, are stored only as salted
 PBKDF2 hashes.
 
+**Turnovers.** Under *Turnovers*, a manager starts a turnover for an apartment
+(move-out and ready-by dates) and it comes with the full make-ready checklist,
+86 tasks in 15 sections from the move-out walk-through to the final inspection
+(`TURNOVER_CHECKLIST` in `portal/worker.js`). Managers assign tasks, or a whole
+section, to a team member or an outside company, add or remove tasks, and mark
+the apartment ready. Anyone on staff ticks tasks off, marks them not needed and
+leaves notes; *My tasks* lists what is assigned to you. The turnover page also
+shows the notes earlier technicians left for that apartment.
+
 **Specials and promotions.** A manager adds rent specials under *Specials* in
 the staff portal and switches each on or off; an optional end date takes it off
 the site by itself after that day (Saint Paul time). Specials that are on fill a

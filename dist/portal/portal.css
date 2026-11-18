@@ -116,6 +116,46 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--g
 .money::before { content: "$"; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--ink-soft); font-weight: 400; }
 .money input { padding-left: 28px; }
 .last-change { margin: -10px 0 18px; }
+/* Turnovers */
+.progress { flex: 1 1 160px; height: 8px; background: var(--cream-deep); border: 1px solid var(--line); overflow: hidden; }
+.progress span { display: block; height: 100%; width: 0; background: var(--gold); transition: width .3s ease; }
+.turn-progress { display: flex; align-items: center; gap: 14px; margin-top: 10px; }
+.turn-progress .fine { white-space: nowrap; }
+.turn-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 18px; }
+.turn-info .card + .card { margin-top: 0; }
+.turn-summary { padding: 18px 22px; margin-bottom: 18px; }
+.turn-section + form.card { margin-top: 22px; }
+.turn-summary .turn-progress { margin-top: 0; }
+.turn-section { padding: 0; }
+.turn-section + .turn-section, .toolbar + .turn-section, .empty + .turn-section { margin-top: 14px; }
+.turn-section-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; padding: 16px 22px; border-bottom: 1px solid var(--line); }
+.turn-section-head h3 { flex: 1 1 180px; }
+.turn-section-head select, .task-side select { width: auto; max-width: 230px; padding: 7px 10px; font-size: 0.86rem; background: var(--white); }
+.task { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 18px; padding: 12px 22px; }
+.task + .task { border-top: 1px solid var(--line); }
+.task.saving { opacity: 0.6; }
+.task-check { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
+.task-check input { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--gold); flex: none; cursor: pointer; }
+.task-title { line-height: 1.45; }
+.task-cat { color: var(--ink-soft); font-size: 0.86rem; }
+.task[data-status="done"] .task-title, .task[data-status="skipped"] .task-title { color: var(--ink-soft); }
+.task[data-status="skipped"] .task-title { text-decoration: line-through; text-decoration-color: var(--line); }
+/* the person and the links sit in fixed columns, so every row's dropdown lines up */
+.task-side { display: grid; grid-template-columns: 200px 196px; align-items: center; gap: 6px 16px; }
+.task-side select { width: 100%; max-width: none; }
+.task-assignee { white-space: nowrap; }
+.task-actions { display: inline-flex; gap: 14px; }
+.task-actions .link-btn { font-size: 0.82rem; }
+.task-meta, .task-note, .task-err, .task-note-form { grid-column: 1 / -1; padding-left: 32px; }
+.task-note { font-size: 0.9rem; }
+.task-note-form { display: flex; gap: 8px; }
+.task-note-form input { flex: 1; padding: 8px 10px; }
+@container (max-width: 640px) {
+  .task { grid-template-columns: minmax(0, 1fr); padding: 12px 16px; }
+  .task-side { display: flex; flex-wrap: wrap; justify-content: flex-start; padding-left: 32px; }
+  .task-side select { width: auto; max-width: 230px; }
+  .turn-section-head { padding: 14px 16px; }
+}
 /* the Specials page */
 .checks { display: flex; flex-wrap: wrap; gap: 10px 26px; }
 .special-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px 24px; flex-wrap: wrap; }
