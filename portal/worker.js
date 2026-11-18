@@ -38,6 +38,7 @@ const PLANS = [
   { id: 'wakefield', name: 'The Wakefield', beds: '3 bedrooms' },
 ];
 const MAX_RENT = 20000;
+const MAX_SPECIALS = 8;
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS tenants (
@@ -1190,15 +1191,21 @@ function readPricing(settings) {
 const describePrice = (v) => (v.rent ? (v.from ? 'from ' : '') + money(v.rent) : 'no price') + (v.note ? ` (${v.note})` : '');
 const describeAvailability = (a) => (a === true ? 'available' : a === false ? 'unavailable' : 'not shown');
 
-// Public: the main site reads this to fill in its price and availability slots.
+// Public: the main site reads this to fill in its price, availability and
+// specials slots. Only specials that are switched on and not past their end
+// date are included.
 async function publicPricing(c) {
-  const pricing = readPricing(await getSettings(c.env));
+  const settings = await getSettings(c.env);
+  const pricing = readPricing(settings);
   const plans = {};
   for (const p of PLANS) {
     const v = pricing.plans[p.id];
     plans[p.id] = { rent: v.rent, from: v.from, note: v.note, available: v.available };
   }
-  return json({ plans, updated_at: pricing.updated_at });
+  const today = todayHere();
+  const specials = readSpecials(settings).filter((x) => specialStatus(x, today) === 'on')
+    .map((x) => ({ id: x.id, title: x.title, details: x.details, fine_print: x.fine_print, plans: x.plans, ends_on: x.ends_on }));
+  return json({ plans, specials, updated_at: pricing.updated_at });
 }
 async function staffGetPricing(c) {
   return json(readPricing(await getSettings(c.env)));
@@ -1249,6 +1256,97 @@ async function staffSavePricing(c) {
     await logActivity(c, 'staff', c.user.id, c.user.name, 'pricing_changed', changes.join('; '));
   }
   return json({ ok: true, changed: changes.length });
+}
+
+/* ---------------------------------------- specials and promotions on the site */
+
+// Kept as one small JSON list in settings, in the order they were added.
+const PLAN_IDS = PLANS.map((p) => p.id);
+function readSpecials(settings) {
+  let list = [];
+  try { list = (JSON.parse(settings.specials || '{}') || {}).list || []; } catch (e) { list = []; }
+  return Array.isArray(list) ? list.filter((x) => x && /^[0-9a-f]{8}$/.test(x.id)) : [];
+}
+// today's date in Saint Paul, as YYYY-MM-DD, so a special ending "December 31"
+// stays up through the end of that day here
+const todayHere = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago',
+  year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+const specialStatus = (x, today) => (!x.active ? 'off' : x.ends_on && x.ends_on < today ? 'ended' : 'on');
+function validDate(d) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
+  const [y, m, day] = d.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1, day));
+  return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === day;
+}
+// Anything not sent keeps its current value, so the on/off toggle sends just { active }.
+function specialFields(b, before) {
+  const pick = (k, max) => (b[k] === undefined ? (before ? before[k] : '') : str(b[k], max));
+  const title = pick('title', 80), details = pick('details', 400), fine_print = pick('fine_print', 300);
+  if (title.length < 3) throw new HttpError(400, 'Give the special a headline, like "First month free".');
+  let plans = before ? before.plans : PLAN_IDS.slice();
+  if (b.plans !== undefined) {
+    if (!Array.isArray(b.plans) || b.plans.some((x) => !PLAN_IDS.includes(x))) throw new HttpError(400, 'Choose floor plans from the list.');
+    plans = PLAN_IDS.filter((id) => b.plans.includes(id));
+  }
+  if (!plans.length) throw new HttpError(400, 'Choose at least one floor plan the special applies to.');
+  const ends_on = b.ends_on === undefined ? (before ? before.ends_on : '') : str(b.ends_on, 10);
+  if (ends_on && !validDate(ends_on)) throw new HttpError(400, 'Enter the end date as a date, or leave it blank.');
+  if (b.active !== undefined && typeof b.active !== 'boolean') throw new HttpError(400, 'A special is either on or off.');
+  const active = b.active === undefined ? (before ? before.active : false) : b.active;
+  return { title, details, fine_print, plans, ends_on, active };
+}
+async function saveSpecials(c, list) {
+  await run(c.env, 'INSERT INTO settings (name, value) VALUES (?, ?) ON CONFLICT(name) DO UPDATE SET value = excluded.value',
+    'specials', JSON.stringify({ list }));
+}
+async function staffGetSpecials(c) {
+  const today = todayHere();
+  return json({ today, plans: PLANS.map((p) => ({ id: p.id, name: p.name })),
+    specials: readSpecials(await getSettings(c.env)).map((x) => Object.assign({}, x, { status: specialStatus(x, today) })) });
+}
+async function staffCreateSpecial(c) {
+  const list = readSpecials(await getSettings(c.env));
+  if (list.length >= MAX_SPECIALS) {
+    throw new HttpError(400, `There can be up to ${MAX_SPECIALS} specials. Delete one you no longer need first.`);
+  }
+  const f = specialFields(await readBody(c), null);
+  const now = nowIso();
+  const x = Object.assign({ id: randomHex(4) }, f, { created_at: now, updated_at: now, updated_by: c.user.name });
+  list.push(x);
+  await saveSpecials(c, list);
+  const status = specialStatus(x, todayHere());
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'special_created', `${x.title} · ${status === 'on' ? 'showing on the site' : status}`);
+  return json({ ok: true, id: x.id, status });
+}
+async function staffUpdateSpecial(c, m) {
+  const list = readSpecials(await getSettings(c.env));
+  const i = list.findIndex((x) => x.id === m[1]);
+  if (i < 0) throw new HttpError(404, 'That special does not exist.');
+  const before = list[i];
+  const f = specialFields(await readBody(c), before);
+  const today = todayHere();
+  const changed = ['title', 'details', 'fine_print', 'ends_on', 'active'].filter((k) => before[k] !== f[k])
+    .concat(before.plans.join() !== f.plans.join() ? ['plans'] : []);
+  if (!changed.length) return json({ ok: true, changed: 0, status: specialStatus(before, today) });
+  list[i] = Object.assign({}, before, f, { updated_at: nowIso(), updated_by: c.user.name });
+  await saveSpecials(c, list);
+  const status = specialStatus(list[i], today);
+  if (changed.length === 1 && changed[0] === 'active') {
+    await logActivity(c, 'staff', c.user.id, c.user.name, f.active ? 'special_turned_on' : 'special_turned_off', f.title);
+  } else {
+    const what = { title: 'headline', details: 'details', fine_print: 'fine print', ends_on: 'end date', active: 'on/off', plans: 'floor plans' };
+    await logActivity(c, 'staff', c.user.id, c.user.name, 'special_changed',
+      `${f.title} · changed ${changed.map((k) => what[k]).join(', ')}${before.title !== f.title ? ` (was "${before.title}")` : ''}`);
+  }
+  return json({ ok: true, changed: changed.length, status });
+}
+async function staffDeleteSpecial(c, m) {
+  const list = readSpecials(await getSettings(c.env));
+  const x = list.find((y) => y.id === m[1]);
+  if (!x) throw new HttpError(404, 'That special does not exist.');
+  await saveSpecials(c, list.filter((y) => y.id !== x.id));
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'special_deleted', x.title);
+  return json({ ok: true });
 }
 
 async function staffEmails(c) {
@@ -1311,6 +1409,10 @@ const ROUTES = [
   ['POST', /^\/staff\/team\/(\d+)$/, staffEditMember, 'manager'],
   ['GET', /^\/staff\/pricing$/, staffGetPricing, 'staff'],
   ['POST', /^\/staff\/pricing$/, staffSavePricing, 'manager'],
+  ['GET', /^\/staff\/specials$/, staffGetSpecials, 'manager'],
+  ['POST', /^\/staff\/specials$/, staffCreateSpecial, 'manager'],
+  ['POST', /^\/staff\/specials\/([0-9a-f]{8})$/, staffUpdateSpecial, 'manager'],
+  ['POST', /^\/staff\/specials\/([0-9a-f]{8})\/delete$/, staffDeleteSpecial, 'manager'],
   ['GET', /^\/staff\/settings$/, staffGetSettings, 'manager'],
   ['POST', /^\/staff\/settings$/, staffSaveSettings, 'manager'],
 ];

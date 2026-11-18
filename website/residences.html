@@ -239,6 +239,25 @@
   .rw-avail-yes { border-color: var(--gold); color: var(--ink); }
   .rw-avail-yes::before { background: var(--gold); }
   .rw-avail-no { border-style: dashed; }
+  /* Specials & promotions, and the "Special" line on a floor plan: both posted
+     by staff from the portal and hidden until one is switched on. */
+  .rw-specials { padding: clamp(60px, 8vw, 100px) 0; scroll-margin-top: 110px; }
+  .rw-specials-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 380px)); justify-content: center;
+    gap: 22px; margin-top: 46px; }
+  .rw-special { background: var(--white); border: 1px solid var(--line); border-top: 3px solid var(--gold);
+    padding: 30px 30px 32px; display: flex; flex-direction: column; gap: 14px; text-align: left; }
+  .rw-special-tag { font-size: 0.62rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
+  .rw-special h3 { font-family: "Cormorant Garamond", Georgia, serif; font-size: 1.75rem; font-weight: 400; line-height: 1.15; color: var(--ink); }
+  .rw-special-details { font-size: 0.95rem; font-weight: 300; line-height: 1.75; color: var(--ink-soft); white-space: pre-line; }
+  .rw-special-ends { font-size: 0.7rem; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink); }
+  .rw-special-fine { font-size: 0.78rem; font-weight: 300; line-height: 1.6; color: var(--ink-soft); white-space: pre-line;
+    padding-top: 12px; border-top: 1px solid var(--line); }
+  .rw-specials-cta { display: flex; justify-content: center; align-items: center; gap: 22px 34px; flex-wrap: wrap; margin-top: 46px; }
+  .rw-specials-cta .link-ul { margin-top: 0; }
+  .rw-special-line { display: inline-flex; align-items: baseline; gap: 9px; flex-wrap: wrap; text-decoration: none;
+    font-size: 0.9rem; font-weight: 400; color: var(--ink); }
+  .rw-special-line:hover { color: var(--gold); }
+  .rw-special-label { font-size: 0.62rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
 
   .pl-specs { display: flex; gap: 34px; flex-wrap: wrap; margin-top: 30px; padding-top: 26px; border-top: 1px solid var(--line); }
   .pl-specs div { display: flex; flex-direction: column; gap: 5px; }
@@ -515,6 +534,23 @@
       <div class="stat"><span class="num" data-to="1050">0</span><span class="cap">Largest, sq ft</span></div>
       <div class="stat"><span class="num" data-to="4">0</span><span class="cap">Utilities included</span></div>
       <div class="stat"><span class="num" data-to="2">0</span><span class="cap">Buildings on Wilson Ave</span></div>
+    </div>
+  </section>
+
+  <!-- ================= SPECIALS =================
+       Hidden until staff switch a special on in the staff portal (Specials);
+       assets/pricing.js fills in the cards from /api/portal/pricing. -->
+  <section class="band band-deep rw-specials" id="specials" data-rw-specials hidden>
+    <div class="wrap">
+      <div class="center-head">
+        <span class="label label-gold">Limited Time</span>
+        <h2>Specials &amp; <em>promotions</em></h2>
+      </div>
+      <div class="rw-specials-grid" data-rw-specials-list></div>
+      <div class="rw-specials-cta">
+        <button class="btn js-open-tour" type="button">Schedule a Tour</button>
+        <a class="link-ul" href="tel:16515780498">Call 651&middot;578&middot;0498</a>
+      </div>
     </div>
   </section>
 

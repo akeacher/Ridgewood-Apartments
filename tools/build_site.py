@@ -154,8 +154,10 @@ def main():
 <link rel="icon" href="assets/img/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="assets/img/favicon.png">
 """
-        # pages with a price slot load the script that fills it from the portal
-        tail = '<script src="assets/pricing.js" defer></script>\n' if "data-rw-price" in body else ""
+        # pages with a price slot or a specials section load the script that
+        # fills them from the portal
+        needs = "data-rw-price" in body or "data-rw-specials" in body
+        tail = '<script src="assets/pricing.js" defer></script>\n' if needs else ""
         out = head + body.lstrip() + "\n" + tail + "</body>\n</html>\n"
         open(os.path.join(DIST, page), "w", encoding="utf-8").write(out)
         report.append((page, before, len(out)))

@@ -1,11 +1,10 @@
-/* Shows the rents and availability staff post from the staff portal
-   (Pricing & availability).
+/* Shows what staff post from the staff portal: rents and availability
+   (Pricing & availability) and rent specials (Specials).
 
-   The pages carry empty, hidden slots: data-rw-price="wilson" and so on. A slot
-   is filled in and shown only once staff have posted something for that floor
-   plan: a rent, a note, or whether it is available. Until then, and whenever
-   the portal cannot be reached, the page reads exactly as it does without this
-   file.
+   The pages carry empty, hidden slots: data-rw-price="wilson" and so on on the
+   floor plans, and a data-rw-specials section. Each is filled in and shown only
+   once staff have posted something for it. Until then, and whenever the portal
+   cannot be reached, the page reads exactly as it does without this file.
 
    The site build adds this script to the pages that have a slot. It is not part
    of the artifact previews, which have no portal to ask. */
@@ -13,12 +12,23 @@
   'use strict';
   var slots = document.querySelectorAll('[data-rw-price]');
   var list = document.querySelector('[data-rw-price-list]');
-  if (!slots.length && !list) return;
+  var section = document.querySelector('[data-rw-specials]');
+  if (!slots.length && !list && !section) return;
 
   var PLANS = [['wilson', 'The Wilson', '1 bedroom'], ['battlecreek', 'The Battle Creek', '2 bedrooms'],
     ['wakefield', 'The Wakefield', '3 bedrooms']];
   var AVAILABLE = 'Available now', UNAVAILABLE = 'Currently unavailable';
 
+  function planName(id) {
+    for (var i = 0; i < PLANS.length; i++) if (PLANS[i][0] === id) return PLANS[i][1];
+    return id;
+  }
+  // "2026-12-31" -> "December 31, 2026", read as a calendar date (no time zone shift)
+  function longDate(d) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || '');
+    if (!m) return '';
+    return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  }
   function money(n) { return '$' + String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
   function hasAvailability(p) { return p.available === true || p.available === false; }
   // textContent throughout: a note is typed by staff and is shown as text, never as markup
@@ -33,10 +43,16 @@
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (data) {
       if (!data || !data.plans) return;
+      var specials = data.specials || [];
+      var specialsFor = function (id) {
+        return specials.filter(function (x) { return x.plans && x.plans.indexOf(id) >= 0; });
+      };
 
       Array.prototype.forEach.call(slots, function (slot) {
-        var p = data.plans[slot.getAttribute('data-rw-price')];
-        if (!p || (!p.rent && !p.note && !hasAvailability(p))) return;
+        var id = slot.getAttribute('data-rw-price');
+        var p = data.plans[id];
+        var mine = specialsFor(id);
+        if (!p || (!p.rent && !p.note && !hasAvailability(p) && !mine.length)) return;
         slot.textContent = '';
         if (hasAvailability(p)) {
           slot.appendChild(el('span', 'rw-avail ' + (p.available ? 'rw-avail-yes' : 'rw-avail-no'),
@@ -50,8 +66,32 @@
           slot.appendChild(line);
         }
         if (p.note) slot.appendChild(el('span', 'rw-price-note', p.note));
+        mine.forEach(function (x) {
+          var a = el(section ? 'a' : 'span', 'rw-special-line');
+          if (section) a.href = '#specials';
+          a.appendChild(el('span', 'rw-special-label', 'Special'));
+          a.appendChild(el('span', '', x.title));
+          slot.appendChild(a);
+        });
         slot.hidden = false;
       });
+
+      // the Specials & promotions section
+      if (section && specials.length) {
+        var grid = section.querySelector('[data-rw-specials-list]');
+        grid.textContent = '';
+        specials.forEach(function (x) {
+          var card = el('article', 'rw-special');
+          card.appendChild(el('span', 'rw-special-tag',
+            x.plans.length >= PLANS.length ? 'All floor plans' : x.plans.map(planName).join(' & ')));
+          card.appendChild(el('h3', '', x.title));
+          if (x.details) card.appendChild(el('p', 'rw-special-details', x.details));
+          if (x.ends_on) card.appendChild(el('p', 'rw-special-ends', 'Offer ends ' + longDate(x.ends_on)));
+          if (x.fine_print) card.appendChild(el('p', 'rw-special-fine', x.fine_print));
+          grid.appendChild(card);
+        });
+        section.hidden = false;
+      }
 
       // the Questions page: swap "call us" for what has been posted
       if (!list) return;

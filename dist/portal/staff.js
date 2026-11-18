@@ -7,7 +7,7 @@
   const who = document.getElementById('who');
 
   const S = { me: null, team: [], categories: [], buildings: [], labels: {},
-    view: 'open', q: '', recordsQ: '', unit: '', unitBuilding: 'any', editResident: null, editReturn: null, resetMember: null, pending: 0,
+    view: 'open', q: '', recordsQ: '', unit: '', unitBuilding: 'any', editResident: null, editReturn: null, resetMember: null, editSpecial: null, pending: 0,
     sheet: { q: '', building: 'all', removed: false, sort: 'unit', dir: 1 } };
   const OPEN = ['new', 'scheduled', 'in_progress', 'on_hold'];
   const URGENCY = [['routine', 'Routine'], ['soon', 'Soon'], ['urgent', 'Urgent']];
@@ -132,7 +132,7 @@
       h('button', { class: 'btn btn-sm btn-ghost', type: 'button', onclick: signOut }, 'Sign out'));
     const links = [['orders', 'Work orders'], ['records', 'Completed records'], ['unit', 'Apartment history'],
       ['residents', 'Residents'], ['contacts', 'Contact sheet'], ['emails', 'Email log']];
-    if (isManager()) links.push(null, ['pricing', 'Pricing & availability'], ['activity', 'Activity log'], ['team', 'Team'], ['settings', 'Settings']);
+    if (isManager()) links.push(null, ['pricing', 'Pricing & availability'], ['specials', 'Specials'], ['activity', 'Activity log'], ['team', 'Team'], ['settings', 'Settings']);
     links.push(null, ['account', 'My account']);
     main = h('section', { id: 'main' });
     app.replaceChildren(h('div', { class: 'staff-shell' },
@@ -151,8 +151,8 @@
   }
 
   const VIEWS = { orders: ordersView, new: newOrderView, records: recordsView, unit: unitView, residents: residentsView, contacts: contactsView,
-    emails: emailsView, pricing: pricingView, activity: activityView, team: teamView, settings: settingsView, account: accountView };
-  const MANAGER_ONLY = ['pricing', 'activity', 'team', 'settings'];
+    emails: emailsView, pricing: pricingView, specials: specialsView, activity: activityView, team: teamView, settings: settingsView, account: accountView };
+  const MANAGER_ONLY = ['pricing', 'specials', 'activity', 'team', 'settings'];
 
   async function route() {
     if (!S.me || !main) return;
@@ -701,6 +701,8 @@
     team_password_reset: 'Reset a password', password_changed: 'Changed their password', settings_changed: 'Changed settings',
     records_exported: 'Downloaded records', portal_set_up: 'Set up the portal', pricing_changed: 'Changed pricing or availability',
     contact_updated: 'Updated contact details', contacts_exported: 'Downloaded the contact sheet',
+    special_created: 'Added a special', special_changed: 'Changed a special', special_turned_on: 'Turned a special on',
+    special_turned_off: 'Turned a special off', special_deleted: 'Deleted a special',
     account_created: 'Created an account', resident_approved: 'Approved an account', resident_declined: 'Declined a sign-up',
     resident_password_changed: 'Changed their password', resident_password_reset: 'Reset a resident password' };
   async function activityView() {
@@ -880,6 +882,134 @@
       h('h2', { class: 'section-title' }, 'Rents'),
       h('p', { class: 'fine section-lede' }, 'Changes to rents go live when you press “Save and publish”.'),
       form];
+  }
+
+  /* ------------------------------------------------ specials and promotions */
+  // "2026-12-31" -> "December 31, 2026", read as a calendar date
+  const longDate = (d) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || '');
+    return m ? new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+  };
+  const SPECIAL_STATUS = { on: ['chip chip-gold', 'Showing on the site'], off: ['chip chip-off', 'Off'],
+    ended: ['chip chip-off', 'Ended — past its end date'] };
+
+  async function specialsView() {
+    const d = await api('/staff/specials');
+    const planName = {};
+    for (const p of d.plans) planName[p.id] = p.name;
+    const appliesTo = (ids) => (ids.length >= d.plans.length ? 'All floor plans' : ids.map((id) => planName[id]).join(' & '));
+    const countEl = h('span', { class: 'fine' });
+    const recount = () => {
+      const showing = d.specials.filter((x) => x.status === 'on').length;
+      countEl.textContent = d.specials.length ? showing + ' of ' + d.specials.length + ' showing on the site' : '';
+    };
+
+    // the form at the top: add a special, or edit the one chosen below
+    const specialForm = (x) => {
+      const editing = !!x;
+      x = x || { title: '', details: '', fine_print: '', plans: d.plans.map((p) => p.id), ends_on: '' };
+      const details = textarea('details', { maxlength: 400, rows: 3,
+        placeholder: 'Sign a 12-month lease by December 31 and your first full month is free.' });
+      const fine = textarea('fine_print', { maxlength: 300, rows: 2, placeholder: 'New residents only. Cannot be combined with other offers.' });
+      details.value = x.details; fine.value = x.fine_print;
+      const form = h('form', { class: 'card stack' + (editing ? ' card-accent' : ''), novalidate: true },
+        h('h3', {}, editing ? 'Edit “' + x.title + '”' : 'Add a special'),
+        field('Headline', input('title', { value: x.title, maxlength: 80, required: true, autocomplete: 'off',
+          placeholder: 'First month free' })),
+        field('Details (optional)', details),
+        field('Fine print (optional)', fine, 'Shown in small type under the special.'),
+        h('fieldset', { class: 'group' }, h('legend', { class: 'field-label' }, 'Applies to'),
+          h('div', { class: 'checks' }, d.plans.map((p) => check('plan_' + p.id, p.name, x.plans.includes(p.id))))),
+        h('div', { class: 'cols' },
+          field('Ends on (optional)', input('ends_on', { type: 'date', value: x.ends_on }),
+            'It comes off the site by itself after this day. Leave it blank to keep it up until you switch it off.')),
+        editing ? null : check('active', 'Show it on the site as soon as it is added', true),
+        h('div', { class: 'actions' },
+          h('button', { class: 'btn btn-sm', type: 'submit' }, editing ? 'Save changes' : 'Add special'),
+          editing ? h('button', { class: 'link-btn', type: 'button', onclick: () => { S.editSpecial = null; route(); } }, 'Cancel') : null),
+        h('p', { class: 'msg', role: 'alert', hidden: true }));
+      onSubmit(form, async (v) => {
+        const body = { title: v.title, details: v.details, fine_print: v.fine_print, ends_on: v.ends_on,
+          plans: d.plans.filter((p) => v['plan_' + p.id] === 'on').map((p) => p.id) };
+        if (!editing) body.active = v.active === 'on';
+        const out = await api(editing ? '/staff/specials/' + x.id : '/staff/specials', body);
+        S.editSpecial = null;
+        flash = out.status === 'ended' ? 'Saved, but its end date has already passed, so it is not on the site.'
+          : editing ? (out.status === 'on' ? 'Saved — the site shows the change now.' : 'Saved.')
+          : out.status === 'on' ? 'Added — it is on the site now.' : 'Added. It is switched off, so it is not on the site yet.';
+        route();
+      });
+      return form;
+    };
+
+    // one card per special, with its on/off toggle (saved the moment it is tapped)
+    const specialCard = (x) => {
+      const chipEl = h('span', {});
+      const on = h('button', { type: 'button' }, 'On');
+      const off = h('button', { type: 'button' }, 'Off');
+      const msg = h('p', { class: 'msg', role: 'status', hidden: true });
+      const card = h('div', { class: 'card stack special-card' },
+        h('div', { class: 'special-top' },
+          h('div', { class: 'special-name' }, h('h3', {}, x.title),
+            h('p', { class: 'fine' }, appliesTo(x.plans) + ' · ' + (x.ends_on ? 'ends ' + longDate(x.ends_on) : 'no end date'))),
+          h('div', { class: 'special-toggle' },
+            h('div', { class: 'seg', role: 'group', 'aria-label': 'Show “' + x.title + '” on the site' }, on, off), chipEl)),
+        x.details ? h('p', { class: 'pre' }, x.details) : null,
+        x.fine_print ? h('p', { class: 'fine pre' }, x.fine_print) : null,
+        h('div', { class: 'actions' },
+          h('button', { class: 'link-btn', type: 'button', onclick: () => { S.editSpecial = x.id; route(); window.scrollTo({ top: 0 }); } }, 'Edit'),
+          h('button', { class: 'link-btn', type: 'button', onclick: async () => {
+            if (!window.confirm('Delete “' + x.title + '”? It comes off the site and cannot be brought back. (To pause it, switch it off instead.)')) return;
+            try { await api('/staff/specials/' + x.id + '/delete', {}); flash = 'Deleted “' + x.title + '”.'; } catch (e) { flash = e.message; }
+            if (S.editSpecial === x.id) S.editSpecial = null;
+            route();
+          } }, 'Delete')),
+        msg);
+      const paint = () => {
+        on.classList.toggle('on', !!x.active); on.setAttribute('aria-pressed', String(!!x.active));
+        off.classList.toggle('on', !x.active); off.setAttribute('aria-pressed', String(!x.active));
+        chipEl.className = SPECIAL_STATUS[x.status][0];
+        chipEl.textContent = SPECIAL_STATUS[x.status][1];
+        card.classList.toggle('card-accent', x.status === 'on');
+      };
+      const set = async (active) => {
+        if (active === !!x.active) return;
+        on.disabled = off.disabled = true;
+        try {
+          const out = await api('/staff/specials/' + x.id, { active: active });
+          x.active = active; x.status = out.status;
+          msg.className = 'msg ok';
+          msg.textContent = out.status === 'on' ? 'It is on the site now.'
+            : out.status === 'ended' ? 'Switched on, but its end date has passed, so it is not showing. Edit the end date to show it again.'
+            : 'Taken off the site.';
+        } catch (e) {
+          msg.className = 'msg';
+          msg.textContent = e.message;
+          if (e.status === 401 && e.code === 'signed_out') RW.onAuthError(e);
+        } finally {
+          msg.hidden = false;
+          on.disabled = off.disabled = false;
+          paint();
+          recount();
+        }
+      };
+      on.addEventListener('click', () => set(true));
+      off.addEventListener('click', () => set(false));
+      paint();
+      return card;
+    };
+
+    const editing = d.specials.find((x) => x.id === S.editSpecial);
+    recount();
+    return [
+      pageHead('Specials', 'Rent specials and promotions for the main site. Each one that is switched on appears in a '
+        + '“Specials & promotions” section on the home and Residences pages, and on the floor plans it applies to.',
+        h('a', { class: 'btn btn-sm btn-ghost', href: '/#specials', target: '_blank', rel: 'noopener' }, 'Open the main site')),
+      specialForm(editing),
+      h('div', { class: 'card-head section-gap' }, h('h2', {}, 'Your specials'), countEl),
+      d.specials.length ? h('div', {}, d.specials.map(specialCard))
+        : h('div', { class: 'empty' }, 'No specials yet. Add one above — it shows on the site as soon as it is switched on.'),
+    ];
   }
 
   /* --------------------------------------------------------------- settings */

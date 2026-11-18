@@ -78,6 +78,13 @@ locks until staff unlock it after 30 in a day, and every attempt is in the staff
 *Activity log*. Passwords, resident and staff alike, are stored only as salted
 PBKDF2 hashes.
 
+**Specials and promotions.** A manager adds rent specials under *Specials* in
+the staff portal and switches each on or off; an optional end date takes it off
+the site by itself after that day (Saint Paul time). Specials that are on fill a
+hidden "Specials & promotions" section on the home and Residences pages
+(`data-rw-specials`) and add a "Special" line to each floor plan they apply to,
+through the same `website/pricing.js` and `/api/portal/pricing` feed.
+
 **Contact details.** Residents keep their own email, phone, second phone and
 emergency contact current under *Your contact details* in the resident portal
 (their current password confirms the change). Staff see everyone's details,

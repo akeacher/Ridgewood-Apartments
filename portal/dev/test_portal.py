@@ -669,7 +669,7 @@ def run():
     print("site pricing")
     blank = {"rent": None, "from": False, "note": "", "available": None}
     s, j = Client().get("/pricing")
-    check(s == 200 and j == {"plans": {"wilson": blank, "battlecreek": blank, "wakefield": blank}, "updated_at": None},
+    check(s == 200 and j == {"plans": {"wilson": blank, "battlecreek": blank, "wakefield": blank}, "specials": [], "updated_at": None},
           "the site is given no prices until staff enter some", j)
     check(Client().get("/staff/pricing")[0] == 401 and Client().post("/staff/pricing", {})[0] == 401, "editing prices needs a staff session")
     s, j = m.get("/staff/pricing")
@@ -731,6 +731,70 @@ def run():
     check("The Wilson availability: not shown → available" in log and "The Battle Creek availability: unavailable → not shown" in log,
           "availability changes are in the activity log", log[:4])
 
+    # ------------------------------------------- specials and promotions on the site
+    print("specials")
+    from datetime import datetime, timedelta
+    from zoneinfo import ZoneInfo
+    today = datetime.now(ZoneInfo("America/Chicago")).date()
+    feed = lambda: Client().get("/pricing")[1]["specials"]
+    check(feed() == [], "the site is given no specials until staff add one")
+    check(Client().get("/staff/specials")[0] == 401 and Client().post("/staff/specials", {})[0] == 401, "managing specials needs a staff session")
+    s, j = m.get("/staff/specials")
+    check(s == 200 and j["specials"] == [] and [p["id"] for p in j["plans"]] == ["wilson", "battlecreek", "wakefield"] and j["today"] == today.isoformat(),
+          "staff start with no specials, and the date in Saint Paul", j)
+    good = {"title": "First month free", "details": "Sign a 12-month lease by December 31 and your first full month is free.",
+            "fine_print": "New residents only. One per household.", "plans": ["wakefield"], "ends_on": "2099-12-31", "active": True}
+    for bad, why in ((dict(good, title="x"), "a headline"), (dict(good, plans=[]), "at least one floor plan"),
+                     (dict(good, plans=["penthouse"]), "real floor plans"), (dict(good, ends_on="tomorrow"), "a real end date"),
+                     (dict(good, ends_on="2026-02-30"), "a date that exists"), (dict(good, active="yes"), "on or off")):
+        check(m.post("/staff/specials", bad)[0] == 400, "a special needs " + why)
+    check(feed() == [], "a refused special adds nothing")
+    s, j = m.post("/staff/specials", good)
+    check(s == 200 and j["status"] == "on" and len(j["id"]) == 8, "a manager adds a special that shows straight away", j)
+    first = j["id"]
+    f = feed()
+    check(f == [{"id": first, "title": "First month free", "details": good["details"], "fine_print": good["fine_print"],
+                 "plans": ["wakefield"], "ends_on": "2099-12-31"}], "the site is given the special, and nothing about who made it", f)
+    s, j = m.post("/staff/specials", {"title": "<b>$250 off</b> move-in", "plans": ["wilson", "battlecreek", "wakefield"], "active": False})
+    check(s == 200 and j["status"] == "off" and len(feed()) == 1, "a special can be added switched off")
+    second = j["id"]
+    s, j = m.post("/staff/specials/" + second, {"active": True})
+    check(s == 200 and j == {"ok": True, "changed": 1, "status": "on"}, "…and switched on with the toggle", j)
+    f = feed()
+    check([x["title"] for x in f] == ["First month free", "<b>$250 off</b> move-in"] and f[1]["details"] == "" and f[1]["ends_on"] == "",
+          "both show, in the order they were added, text kept as text", f)
+    check(m.post("/staff/specials/" + second, {"active": True})[1]["changed"] == 0, "switching on what is already on is not a change")
+    check(m.post("/staff/specials/" + second, {"active": False})[1]["status"] == "off" and len(feed()) == 1, "switching it off takes it off the site")
+    s, j = m.post("/staff/specials/" + first, {"title": "First month FREE", "plans": ["wakefield", "wilson"]})
+    check(s == 200 and j["changed"] == 2, "a special can be edited", j)
+    f = feed()[0]
+    check((f["title"], f["plans"], f["details"], f["ends_on"]) == ("First month FREE", ["wilson", "wakefield"], good["details"], "2099-12-31"),
+          "…and only what was sent changes; plans keep the site's order", f)
+    check(m.post("/staff/specials/" + first, {"plans": []})[0] == 400, "an edit still needs a floor plan")
+    yesterday, tomorrow = (today - timedelta(days=1)).isoformat(), (today + timedelta(days=1)).isoformat()
+    check(m.post("/staff/specials/" + first, {"ends_on": today.isoformat()})[1]["status"] == "on" and len(feed()) == 1,
+          "a special ending today still shows today")
+    s, j = m.post("/staff/specials/" + first, {"ends_on": yesterday})
+    check(j["status"] == "ended" and feed() == [], "once its end date has passed it comes off the site by itself", j)
+    check([x["status"] for x in m.get("/staff/specials")[1]["specials"]] == ["ended", "off"], "staff see which have ended and which are off")
+    check(m.post("/staff/specials/" + first, {"ends_on": tomorrow})[1]["status"] == "on" and len(feed()) == 1, "moving the end date brings it back")
+    check(m.post("/staff/specials/" + first, {"ends_on": ""})[1]["status"] == "on", "an end date is optional")
+    for i in range(6):
+        m.post("/staff/specials", {"title": "Filler special %d" % i, "active": False})
+    s, j = m.post("/staff/specials", {"title": "One too many"})
+    check(s == 400 and "up to 8" in j.get("error", ""), "there can be up to eight specials", j)
+    for x in m.get("/staff/specials")[1]["specials"]:
+        if x["title"].startswith("Filler"):
+            m.post("/staff/specials/%s/delete" % x["id"])
+    check(m.post("/staff/specials/%s/delete" % second)[0] == 200 and len(m.get("/staff/specials")[1]["specials"]) == 1, "a special can be deleted")
+    check(m.post("/staff/specials/%s/delete" % second)[0] == 404 and m.post("/staff/specials/ffffffff", {"active": True})[0] == 404,
+          "a deleted or unknown special is 404")
+    events = [e["event"] for e in m.get("/staff/activity")[1]["activity"]]
+    for ev in ("special_created", "special_turned_on", "special_turned_off", "special_changed", "special_deleted"):
+        check(ev in events, "the activity log records " + ev)
+    changed = [e["detail"] for e in m.get("/staff/activity")[1]["activity"] if e["event"] == "special_changed"]
+    check(any('changed headline, floor plans (was "First month free")' in x for x in changed), "edits say what changed", changed[:3])
+
     # --------------------------------------------------------------- the team
     print("team")
     tech_new = {"name": "Sam Tech", "email": "sam@ridgewood.test", "password": "temporary pass 1", "role": "tech"}
@@ -761,6 +825,7 @@ def run():
           "technician cannot change them")
     check(k.post("/staff/pricing", {"plans": {"wakefield": {"available": True}}})[0] == 403 and Client().get("/pricing")[1]["plans"]["wakefield"]["available"] is None,
           "…or availability")
+    check(k.get("/staff/specials")[0] == 403 and k.post("/staff/specials", {"title": "Tech special"})[0] == 403, "…or specials")
     Client().post("/signup", dict(new, email="wait@example.com", name="Wendy Waits", unit="130"))
     wid = sql("SELECT id FROM tenants WHERE email = 'wait@example.com'")[0]["id"]
     for action in ("approve", "decline", "reset-password"):
