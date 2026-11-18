@@ -1168,11 +1168,13 @@ async function staffSaveSettings(c) {
   await logActivity(c, 'staff', c.user.id, c.user.name, 'settings_changed', changes.map((x) => x[0]).join(', '));
   return json({ ok: true });
 }
-/* ------------------------------------------------- rents on the main site */
+/* ------------------------------- rents and availability on the main site */
 
-// Kept as one small JSON value in settings. A plan with no rent and no note
-// shows nothing on the site, which is how every plan starts.
+// Kept as one small JSON value in settings. A plan with no rent, no note and no
+// availability chosen shows nothing on the site, which is how every plan starts.
 const money = (n) => '$' + String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+// true = available, false = unavailable, null = not shown on the site
+const availability = (v) => (v === true || v === false ? v : null);
 function readPricing(settings) {
   let saved = {};
   try { saved = JSON.parse(settings.pricing || '{}') || {}; } catch (e) { saved = {}; }
@@ -1180,50 +1182,70 @@ function readPricing(settings) {
   for (const p of PLANS) {
     const v = (saved.plans && saved.plans[p.id]) || {};
     const rent = Number.isInteger(v.rent) && v.rent > 0 && v.rent <= MAX_RENT ? v.rent : null;
-    plans[p.id] = { name: p.name, beds: p.beds, rent, from: rent ? !!v.from : false, note: str(v.note, 80) };
+    plans[p.id] = { name: p.name, beds: p.beds, rent, from: rent ? !!v.from : false, note: str(v.note, 80),
+      available: availability(v.available) };
   }
   return { plans, updated_at: saved.updated_at || null, updated_by: saved.updated_by || null };
 }
 const describePrice = (v) => (v.rent ? (v.from ? 'from ' : '') + money(v.rent) : 'no price') + (v.note ? ` (${v.note})` : '');
+const describeAvailability = (a) => (a === true ? 'available' : a === false ? 'unavailable' : 'not shown');
 
-// Public: the main site reads this to fill in its price slots.
+// Public: the main site reads this to fill in its price and availability slots.
 async function publicPricing(c) {
   const pricing = readPricing(await getSettings(c.env));
   const plans = {};
   for (const p of PLANS) {
     const v = pricing.plans[p.id];
-    plans[p.id] = { rent: v.rent, from: v.from, note: v.note };
+    plans[p.id] = { rent: v.rent, from: v.from, note: v.note, available: v.available };
   }
   return json({ plans, updated_at: pricing.updated_at });
 }
 async function staffGetPricing(c) {
   return json(readPricing(await getSettings(c.env)));
 }
+// Only what is sent changes: the availability toggle sends just { available },
+// the rent form just the rent, note and "from".
 async function staffSavePricing(c) {
   const b = await readBody(c);
   const sent = b.plans && typeof b.plans === 'object' ? b.plans : {};
   const before = readPricing(await getSettings(c.env));
   const plans = {}, changes = [];
   for (const p of PLANS) {
-    const v = sent[p.id] && typeof sent[p.id] === 'object' ? sent[p.id] : before.plans[p.id];
-    // "$1,150", "1150" and 1150 are all the same rent; blank means do not show one
-    const typed = String(v.rent === null || v.rent === undefined ? '' : v.rent).replace(/[$,\s]/g, '');
-    let rent = null;
-    if (typed !== '') {
-      if (!/^\d+$/.test(typed) || Number(typed) < 1 || Number(typed) > MAX_RENT) {
-        throw new HttpError(400, `Enter the rent for ${p.name} in whole dollars, like 1150, or leave it blank.`);
-      }
-      rent = Number(typed);
-    }
-    plans[p.id] = { rent, from: rent ? !!v.from : false, note: str(v.note, 80) };
     const was = before.plans[p.id];
+    const v = sent[p.id] && typeof sent[p.id] === 'object' ? sent[p.id] : {};
+    let rent = was.rent;
+    if (v.rent !== undefined) {
+      // "$1,150", "1150" and 1150 are all the same rent; blank means do not show one
+      const typed = String(v.rent === null ? '' : v.rent).replace(/[$,\s]/g, '');
+      rent = null;
+      if (typed !== '') {
+        if (!/^\d+$/.test(typed) || Number(typed) < 1 || Number(typed) > MAX_RENT) {
+          throw new HttpError(400, `Enter the rent for ${p.name} in whole dollars, like 1150, or leave it blank.`);
+        }
+        rent = Number(typed);
+      }
+    }
+    if (v.available !== undefined && v.available !== null && typeof v.available !== 'boolean') {
+      throw new HttpError(400, `Choose available or unavailable for ${p.name}.`);
+    }
+    const from = v.from !== undefined ? !!v.from : was.from;
+    plans[p.id] = { rent, from: rent ? from : false, note: v.note !== undefined ? str(v.note, 80) : was.note,
+      available: v.available !== undefined ? availability(v.available) : was.available };
     if (was.rent !== rent || was.from !== plans[p.id].from || was.note !== plans[p.id].note) {
       changes.push(`${p.name}: ${describePrice(was)} → ${describePrice(plans[p.id])}`);
     }
+    if (was.available !== plans[p.id].available) {
+      changes.push(`${p.name} availability: ${describeAvailability(was.available)} → ${describeAvailability(plans[p.id].available)}`);
+    }
   }
   if (changes.length) {
+    const stored = {};
+    for (const p of PLANS) {
+      const v = plans[p.id];
+      stored[p.id] = { rent: v.rent, from: v.from, note: v.note, available: v.available };
+    }
     await run(c.env, 'INSERT INTO settings (name, value) VALUES (?, ?) ON CONFLICT(name) DO UPDATE SET value = excluded.value',
-      'pricing', JSON.stringify({ plans, updated_at: nowIso(), updated_by: c.user.name }));
+      'pricing', JSON.stringify({ plans: stored, updated_at: nowIso(), updated_by: c.user.name }));
     await logActivity(c, 'staff', c.user.id, c.user.name, 'pricing_changed', changes.join('; '));
   }
   return json({ ok: true, changed: changes.length });

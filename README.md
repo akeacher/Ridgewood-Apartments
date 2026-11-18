@@ -85,12 +85,13 @@ apartment by apartment, on the *Contact sheet*, and a manager can download it as
 a spreadsheet. Each change is in the *Activity log*, open work orders pick up the
 new email and phone, and the office and the old email address are notified.
 
-**Rents on the main site.** A manager sets the rent for each floor plan under
-*Site pricing* in the staff portal. The home, Residences and Questions pages carry
+**Rents and availability on the main site.** A manager sets the rent for each
+floor plan, and toggles it available or unavailable, under *Pricing &
+availability* in the staff portal. The home, Residences and Questions pages carry
 hidden slots (`data-rw-price="wilson"` and so on) that `website/pricing.js` fills
-from `/api/portal/pricing`. A plan with no rent entered shows no price, so the
-pages read as they always have until someone posts one. Never type a rent into
-the pages themselves.
+from `/api/portal/pricing`. A plan with nothing posted shows nothing, so the
+pages read as they always have until someone posts something. Never type a rent
+or an availability into the pages themselves.
 
 **Data** lives in a Cloudflare D1 database bound as `DB`. The Worker creates its
 own tables on first use and applies any later changes itself (`MIGRATIONS` in

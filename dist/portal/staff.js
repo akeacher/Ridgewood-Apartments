@@ -132,7 +132,7 @@
       h('button', { class: 'btn btn-sm btn-ghost', type: 'button', onclick: signOut }, 'Sign out'));
     const links = [['orders', 'Work orders'], ['records', 'Completed records'], ['unit', 'Apartment history'],
       ['residents', 'Residents'], ['contacts', 'Contact sheet'], ['emails', 'Email log']];
-    if (isManager()) links.push(null, ['pricing', 'Site pricing'], ['activity', 'Activity log'], ['team', 'Team'], ['settings', 'Settings']);
+    if (isManager()) links.push(null, ['pricing', 'Pricing & availability'], ['activity', 'Activity log'], ['team', 'Team'], ['settings', 'Settings']);
     links.push(null, ['account', 'My account']);
     main = h('section', { id: 'main' });
     app.replaceChildren(h('div', { class: 'staff-shell' },
@@ -699,7 +699,7 @@
     resident_removed: 'Removed a resident', resident_restored: 'Restored a resident', resident_edited: 'Edited a resident',
     resident_unlocked: 'Unlocked a resident', team_member_added: 'Added a team member', team_member_changed: 'Changed a team member',
     team_password_reset: 'Reset a password', password_changed: 'Changed their password', settings_changed: 'Changed settings',
-    records_exported: 'Downloaded records', portal_set_up: 'Set up the portal', pricing_changed: 'Changed site pricing',
+    records_exported: 'Downloaded records', portal_set_up: 'Set up the portal', pricing_changed: 'Changed pricing or availability',
     contact_updated: 'Updated contact details', contacts_exported: 'Downloaded the contact sheet',
     account_created: 'Created an account', resident_approved: 'Approved an account', resident_declined: 'Declined a sign-up',
     resident_password_changed: 'Changed their password', resident_password_reset: 'Reset a resident password' };
@@ -800,8 +800,11 @@
       const note = e[id + '_note'].value.trim();
       const price = /^\d+$/.test(typed) && Number(typed) > 0
         ? (e[id + '_from'].checked ? 'From ' : '') + dollars(Number(typed)) + ' per month' : '';
+      const a = d.plans[id].available;
+      const avail = a === true ? 'Available now' : a === false ? 'Currently unavailable' : '';
       form.querySelector('[data-preview="' + id + '"]').textContent = 'On the site: '
-        + (typed && !price ? 'that rent is not a whole dollar amount' : [price, note].filter(Boolean).join(' · ') || 'no price shown for this plan');
+        + (typed && !price ? 'that rent is not a whole dollar amount'
+          : [avail, price, note].filter(Boolean).join(' · ') || 'nothing shown for this plan');
     });
     form.addEventListener('input', preview);
     preview();
@@ -813,9 +816,69 @@
       flash = out.changed ? 'Saved. The main site is showing the new pricing now.' : 'Nothing was changed.';
       route();
     });
-    return [pageHead('Site pricing', 'The rent shown for each floor plan on the main site — on the home page, the Residences page and the Questions page. '
-      + 'Changes go live as soon as you save.'),
-      d.updated_at ? h('p', { class: 'fine last-change' }, 'Last changed ' + when(d.updated_at) + (d.updated_by ? ' by ' + d.updated_by : '') + '.') : null,
+
+    // Availability: one toggle per floor plan, live on the site the moment it is
+    // tapped. It saves on its own, so rents being typed below are left as they are.
+    const availMsg = h('p', { class: 'msg', role: 'status', hidden: true });
+    const lastChange = h('p', { class: 'fine last-change', hidden: !d.updated_at },
+      d.updated_at ? 'Last changed ' + when(d.updated_at) + (d.updated_by ? ' by ' + d.updated_by : '') + '.' : '');
+    const STATE = { true: 'Showing as available', false: 'Showing as unavailable', null: 'Not shown on the site' };
+    const availRow = (id) => {
+      const p = d.plans[id];
+      const yes = h('button', { type: 'button' }, 'Available');
+      const no = h('button', { type: 'button' }, 'Unavailable');
+      const clear = h('button', { type: 'button', class: 'link-btn' }, 'Don’t show');
+      const state = h('span', { class: 'fine avail-state' });
+      const paint = () => {
+        yes.classList.toggle('on', p.available === true); yes.setAttribute('aria-pressed', String(p.available === true));
+        no.classList.toggle('on', p.available === false); no.setAttribute('aria-pressed', String(p.available === false));
+        state.textContent = STATE[String(p.available)];
+        clear.hidden = p.available === null;
+        preview();
+      };
+      const set = async (value) => {
+        if (value === p.available) return;
+        for (const b of [yes, no, clear]) b.disabled = true;
+        try {
+          await api('/staff/pricing', { plans: { [id]: { available: value } } });
+          p.available = value;
+          lastChange.textContent = 'Last changed ' + when(new Date().toISOString()) + ' by ' + S.me.name + '.';
+          lastChange.hidden = false;
+          availMsg.className = 'msg ok';
+          availMsg.textContent = value === null ? p.name + ' no longer shows availability on the site.'
+            : p.name + ' now shows as ' + (value ? 'available' : 'unavailable') + ' on the site.';
+        } catch (e) {
+          availMsg.className = 'msg';
+          availMsg.textContent = e.message;
+          if (e.status === 401 && e.code === 'signed_out') RW.onAuthError(e);
+        } finally {
+          availMsg.hidden = false;
+          for (const b of [yes, no, clear]) b.disabled = false;
+          paint();
+        }
+      };
+      yes.addEventListener('click', () => set(true));
+      no.addEventListener('click', () => set(false));
+      clear.addEventListener('click', () => set(null));
+      paint();
+      return h('div', { class: 'avail-row' },
+        h('div', { class: 'avail-name' }, h('strong', {}, p.name), h('span', { class: 'fine' }, p.beds)),
+        h('div', { class: 'seg avail-seg', role: 'group', 'aria-label': 'Availability of ' + p.name }, yes, no),
+        h('div', { class: 'avail-status' }, state, clear));
+    };
+    const availCard = h('div', { class: 'card stack avail-card' },
+      h('div', {}, h('h3', {}, 'Availability'),
+        h('p', { class: 'fine' }, 'Tap to mark each floor plan available or unavailable. It changes on the main site straight away — '
+          + 'on the floor plans and in the Questions page’s answer about what is available.')),
+      h('div', {}, ids.map(availRow)),
+      availMsg);
+
+    return [pageHead('Pricing & availability', 'What the main site shows for each floor plan — on the home page, the Residences page '
+      + 'and the Questions page.'),
+      lastChange,
+      availCard,
+      h('h2', { class: 'section-title' }, 'Rents'),
+      h('p', { class: 'fine section-lede' }, 'Changes to rents go live when you press “Save and publish”.'),
       form];
   }
 

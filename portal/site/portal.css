@@ -114,6 +114,14 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--g
 .money::before { content: "$"; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--ink-soft); font-weight: 400; }
 .money input { padding-left: 28px; }
 .last-change { margin: -10px 0 18px; }
+/* the availability toggles on Pricing & availability */
+.avail-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 22px; padding: 14px 0; border-top: 1px solid var(--line); }
+.avail-name { flex: 1 1 170px; display: flex; flex-direction: column; }
+.avail-name strong { font-weight: 500; }
+.avail-status { display: flex; align-items: baseline; gap: 14px; flex: 1 1 210px; }
+.seg button:disabled { opacity: 0.55; cursor: progress; }
+.avail-card + .section-title { margin-top: 34px; }
+.section-lede { margin: 4px 0 16px; }
 /* password box with its show/hide eye */
 .pw { position: relative; display: block; }
 .pw input { padding-right: 50px; }
