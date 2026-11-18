@@ -140,7 +140,10 @@ def run():
     check(Client().get("/health")[0] == 200, "the Worker starts against the older database")
     row = sql("SELECT name, pw_hash, pending, source FROM tenants WHERE email = 'old@example.com'")[0]
     check(row == {"name": "Old Timer", "pw_hash": None, "pending": 0, "source": "staff"}, "existing residents are kept and given the new fields", row)
-    check(sql("SELECT value FROM settings WHERE name = 'schema_version'")[0]["value"] == "2", "the upgrade is recorded")
+    check(sql("SELECT value FROM settings WHERE name = 'schema_version'")[0]["value"] == "3", "the upgrades are recorded")
+    row = sql("SELECT alt_phone, emergency_name, emergency_phone, contact_updated_at, contact_updated_by FROM tenants WHERE email = 'old@example.com'")[0]
+    check(row == {"alt_phone": "", "emergency_name": "", "emergency_phone": "", "contact_updated_at": None, "contact_updated_by": ""},
+          "existing residents get the new contact fields, empty", row)
     check(Client().get("/health")[0] == 200 and len(sql("SELECT id FROM tenants")) == 1, "starting again does not repeat it")
     old = Client()
     check(tenant_login(old, "old@example.com", "651-555-0900", "501")[0] == 200, "a resident from before the upgrade still signs in with their apartment number")
@@ -254,7 +257,7 @@ def run():
     check(s == 200 and "rw_tenant" in t.cookies, "sign-in tolerates formatting differences", j)
     s, me = t.get("/me")
     check(s == 200 and me["resident"] == {"name": "Maria Lopez", "unit": "204", "building": "1871",
-                                          "email": "maria@example.com", "phone": "651-555-0101", "has_password": False},
+                                          "email": "maria@example.com", "phone": "651-555-0101", "alt_phone": "", "emergency_name": "", "emergency_phone": "", "contact_updated_at": None, "has_password": False},
           "resident sees their own details", me)
     check(me["requests"] == [] and "Plumbing" in me["categories"], "new resident has no requests")
     check(t.get("/staff/workorders")[0] == 401, "a resident session does not open the staff side")
@@ -327,7 +330,7 @@ def run():
           "the resident is told their account is ready")
     check(tenant_login(su, "nora@example.com", "651 555 0110", "apt 118", "nora-chosen-pass")[0] == 200, "an approved resident signs in with the password they chose")
     check(su.get("/me")[1]["resident"] == {"name": "Nora Quinn", "unit": "118", "building": "1885", "email": "nora@example.com",
-                                           "phone": "651-555-0110", "has_password": True}, "…and sees their own account")
+                                           "phone": "651-555-0110", "alt_phone": "", "emergency_name": "", "emergency_phone": "", "contact_updated_at": None, "has_password": True}, "…and sees their own account")
     check(new_request(su, description="Bedroom window will not latch.", category="Doors, locks & windows")[0] == 200, "…and can send a request")
     check(m.get("/staff/me")[1]["pending_residents"] == 0, "nobody is left waiting")
 
@@ -586,6 +589,82 @@ def run():
                                  "office_new_signup", "resident_signup", "resident_welcome"}, "email log lists every kind", kinds)
     check(j["emails"][0]["id"] > j["emails"][-1]["id"], "email log is newest first")
 
+    # ------------------------------------------------ residents' contact details
+    print("contact details")
+    check(Client().post("/me/contact", {"email": "x@y.com"})[0] == 401, "updating contact details needs a session")
+    t2 = Client()
+    check(tenant_login(t2, "maria@example.com", "651-555-0101", "204")[0] == 200, "(Maria signed in on a second device)")
+    newc = {"email": " Maria.Lopez@Example.org ", "phone": "(651) 555-0199", "alt_phone": "651.555.0177",
+            "emergency_name": "Ana Lopez (sister)", "emergency_phone": "6515550188", "password": "204"}
+    s, j = t.post("/me/contact", dict(newc, password="999"))
+    check(s == 401 and t.get("/me")[1]["resident"]["email"] == "maria@example.com", "a wrong current password changes nothing", j)
+    check(t.post("/me/contact", dict(newc, password=""))[0] == 401, "the current password is required")
+    for bad, why in ((dict(newc, email="nope"), "a valid email"), (dict(newc, phone="555-0199"), "a full phone number"),
+                     (dict(newc, alt_phone="12"), "a full second phone, if any"), (dict(newc, emergency_phone="12"), "a full emergency phone, if any")):
+        check(t.post("/me/contact", bad)[0] == 400, "contact details need " + why)
+    check(t.post("/me/contact", dict(newc, email="james@example.com"))[0] == 409, "an email already on another account is refused")
+    done_before = sql("SELECT contact_email, contact_phone FROM work_orders WHERE id = ?", r1)[0]
+    s, j = t.post("/me/contact", newc)
+    check(s == 200 and j == {"ok": True, "changed": 5, "sign_in_changed": True}, "a resident updates their contact details", j)
+    me = t.get("/me")[1]["resident"]
+    check((me["email"], me["phone"], me["alt_phone"], me["emergency_name"], me["emergency_phone"]) ==
+          ("maria.lopez@example.org", "651-555-0199", "651-555-0177", "Ana Lopez (sister)", "651-555-0188") and me["contact_updated_at"],
+          "…and sees them back, tidied up", me)
+    check(t.get("/me")[0] == 200 and t2.get("/me")[0] == 401, "…staying signed in here while other devices are signed out")
+    check(tenant_login(Client(), "maria@example.com", "651-555-0101", "204")[0] == 401, "the old email and phone no longer sign in")
+    check(tenant_login(Client(), "maria.lopez@example.org", "651-555-0199", "204")[0] == 200, "the new ones do")
+    check(sql("SELECT contact_email, contact_phone FROM work_orders WHERE id = ?", r3)[0] ==
+          {"contact_email": "maria.lopez@example.org", "contact_phone": "651-555-0199"}, "her open work orders carry the new details")
+    check(sql("SELECT contact_email, contact_phone FROM work_orders WHERE id = ?", r1)[0] == done_before,
+          "completed ones keep the details they were done under")
+    act = [e for e in m.get("/staff/activity")[1]["activity"] if e["event"] == "contact_updated"]
+    check(len(act) == 1 and "email: maria@example.com → maria.lopez@example.org" in act[0]["detail"]
+          and "phone: 651-555-0101 → 651-555-0199" in act[0]["detail"] and "emergency contact: (none) → Ana Lopez (sister)" in act[0]["detail"],
+          "the change is in the activity log, old and new", act)
+    mails = sql("SELECT kind, to_addr FROM email_log WHERE kind IN ('office_contact_update', 'resident_email_changed') ORDER BY id")
+    check([x["kind"] for x in mails] == ["office_contact_update", "resident_email_changed"] and mails[1]["to_addr"] == "maria@example.com",
+          "the office is told, and so is the old email address", mails)
+    s, j = t.post("/me/contact", newc)
+    check(s == 200 and j["changed"] == 0, "saving the same details again is not a change", j)
+    s, j = t.post("/me/contact", {"email": "maria.lopez@example.org", "phone": "651-555-0199", "password": "204"})
+    check(s == 200 and j["changed"] == 0, "details that are not sent are kept", j)
+    s, j = t.post("/me/contact", dict(newc, alt_phone="", emergency_name="", emergency_phone=""))
+    check(s == 200 and j == {"ok": True, "changed": 3, "sign_in_changed": False} and t.get("/me")[0] == 200,
+          "clearing the optional details leaves sign-in alone", j)
+    codes = [dee.post("/me/contact", {"email": "dee@example.com", "phone": "651-555-0104", "password": "guess%d" % i})[0] for i in range(11)]
+    check(codes == [401] * 10 + [429], "guessing the current password is cut off after ten tries", codes)
+
+    # the office sees it, and can fill in what the resident has not
+    row = [r for r in m.get("/staff/residents")[1]["residents"] if r["id"] == ids["maria@example.com"]][0]
+    check(row["email"] == "maria.lopez@example.org" and row["contact_updated_by"] == "resident" and row["contact_updated_at"]
+          and row["alt_phone"] == "" and "emergency_name" in row, "staff see the new details and that the resident made the change", row)
+    check(m.post("/staff/residents/%d" % ids["maria@example.com"], {"alt_phone": "12"})[0] == 400, "staff edits are validated too")
+    check(m.post("/staff/residents/%d" % ids["maria@example.com"], {"emergency_name": "Ana Lopez", "emergency_phone": "651 555 0188"})[0] == 200,
+          "staff add an emergency contact")
+    row = [r for r in m.get("/staff/residents")[1]["residents"] if r["id"] == ids["maria@example.com"]][0]
+    check((row["emergency_name"], row["emergency_phone"], row["contact_updated_by"]) == ("Ana Lopez", "651-555-0188", "Andrew Manager"),
+          "…recorded under their name", row)
+    check(t.get("/me")[0] == 200, "…without signing the resident out")
+    check(any("emergency contact: (none) → Ana Lopez" in e["detail"] for e in m.get("/staff/activity")[1]["activity"] if e["event"] == "resident_edited"),
+          "staff edits to contact details are in the activity log too")
+    s, j = t.post("/me/contact", {"email": "maria@example.com", "phone": "651-555-0101", "password": "204"})
+    check(s == 200 and j["sign_in_changed"] is True, "(Maria back to her original sign-in details)", j)
+
+    # the contact sheet as a spreadsheet
+    check(Client().get("/staff/contacts.csv")[0] == 401, "the contact sheet download needs a staff session")
+    s, headers, text = raw("GET", "/api/portal/staff/contacts.csv", headers={"Cookie": "rw_staff=" + m.cookies["rw_staff"]})
+    csvt = text.decode()
+    check(s == 200 and headers.get("Content-Type", "").startswith("text/csv")
+          and 'filename="ridgewood-resident-contacts-' in headers.get("Content-Disposition", ""), "a manager downloads the contact sheet", headers.get("Content-Disposition"))
+    check(csvt.startswith('"Building","Apartment","Resident","Email","Phone","Second phone","Emergency contact","Emergency phone","Account"'),
+          "with a column for every contact detail", csvt[:200])
+    check('"1871","204","Maria Lopez","maria@example.com","651-555-0101","","Ana Lopez","651-555-0188","Active","Added by the office"' in csvt,
+          "each resident is one row", csvt[:600])
+    check(csvt.index('"1871","204"') < csvt.index('"1871","305"') < csvt.index('"1871","310"') < csvt.index('"1885","112"'),
+          "rows run building by building, apartments in number order")
+    check(csvt.count("\r\n") == len(sql("SELECT id FROM tenants")) + 1, "every resident account is in it, removed ones included")
+    check(any(e["event"] == "contacts_exported" for e in m.get("/staff/activity")[1]["activity"]), "downloading it is in the activity log")
+
     # ------------------------------------------------- rents on the main site
     print("site pricing")
     blank = {"rent": None, "from": False, "note": ""}
@@ -650,6 +729,8 @@ def run():
     check(k.post("/staff/team", tech_new)[0] == 403, "technician cannot add staff")
     check(k.post("/staff/settings", {"office_email": ""})[0] == 403, "technician cannot change settings")
     check(k.get("/staff/pricing")[0] == 200, "technician can see the posted rents")
+    check(k.get("/staff/residents")[1]["residents"][0].get("emergency_phone") is not None, "technician can see residents' contact details")
+    check(k.get("/staff/contacts.csv")[0] == 403, "…but only a manager can download the contact sheet")
     check(k.post("/staff/pricing", {"plans": {"wilson": {"rent": 1}}})[0] == 403 and Client().get("/pricing")[1]["plans"]["wilson"]["rent"] == 1150,
           "technician cannot change them")
     Client().post("/signup", dict(new, email="wait@example.com", name="Wendy Waits", unit="130"))
@@ -725,7 +806,8 @@ def run():
     for ev in ("portal_set_up", "sign_in", "sign_in_failed", "request_created", "request_cancelled", "order_completed",
                "order_updated", "resident_added", "residents_imported", "resident_removed", "resident_unlocked",
                "team_member_added", "team_password_reset", "password_changed", "settings_changed", "records_exported",
-               "account_created", "resident_approved", "resident_declined", "resident_password_changed", "resident_password_reset"):
+               "account_created", "resident_approved", "resident_declined", "resident_password_changed", "resident_password_reset",
+               "contact_updated", "contacts_exported"):
         check(ev in events, "activity log records " + ev)
     failed_rows = [e for e in j["activity"] if e["event"] == "sign_in_failed" and e["actor_kind"] == "tenant"]
     check(any("Tried apartment 204" in e["detail"] and "651-555-9999" in e["detail"] and e["actor_label"] == "maria@example.com"

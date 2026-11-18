@@ -136,7 +136,7 @@
         h('strong', {}, 'Your password is still your apartment number. '),
         'Choose one of your own under “Change your password” below.'),
       h('div', { class: 'two' },
-        h('div', {}, requestForm(data), passwordCard(r)),
+        h('div', {}, requestForm(data), contactCard(r), passwordCard(r)),
         h('section', { 'aria-label': 'Your requests' },
           h('div', { class: 'card-head' }, h('h2', {}, 'Your requests'),
             h('span', { class: 'fine' }, open.length ? open.length + ' open' : 'Nothing open')),
@@ -168,6 +168,55 @@
     return h('div', { class: 'card' }, h('details', { class: 'more flush' }, h('summary', {}, 'Change your password'), form));
   }
 
+  // jump to the contact details card and open its form
+  function openContact() {
+    const d = document.getElementById('contactDetails');
+    if (!d) return;
+    d.open = true;
+    d.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const first = d.querySelector('input');
+    if (first) setTimeout(() => first.focus({ preventScroll: true }), 300);
+  }
+
+  function contactCard(r) {
+    const emergency = [r.emergency_name, r.emergency_phone].filter(Boolean).join(' · ');
+    const form = h('form', { class: 'stack', novalidate: true },
+      field('Email address', input('email', { type: 'email', value: r.email, autocomplete: 'email', inputmode: 'email',
+        autocapitalize: 'none', spellcheck: 'false', required: true, maxlength: 200 })),
+      field('Phone number', input('phone', { type: 'tel', value: r.phone, autocomplete: 'tel', required: true, maxlength: 30 })),
+      field('Second phone (optional)', input('alt_phone', { type: 'tel', value: r.alt_phone, autocomplete: 'off', maxlength: 30 }),
+        'A work number, or another way to reach you.'),
+      h('fieldset', { class: 'group' }, h('legend', { class: 'field-label' }, 'Emergency contact (optional)'),
+        h('div', { class: 'cols' },
+          field('Name', input('emergency_name', { value: r.emergency_name, autocomplete: 'off', maxlength: 80,
+            placeholder: 'Name and relationship' })),
+          field('Phone', input('emergency_phone', { type: 'tel', value: r.emergency_phone, autocomplete: 'off', maxlength: 30 })))),
+      field('Current password', password('password', { autocomplete: 'current-password', required: true }), 'To confirm it is you.'),
+      h('p', { class: 'fine' }, 'You sign in with your email address and phone number, so if you change either one, '
+        + 'use the new one the next time you sign in.'),
+      h('button', { class: 'btn btn-sm', type: 'submit' }, 'Save contact details'),
+      h('p', { class: 'msg', role: 'alert', hidden: true }));
+    onSubmit(form, async (v) => {
+      const out = await api('/me/contact', { email: v.email, phone: v.phone, alt_phone: v.alt_phone,
+        emergency_name: v.emergency_name, emergency_phone: v.emergency_phone, password: v.password });
+      flash = !out.changed ? 'Your contact details were already up to date.'
+        : out.sign_in_changed ? 'Thank you — your contact details are updated. Next time you sign in, use your new email address and phone number.'
+        : 'Thank you — your contact details are updated.';
+      await boot();
+      window.scrollTo({ top: 0 });
+    });
+    return h('div', { class: 'card stack' },
+      h('div', { class: 'card-head flush-head' }, h('h3', {}, 'Your contact details'),
+        r.contact_updated_at ? h('span', { class: 'fine' }, 'Updated ' + day(r.contact_updated_at)) : null),
+      h('p', { class: 'fine' }, 'How the office and maintenance reach you. Please keep it current.'),
+      h('dl', { class: 'kv' },
+        h('dt', {}, 'Email'), h('dd', {}, r.email),
+        h('dt', {}, 'Phone'), h('dd', {}, r.phone),
+        h('dt', {}, 'Second phone'), h('dd', {}, r.alt_phone || '—'),
+        h('dt', {}, 'Emergency'), h('dd', {}, emergency || '—')),
+      h('details', { class: 'more', id: 'contactDetails' }, h('summary', {}, 'Update your contact details'), form));
+  }
+
   function requestForm(data) {
     const r = data.resident;
     const form = h('form', { class: 'card stack', novalidate: true },
@@ -182,7 +231,8 @@
       field('Anything we should know before coming in?', input('entry_notes', { maxlength: 500, placeholder: 'Best times, where to find it… (optional)' })),
       h('div', {}, h('span', { class: 'field-label' }, 'We will contact you at'),
         h('p', {}, r.phone + ' · ' + r.email),
-        h('p', { class: 'fine' }, 'Out of date? Call the leasing office and we will correct it.')),
+        h('p', { class: 'fine' }, 'Out of date? ',
+          h('button', { class: 'link-btn', type: 'button', onclick: openContact }, 'Update your contact details'), '.')),
       h('button', { class: 'btn', type: 'submit' }, 'Send request'),
       h('p', { class: 'msg', role: 'alert', hidden: true }));
     onSubmit(form, async (v) => {

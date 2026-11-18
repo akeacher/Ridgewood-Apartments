@@ -149,6 +149,14 @@ const MIGRATIONS = [
     'ALTER TABLE tenants ADD COLUMN pending INTEGER NOT NULL DEFAULT 0',
     "ALTER TABLE tenants ADD COLUMN source TEXT NOT NULL DEFAULT 'staff'",
   ]],
+  // more ways to reach a resident, and who last changed their contact details
+  [3, [
+    "ALTER TABLE tenants ADD COLUMN alt_phone TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE tenants ADD COLUMN emergency_name TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE tenants ADD COLUMN emergency_phone TEXT NOT NULL DEFAULT ''",
+    'ALTER TABLE tenants ADD COLUMN contact_updated_at TEXT',
+    "ALTER TABLE tenants ADD COLUMN contact_updated_by TEXT NOT NULL DEFAULT ''",
+  ]],
 ];
 
 let schemaReady = false;
@@ -406,6 +414,45 @@ async function addNote(c, o, kind, author, body, visible) {
 
 /* --------------------------------------------------------- resident routes */
 
+/* -------------------------------------------- residents' contact details */
+
+// The optional ways to reach a resident. A field that is not sent keeps its
+// current value; one sent blank is cleared.
+function contactExtras(b, before) {
+  const pick = (k, max) => (b[k] === undefined ? String((before && before[k]) || '') : str(b[k], max));
+  const alt = pick('alt_phone', 30), ename = pick('emergency_name', 80), ephone = pick('emergency_phone', 30);
+  if (alt && normPhone(alt).length < 10) throw new HttpError(400, 'Enter the second phone as a ten-digit number, or leave it blank.');
+  if (ephone && normPhone(ephone).length < 10) {
+    throw new HttpError(400, "Enter the emergency contact's phone as a ten-digit number, or leave it blank.");
+  }
+  return { alt_phone: alt ? fmtPhone(alt) : '', emergency_name: ename, emergency_phone: ephone ? fmtPhone(ephone) : '' };
+}
+
+const CONTACT_FIELDS = [['email', 'email'], ['phone', 'phone'], ['alt_phone', 'second phone'],
+  ['emergency_name', 'emergency contact'], ['emergency_phone', 'emergency phone']];
+// "phone: 651-555-0101 → 651-555-0199", one per field that changed
+const contactChanges = (before, after) => CONTACT_FIELDS
+  .filter(([k]) => String(before[k] || '') !== String(after[k] || ''))
+  .map(([k, label]) => `${label}: ${before[k] || '(none)'} → ${after[k] || '(none)'}`);
+
+// Open work orders carry a copy of how to reach the resident; keep it current.
+// Finished ones keep the details they were completed under.
+async function syncOpenOrders(c, tenantId, t) {
+  await run(c.env,
+    `UPDATE work_orders SET contact_name = ?, contact_email = ?, contact_phone = ?
+      WHERE tenant_id = ? AND status IN ('new','scheduled','in_progress','on_hold')`,
+    t.name, t.email, t.phone, tenantId);
+}
+
+// Re-entering the current password, before a resident changes how they sign in.
+async function checkTenantPassword(c, t, typed) {
+  typed = String(typed || '').slice(0, 200);
+  await guardAttempts(c, 'tenant_reauth', String(t.id));
+  const ok = t.pw_hash ? await verifyPassword(typed, t.pw_hash) : !!typed.trim() && normUnit(typed) === t.unit_key;
+  await recordAttempt(c, 'tenant_reauth', String(t.id), ok);
+  if (!ok) throw new HttpError(401, 'Your current password is not right.');
+}
+
 async function tenantLogin(c) {
   const b = await readBody(c);
   const email = normEmail(b.email), phoneKey = normPhone(b.phone);
@@ -505,8 +552,7 @@ async function tenantSignup(c) {
 async function tenantChangePassword(c) {
   const b = await readBody(c);
   const t = c.user, current = String(b.current || '');
-  const ok = t.pw_hash ? await verifyPassword(current, t.pw_hash) : normUnit(current) === t.unit_key;
-  if (!ok) throw new HttpError(401, 'Your current password is not right.');
+  await checkTenantPassword(c, t, current);
   const pw = checkResidentPassword(b.next);
   if (pw === current) throw new HttpError(400, 'Choose a password different from the current one.');
   await run(c.env, 'UPDATE tenants SET pw_hash = ?, updated_at = ? WHERE id = ?', await hashPassword(pw), nowIso(), t.id);
@@ -514,6 +560,52 @@ async function tenantChangePassword(c) {
   await run(c.env, "DELETE FROM sessions WHERE kind = 'tenant' AND user_id = ? AND token_hash != ?", t.id, c.tokenHash);
   await logActivity(c, 'tenant', t.id, `${t.name} · Apt ${t.unit}`, 'resident_password_changed', '');
   return json({ ok: true });
+}
+
+async function tenantUpdateContact(c) {
+  const t = c.user;
+  const b = await readBody(c);
+  await checkTenantPassword(c, t, b.password);
+  const email = normEmail(b.email), phone = str(b.phone, 30);
+  if (!validEmail(email)) throw new HttpError(400, 'Enter a valid email address.');
+  if (normPhone(phone).length < 10) throw new HttpError(400, 'Enter your phone number as a ten-digit number.');
+  const next = Object.assign({ email, phone: fmtPhone(phone) }, contactExtras(b, t));
+  if (email !== t.email && await one(c.env, 'SELECT id FROM tenants WHERE email = ? AND id != ? LIMIT 1', email, t.id)) {
+    throw new HttpError(409, 'That email address is already on another resident account. Please call the leasing office.');
+  }
+  const changes = contactChanges(t, next);
+  if (!changes.length) return json({ ok: true, changed: 0, sign_in_changed: false });
+
+  const now = nowIso();
+  await run(c.env,
+    `UPDATE tenants SET email = ?, phone = ?, phone_key = ?, alt_phone = ?, emergency_name = ?, emergency_phone = ?,
+            contact_updated_at = ?, contact_updated_by = 'resident', updated_at = ? WHERE id = ?`,
+    next.email, next.phone, normPhone(next.phone), next.alt_phone, next.emergency_name, next.emergency_phone, now, now, t.id);
+  await syncOpenOrders(c, t.id, Object.assign({}, t, next));
+  // email and phone are part of signing in, so other devices sign in again with the new ones
+  const signInChanged = next.email !== t.email || normPhone(next.phone) !== t.phone_key;
+  if (signInChanged) {
+    await run(c.env, "DELETE FROM sessions WHERE kind = 'tenant' AND user_id = ? AND token_hash != ?", t.id, c.tokenHash);
+  }
+  await logActivity(c, 'tenant', t.id, `${t.name} · Apt ${t.unit}`, 'contact_updated', changes.join('; '));
+
+  const settings = await getSettings(c.env);
+  await sendEmail(c, settings, {
+    to: settings.office_email || '', missing: 'No office address is set under Settings', kind: 'office_contact_update',
+    subject: `Contact details updated — Apt ${t.unit}`,
+    body: `${t.name} (Apartment ${t.unit}${t.building ? `, ${t.building} Wilson Ave` : ''}) updated their contact details:\n\n` +
+      `${changes.join('\n')}\n\nContact sheet: ${c.url.origin}/portal/staff#/contacts`,
+  });
+  if (next.email !== t.email) {
+    // the old address hears about it too, in case the change was not theirs
+    await sendEmail(c, settings, {
+      to: t.email, kind: 'resident_email_changed', subject: 'The email on your Ridgewood resident account was changed',
+      body: `Hello ${t.name},\n\nThe email address on your Ridgewood resident portal account was changed to ${next.email}. ` +
+        'From now on, sign in with that address.\n\nIf you did not make this change, call the leasing office at 651-578-0498 right away.' +
+        '\n\nRidgewood Apartments',
+    });
+  }
+  return json({ ok: true, changed: changes.length, sign_in_changed: signInChanged });
 }
 
 const tenantView = (o, notes) => ({
@@ -538,7 +630,8 @@ async function tenantMe(c) {
         AND (visible_to_tenant = 1 OR author_kind = 'tenant') ORDER BY created_at ASC`, t.id);
   return json({
     resident: { name: t.name, unit: t.unit, building: t.building, email: t.email, phone: t.phone,
-      has_password: !!t.pw_hash },
+      alt_phone: t.alt_phone || '', emergency_name: t.emergency_name || '', emergency_phone: t.emergency_phone || '',
+      contact_updated_at: t.contact_updated_at || null, has_password: !!t.pw_hash },
     categories: CATEGORIES,
     requests: orders.map((o) => tenantView(o, notes.filter((n) => n.work_order_id === o.id))),
   });
@@ -878,7 +971,8 @@ async function insertTenant(c, f) {
 
 async function staffTenants(c) {
   const rows = await all(c.env,
-    `SELECT id, unit, building, name, email, phone, active, pending, source, created_at, (pw_hash IS NOT NULL) AS has_password
+    `SELECT id, unit, building, name, email, phone, alt_phone, emergency_name, emergency_phone, contact_updated_at,
+            contact_updated_by, active, pending, source, created_at, (pw_hash IS NOT NULL) AS has_password
        FROM tenants ORDER BY pending DESC, active DESC, building, unit_key, name LIMIT 2000`);
   return json({ residents: rows.map((r) => Object.assign(r, { active: !!r.active, pending: !!r.pending, has_password: !!r.has_password })) });
 }
@@ -967,13 +1061,48 @@ async function staffEditTenant(c, m) {
     return json({ ok: true });
   }
   const f = tenantFields(Object.assign({ unit: t.unit, name: t.name, email: t.email, phone: t.phone, building: t.building }, b));
+  const next = Object.assign({}, f, contactExtras(b, t));
+  const changes = contactChanges(t, next);
+  const now = nowIso();
   await run(c.env,
-    'UPDATE tenants SET unit = ?, unit_key = ?, building = ?, name = ?, email = ?, phone = ?, phone_key = ?, updated_at = ? WHERE id = ?',
-    f.unit, normUnit(f.unit), f.building, f.name, f.email, f.phone, normPhone(f.phone), nowIso(), t.id);
-  // their sign-in details changed, so they sign in again with the new ones
-  await run(c.env, "DELETE FROM sessions WHERE kind = 'tenant' AND user_id = ?", t.id);
-  await logActivity(c, 'staff', c.user.id, c.user.name, 'resident_edited', `${f.name} · Apt ${f.unit}`);
+    `UPDATE tenants SET unit = ?, unit_key = ?, building = ?, name = ?, email = ?, phone = ?, phone_key = ?,
+            alt_phone = ?, emergency_name = ?, emergency_phone = ?, updated_at = ? WHERE id = ?`,
+    f.unit, normUnit(f.unit), f.building, f.name, f.email, f.phone, normPhone(f.phone),
+    next.alt_phone, next.emergency_name, next.emergency_phone, now, t.id);
+  if (changes.length) {
+    await run(c.env, 'UPDATE tenants SET contact_updated_at = ?, contact_updated_by = ? WHERE id = ?', now, c.user.name, t.id);
+  }
+  await syncOpenOrders(c, t.id, next);
+  // if how they sign in changed, they sign in again with the new details
+  if (normUnit(f.unit) !== t.unit_key || f.email !== t.email || normPhone(f.phone) !== t.phone_key) {
+    await run(c.env, "DELETE FROM sessions WHERE kind = 'tenant' AND user_id = ?", t.id);
+  }
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'resident_edited',
+    `${f.name} · Apt ${f.unit}${changes.length ? ' · ' + changes.join('; ') : ''}`);
   return json({ ok: true });
+}
+
+// Every resident's contact details, one row each, for a spreadsheet program.
+const ACCOUNT_STATE = (r) => (!r.active ? 'Removed' : r.pending ? 'Waiting for approval' : 'Active');
+const byUnit = (a, b) => String(a.building).localeCompare(String(b.building))
+  || String(a.unit).localeCompare(String(b.unit), undefined, { numeric: true, sensitivity: 'base' })
+  || String(a.name).localeCompare(String(b.name));
+async function staffContactsExport(c) {
+  const rows = (await all(c.env, 'SELECT * FROM tenants LIMIT 5000')).sort(byUnit);
+  const head = ['Building', 'Apartment', 'Resident', 'Email', 'Phone', 'Second phone', 'Emergency contact', 'Emergency phone',
+    'Account', 'How added', 'Added', 'Contact details last updated', 'Updated by'];
+  const lines = [head.map(csvCell).join(',')];
+  for (const r of rows) {
+    lines.push([r.building, r.unit, r.name, r.email, r.phone, r.alt_phone, r.emergency_name, r.emergency_phone,
+      ACCOUNT_STATE(r), r.source === 'self' ? 'Signed up online' : 'Added by the office', (r.created_at || '').slice(0, 10),
+      (r.contact_updated_at || '').slice(0, 10), r.contact_updated_by === 'resident' ? 'Resident' : r.contact_updated_by]
+      .map(csvCell).join(','));
+  }
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'contacts_exported', `${rows.length} residents`);
+  return new Response(lines.join('\r\n') + '\r\n', { status: 200, headers: new Headers({
+    'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'no-store',
+    'Content-Disposition': `attachment; filename="ridgewood-resident-contacts-${nowIso().slice(0, 10)}.csv"`,
+  }) });
 }
 
 /* ------------------------------------- staff: team, settings and the logs */
@@ -1124,6 +1253,7 @@ const ROUTES = [
   ['GET', /^\/signup$/, signupInfo],
   ['POST', /^\/signup$/, tenantSignup],
   ['POST', /^\/password$/, tenantChangePassword, 'tenant'],
+  ['POST', /^\/me\/contact$/, tenantUpdateContact, 'tenant'],
   ['GET', /^\/me$/, tenantMe, 'tenant'],
   ['POST', /^\/requests$/, tenantCreate, 'tenant'],
   ['POST', /^\/requests\/(\d+)\/note$/, tenantAddNote, 'tenant'],
@@ -1143,6 +1273,7 @@ const ROUTES = [
   ['POST', /^\/staff\/workorders\/(\d+)\/complete$/, staffComplete, 'staff'],
   ['GET', /^\/staff\/unit$/, staffUnit, 'staff'],
   ['GET', /^\/staff\/export\.csv$/, staffExport, 'staff'],
+  ['GET', /^\/staff\/contacts\.csv$/, staffContactsExport, 'manager'],
   ['GET', /^\/staff\/residents$/, staffTenants, 'staff'],
   ['POST', /^\/staff\/residents$/, staffAddTenant, 'manager'],
   ['POST', /^\/staff\/residents\/bulk$/, staffBulkTenants, 'manager'],

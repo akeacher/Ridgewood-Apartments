@@ -78,6 +78,13 @@ locks until staff unlock it after 30 in a day, and every attempt is in the staff
 *Activity log*. Passwords, resident and staff alike, are stored only as salted
 PBKDF2 hashes.
 
+**Contact details.** Residents keep their own email, phone, second phone and
+emergency contact current under *Your contact details* in the resident portal
+(their current password confirms the change). Staff see everyone's details,
+apartment by apartment, on the *Contact sheet*, and a manager can download it as
+a spreadsheet. Each change is in the *Activity log*, open work orders pick up the
+new email and phone, and the office and the old email address are notified.
+
 **Rents on the main site.** A manager sets the rent for each floor plan under
 *Site pricing* in the staff portal. The home, Residences and Questions pages carry
 hidden slots (`data-rw-price="wilson"` and so on) that `website/pricing.js` fills

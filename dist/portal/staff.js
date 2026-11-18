@@ -7,7 +7,8 @@
   const who = document.getElementById('who');
 
   const S = { me: null, team: [], categories: [], buildings: [], labels: {},
-    view: 'open', q: '', recordsQ: '', unit: '', unitBuilding: 'any', editResident: null, resetMember: null, pending: 0 };
+    view: 'open', q: '', recordsQ: '', unit: '', unitBuilding: 'any', editResident: null, editReturn: null, resetMember: null, pending: 0,
+    sheet: { q: '', building: 'all', removed: false, sort: 'unit', dir: 1 } };
   const OPEN = ['new', 'scheduled', 'in_progress', 'on_hold'];
   const URGENCY = [['routine', 'Routine'], ['soon', 'Soon'], ['urgent', 'Urgent']];
   let main = null, flash = '', painted = '', ticket = 0;
@@ -130,7 +131,7 @@
       h('span', { class: 'who' }, S.me.name, h('small', {}, isManager() ? 'Manager' : 'Maintenance')),
       h('button', { class: 'btn btn-sm btn-ghost', type: 'button', onclick: signOut }, 'Sign out'));
     const links = [['orders', 'Work orders'], ['records', 'Completed records'], ['unit', 'Apartment history'],
-      ['residents', 'Residents'], ['emails', 'Email log']];
+      ['residents', 'Residents'], ['contacts', 'Contact sheet'], ['emails', 'Email log']];
     if (isManager()) links.push(null, ['pricing', 'Site pricing'], ['activity', 'Activity log'], ['team', 'Team'], ['settings', 'Settings']);
     links.push(null, ['account', 'My account']);
     main = h('section', { id: 'main' });
@@ -149,7 +150,7 @@
     link.replaceChildren('Residents', S.pending ? h('span', { class: 'nav-count', title: 'Waiting for approval' }, S.pending) : '');
   }
 
-  const VIEWS = { orders: ordersView, new: newOrderView, records: recordsView, unit: unitView, residents: residentsView,
+  const VIEWS = { orders: ordersView, new: newOrderView, records: recordsView, unit: unitView, residents: residentsView, contacts: contactsView,
     emails: emailsView, pricing: pricingView, activity: activityView, team: teamView, settings: settingsView, account: accountView };
   const MANAGER_ONLY = ['pricing', 'activity', 'team', 'settings'];
 
@@ -454,9 +455,25 @@
       field('Full name', input('name', { required: true, maxlength: 80, value: r.name || '' }))),
     h('div', { class: 'cols' },
       field('Email', input('email', { type: 'email', required: true, maxlength: 200, autocapitalize: 'none', value: r.email || '' })),
-      field('Phone', input('phone', { type: 'tel', required: true, maxlength: 30, value: r.phone || '' })))];
+      field('Phone', input('phone', { type: 'tel', required: true, maxlength: 30, value: r.phone || '' }))),
+    // editing someone already on file: the optional ways to reach them too
+    r.id ? h('div', { class: 'cols-3' },
+      field('Second phone', input('alt_phone', { type: 'tel', maxlength: 30, value: r.alt_phone || '' })),
+      field('Emergency contact', input('emergency_name', { maxlength: 80, value: r.emergency_name || '',
+        placeholder: 'Name and relationship' })),
+      field('Emergency phone', input('emergency_phone', { type: 'tel', maxlength: 30, value: r.emergency_phone || '' }))) : null];
   }
-  const residentBody = (v) => ({ unit: v.unit, building: v.building, name: v.name, email: v.email, phone: v.phone });
+  const residentBody = (v) => {
+    const out = { unit: v.unit, building: v.building, name: v.name, email: v.email, phone: v.phone };
+    for (const k of ['alt_phone', 'emergency_name', 'emergency_phone']) if (v[k] !== undefined) out[k] = v[k];
+    return out;
+  };
+  // after an edit, go back to wherever it was started from (the contact sheet, or here)
+  const leaveEdit = () => {
+    const back = S.editReturn;
+    S.editResident = null; S.editReturn = null;
+    if (back && location.hash !== back) location.hash = back; else route();
+  };
 
   async function residentsView() {
     const list = (await api('/staff/residents')).residents;
@@ -489,12 +506,12 @@
       const editing = list.find((r) => r.id === S.editResident);
       if (editing) {
         const edit = h('form', { class: 'card card-accent stack' }, h('h3', {}, 'Edit ' + editing.name), residentFields(editing),
-          h('p', { class: 'fine' }, 'Changing these signs the resident out; they sign back in with the new details.'),
+          h('p', { class: 'fine' }, 'Changing the apartment, email or phone signs the resident out; they sign back in with the new details.'),
           h('div', { class: 'actions' }, h('button', { class: 'btn btn-sm', type: 'submit' }, 'Save'),
-            h('button', { class: 'link-btn', type: 'button', onclick: () => { S.editResident = null; route(); } }, 'Cancel')));
+            h('button', { class: 'link-btn', type: 'button', onclick: leaveEdit }, 'Cancel')));
         onSubmit(edit, async (v) => {
           await api('/staff/residents/' + editing.id, residentBody(v));
-          S.editResident = null; flash = 'Saved ' + v.name + '.'; route();
+          flash = 'Saved ' + v.name + '.'; leaveEdit();
         });
         nodes.push(edit);
       } else {
@@ -535,7 +552,7 @@
         r.active ? h('button', { class: 'link-btn', type: 'button', title: 'Clear a sign-in lock after too many wrong attempts',
           onclick: () => act('/staff/residents/' + r.id + '/unlock', {}, r.name + ' can try signing in again.') }, 'Unlock') : null,
         isManager() && r.active ? h('button', { class: 'link-btn', type: 'button',
-          onclick: () => { S.editResident = r.id; route(); window.scrollTo({ top: 0 }); } }, 'Edit') : null,
+          onclick: () => { S.editResident = r.id; S.editReturn = null; route(); window.scrollTo({ top: 0 }); } }, 'Edit') : null,
         isManager() && r.active && r.has_password ? h('button', { class: 'link-btn', type: 'button',
           title: 'For a forgotten password: puts it back to the apartment number', onclick: () => {
             if (!window.confirm('Reset the password for ' + r.name + '? It goes back to their apartment number (' + r.unit
@@ -553,10 +570,115 @@
     return nodes;
   }
 
+  /* --------------------------------------------------------- contact sheet */
+  // Every resident's contact details as a spreadsheet: one row per resident,
+  // apartment by apartment, filtered and sorted in place as you type or click.
+  const digitsOf = (x) => String(x || '').replace(/\D/g, '');
+  const unitOrder = (a, b) => String(a.building).localeCompare(String(b.building))
+    || String(a.unit).localeCompare(String(b.unit), undefined, { numeric: true, sensitivity: 'base' })
+    || String(a.name).localeCompare(String(b.name));
+  const SHEET_COLS = [['unit', 'Apartment'], ['name', 'Resident'], [null, 'Email'], [null, 'Phone'], [null, 'Second phone'],
+    [null, 'Emergency contact'], [null, 'Emergency phone'], ['updated', 'Last updated']];
+
+  async function contactsView() {
+    const everyone = (await api('/staff/residents')).residents;
+    setPending(everyone.filter((r) => r.pending && r.active).length);
+    const st = S.sheet;
+    const body = h('tbody');
+    const headRow = h('tr');
+    const count = h('span', { class: 'fine' });
+    const hint = h('p', { class: 'fine sheet-hint', hidden: true }, 'Scroll sideways to see every column.');
+    const wrap = h('div', { class: 'sheet-wrap', tabindex: '0', role: 'region', 'aria-label': 'Resident contact sheet' });
+
+    const matches = (r) => {
+      if (!st.removed && !r.active) return false;
+      if (st.building !== 'all' && r.building !== st.building) return false;
+      const q = st.q.trim().toLowerCase().replace(/^(apartment|apt\.?|unit|#)\s*/, '');
+      if (!q) return true;
+      const text = [r.unit, r.name, r.email, r.emergency_name].join(' ').toLowerCase();
+      const d = digitsOf(q);
+      return text.includes(q) || (d.length >= 3 && [r.phone, r.alt_phone, r.emergency_phone].some((p) => digitsOf(p).includes(d)));
+    };
+    const sorter = (a, b) => st.dir * (st.sort === 'name' ? String(a.name).localeCompare(String(b.name)) || unitOrder(a, b)
+      : st.sort === 'updated' ? String(a.contact_updated_at || '').localeCompare(String(b.contact_updated_at || '')) || unitOrder(a, b)
+      : unitOrder(a, b));
+    const updated = (r) => (r.contact_updated_at
+      ? day(r.contact_updated_at) + ' · ' + (r.contact_updated_by === 'resident' ? 'by resident' : 'by ' + r.contact_updated_by)
+      : 'Added ' + day(r.created_at));
+
+    const render = () => {
+      const rows = everyone.filter(matches).sort(sorter);
+      let prev = '';
+      body.replaceChildren(...rows.map((r) => {
+        const unit = r.building + '|' + String(r.unit).toUpperCase();
+        // a second resident of the same apartment sits under the first, number not repeated
+        const same = st.sort === 'unit' && unit === prev;
+        prev = unit;
+        return h('tr', { class: (r.active ? '' : 'off') + (same ? ' same-unit' : '') },
+          h('td', { class: 'sheet-unit' }, r.unit, r.building ? h('span', { class: 'fine' }, ' · ' + r.building) : null),
+          h('td', {}, r.name,
+            r.pending && r.active ? h('span', { class: 'chip chip-goldline' }, 'Waiting') : null,
+            r.active ? null : h('span', { class: 'chip chip-off' }, 'Removed'),
+            isManager() && r.active ? h('button', { class: 'link-btn sheet-edit', type: 'button', onclick: () => {
+              S.editResident = r.id; S.editReturn = '#/contacts'; location.hash = '#/residents';
+            } }, 'Edit') : null),
+          h('td', { class: 'addr' }, r.email ? h('a', { href: 'mailto:' + r.email }, addr(r.email)) : ''),
+          h('td', {}, r.phone ? tel(r.phone) : ''),
+          h('td', {}, r.alt_phone ? tel(r.alt_phone) : ''),
+          h('td', {}, r.emergency_name || ''),
+          h('td', {}, r.emergency_phone ? tel(r.emergency_phone) : ''),
+          h('td', { class: 'fine' }, updated(r)));
+      }));
+      if (!rows.length) {
+        body.replaceChildren(h('tr', {}, h('td', { class: 'sheet-empty', colspan: String(SHEET_COLS.length) },
+          everyone.length ? 'No residents match.' : 'No residents yet. Add them under Residents, or let them sign up from the resident portal.')));
+      }
+      const units = new Set(rows.map((r) => r.building + '|' + String(r.unit).toUpperCase())).size;
+      count.textContent = rows.length + (rows.length === 1 ? ' resident in ' : ' residents in ') + units + (units === 1 ? ' apartment' : ' apartments');
+      headRow.replaceChildren(...SHEET_COLS.map(([key, label]) => {
+        if (!key) return h('th', { scope: 'col' }, label);
+        const on = st.sort === key;
+        return h('th', { scope: 'col', 'aria-sort': on ? (st.dir > 0 ? 'ascending' : 'descending') : null },
+          h('button', { type: 'button', class: 'sort' + (on ? ' on' : ''), title: 'Sort by ' + label.toLowerCase(), onclick: () => {
+            if (on) st.dir = -st.dir; else { st.sort = key; st.dir = key === 'updated' ? -1 : 1; }
+            render();
+          } }, label, h('span', { class: 'sort-mark', 'aria-hidden': 'true' }, on ? (st.dir > 0 ? ' ↑' : ' ↓') : '')));
+      }));
+      requestAnimationFrame(() => { hint.hidden = !(wrap.scrollWidth > wrap.clientWidth + 1); });
+    };
+
+    const search = input('q', { type: 'search', value: st.q, class: 'sheet-search', autocomplete: 'off',
+      placeholder: 'Apartment, name, email or phone', 'aria-label': 'Search the contact sheet' });
+    search.addEventListener('input', () => { st.q = search.value; render(); });
+    const seg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Building' });
+    for (const [v, label] of [['all', 'Both buildings'], ['1871', '1871'], ['1885', '1885']]) {
+      const b = h('button', { type: 'button', class: st.building === v ? 'on' : '', 'aria-pressed': String(st.building === v) }, label);
+      b.addEventListener('click', () => {
+        st.building = v;
+        for (const x of seg.children) { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', String(x === b)); }
+        render();
+      });
+      seg.append(b);
+    }
+    const removed = check('removed', 'Show removed residents', st.removed);
+    removed.querySelector('input').addEventListener('change', (ev) => { st.removed = ev.target.checked; render(); });
+
+    wrap.append(h('table', { class: 'sheet' }, h('thead', {}, headRow), body));
+    render();
+    return [
+      pageHead('Contact sheet', 'Every resident’s email and phone numbers, apartment by apartment. '
+        + 'Residents keep their own details current from the resident portal; changes show up here straight away.',
+        isManager() ? h('a', { class: 'btn btn-sm btn-ghost', href: '/api/portal/staff/contacts.csv' }, 'Download spreadsheet') : null),
+      h('div', { class: 'toolbar' }, search, seg, removed, count),
+      hint, wrap,
+    ];
+  }
+
   /* ------------------------------------------------------------------- logs */
   const EMAIL_KIND = { office_new_request: 'New request → office', resident_received: 'Confirmation → resident',
     resident_update: 'Update → resident', resident_completed: 'Completed → resident',
     office_new_signup: 'New account → office', resident_signup: 'Sign-up received → resident',
+    office_contact_update: 'Contact update → office', resident_email_changed: 'Email changed → old address',
     resident_welcome: 'Account ready → resident' };
   async function emailsView() {
     const list = (await api('/staff/emails')).emails;
@@ -578,6 +700,7 @@
     resident_unlocked: 'Unlocked a resident', team_member_added: 'Added a team member', team_member_changed: 'Changed a team member',
     team_password_reset: 'Reset a password', password_changed: 'Changed their password', settings_changed: 'Changed settings',
     records_exported: 'Downloaded records', portal_set_up: 'Set up the portal', pricing_changed: 'Changed site pricing',
+    contact_updated: 'Updated contact details', contacts_exported: 'Downloaded the contact sheet',
     account_created: 'Created an account', resident_approved: 'Approved an account', resident_declined: 'Declined a sign-up',
     resident_password_changed: 'Changed their password', resident_password_reset: 'Reset a resident password' };
   async function activityView() {
