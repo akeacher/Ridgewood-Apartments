@@ -108,6 +108,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self.dev(path[len("/__dev/"):])
             if path == "/api/portal" or path.startswith("/api/portal/"):
                 return self.worker()
+            # Like wrangler.jsonc's run_worker_first: on the real site every request
+            # but the photos goes through the Worker (which redirects http and www.).
+            # Local addresses skip it here, so browsing the dev server stays fast.
+            host = (self.headers.get("Host") or "").split(":")[0]
+            if host not in ("127.0.0.1", "localhost", "") and not path.startswith("/assets/"):
+                return self.worker()
             return self.static(path)
         except Exception as e:                                   # keep the server up, show the cause
             return self.reply_json({"error": "%s: %s" % (type(e).__name__, e)}, 500)
@@ -173,7 +179,8 @@ class Handler(BaseHTTPRequestHandler):
             env = {}
         if state["mail_mode"] != "off":
             env["RESEND_API_KEY"] = "local-test-key"
-        req = {"method": self.command, "url": "http://%s%s" % (h.get("Host") or "127.0.0.1", self.path),
+        scheme = "https" if h.get("X-Test-Proto") == "https" else "http"
+        req = {"method": self.command, "url": "%s://%s%s" % (scheme, h.get("Host") or "127.0.0.1", self.path),
                "headers": headers, "body": self.body().decode("utf-8", "replace"), "env": env,
                "clockOffsetMs": int(h.get("X-Test-Clock-Offset-Ms") or 0), "noDb": bool(h.get("X-Test-No-Db"))}
         with tempfile.TemporaryDirectory() as tmp:

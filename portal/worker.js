@@ -1457,18 +1457,49 @@ async function handleApi(request, env, url) {
   throw new HttpError(404, 'Not found');
 }
 
+/* ------------------------------------------------- one secure address only */
+
+// The site's one address. Everything is served from https://ridgewoodapartments.org:
+// a visit over plain http (an old bookmark, a link without the "s", an address
+// typed on a phone) or to the www. form is sent there, and browsers are told
+// (HSTS) to use https for this site from then on. Without this, browsers mark
+// the pages "Not Secure", and a sign-in over plain http would cross the
+// network unencrypted.
+const CANONICAL_HOST = 'ridgewoodapartments.org';
+const HSTS = 'max-age=31536000';
+function secureRedirect(request, url) {
+  const host = url.hostname.toLowerCase();
+  // local testing (and Cloudflare's own preview address) are left as they are
+  if (host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host.endsWith('.localhost')) return null;
+  const www = host === 'www.' + CANONICAL_HOST;
+  if (url.protocol === 'https:' && !www) return null;
+  const to = 'https://' + (www ? CANONICAL_HOST : url.host) + url.pathname + url.search;
+  const method = request.method.toUpperCase();
+  // 308 keeps a form submission a submission; 301 is the usual move for a page
+  return new Response(null, { status: method === 'GET' || method === 'HEAD' ? 301 : 308,
+    headers: new Headers({ Location: to, 'Cache-Control': 'no-store', 'Strict-Transport-Security': HSTS }) });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const moved = secureRedirect(request, url);
+    if (moved) return moved;
     if (url.pathname === '/api/portal' || url.pathname.startsWith('/api/portal/')) {
+      let res;
       try {
-        return await handleApi(request, env, url);
+        res = await handleApi(request, env, url);
       } catch (err) {
-        if (err instanceof HttpError) return json(Object.assign({ error: err.message }, err.extra), err.status);
-        console.error('portal error', err && err.stack ? err.stack : err);
-        return json({ error: 'Something went wrong on our side. Please try again.' }, 500);
+        if (err instanceof HttpError) res = json(Object.assign({ error: err.message }, err.extra), err.status);
+        else {
+          console.error('portal error', err && err.stack ? err.stack : err);
+          res = json({ error: 'Something went wrong on our side. Please try again.' }, 500);
+        }
       }
+      if (url.protocol === 'https:') res.headers.set('Strict-Transport-Security', HSTS);
+      return res;
     }
+    // pages and files: dist/_headers adds the same HSTS header to these
     if (env.ASSETS) return env.ASSETS.fetch(request);
     return new Response('Not found', { status: 404 });
   },

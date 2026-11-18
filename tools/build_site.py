@@ -205,6 +205,7 @@ def main():
         "/*\n"
         "  X-Content-Type-Options: nosniff\n"
         "  Referrer-Policy: strict-origin-when-cross-origin\n"
+        "  Strict-Transport-Security: max-age=31536000\n"
         "\n"
         "# Photos are content-hashed by this build, so they can be cached hard.\n"
         "/assets/img/*\n"

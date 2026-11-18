@@ -78,6 +78,7 @@ function run(argv) {
       const m = /^(https?:)\/\/([^\/?#]+)([^?#]*)(\?[^#]*)?/.exec(String(s));
       if (!m) throw new TypeError('Invalid URL');
       this.protocol = m[1]; this.host = m[2]; this.pathname = m[3] || '/'; this.search = m[4] || '';
+      this.hostname = m[2].replace(/:\d+$/, ''); this.port = (/:(\d+)$/.exec(m[2]) || [])[1] || '';
       this.origin = m[1] + '//' + m[2]; this.href = String(s);
       this.searchParams = new SearchParams(this.search);
     }

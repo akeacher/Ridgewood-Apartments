@@ -26,13 +26,23 @@ def check(cond, label, detail=""):
         print("  FAIL", label, str(detail)[:300])
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Hand back a redirect as it is. Following one would leave the test server
+    (the redirects under test point at the real site)."""
+    def redirect_request(self, *args, **kwargs):
+        return None
+
+
+_opener = urllib.request.build_opener(_NoRedirect)
+
+
 def raw(method, path, body=None, headers=None):
     data = None
     if body is not None:
         data = body if isinstance(body, bytes) else json.dumps(body).encode()
     req = urllib.request.Request(BASE + path, data=data, method=method, headers=headers or {})
     try:
-        res = urllib.request.urlopen(req, timeout=180)
+        res = _opener.open(req, timeout=180)
     except urllib.error.HTTPError as e:
         res = e
     return res.status, res.headers, res.read()
@@ -103,9 +113,11 @@ def main():
                                "--db", os.path.join(tmp, "test.sqlite3"), "--fresh"],
                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     try:
+        # wait for the server with a plain file, not the Worker: the first Worker
+        # request builds the database, and the upgrade test needs to get there first
         for _ in range(50):
             try:
-                raw("GET", "/api/portal/health")
+                raw("GET", "/robots.txt")
                 break
             except Exception:
                 time.sleep(0.1)
@@ -130,13 +142,15 @@ def run():
     # The live database was created before residents could choose a password.
     # Recreate that shape, with someone in it, and let the Worker upgrade it.
     print("upgrade")
-    dev("sql", {"sql": """CREATE TABLE tenants (
+    made = dev("sql", {"sql": """CREATE TABLE tenants (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         unit TEXT NOT NULL, unit_key TEXT NOT NULL, building TEXT NOT NULL DEFAULT '',
         name TEXT NOT NULL, email TEXT NOT NULL, phone TEXT NOT NULL, phone_key TEXT NOT NULL,
         active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)"""})
-    dev("sql", {"sql": "INSERT INTO tenants (unit, unit_key, building, name, email, phone, phone_key, active, created_at, updated_at) "
+    filled = dev("sql", {"sql": "INSERT INTO tenants (unit, unit_key, building, name, email, phone, phone_key, active, created_at, updated_at) "
                        "VALUES ('501','501','1871','Old Timer','old@example.com','651-555-0900','6515550900',1,'2026-11-16T00:00:00.000Z','2026-11-16T00:00:00.000Z')"})
+    check("error" not in made and "error" not in filled and len(sql("PRAGMA table_info(tenants)")) == 11,
+          "(the test starts from the original residents table, with a resident in it)", (made, filled))
     check(Client().get("/health")[0] == 200, "the Worker starts against the older database")
     row = sql("SELECT name, pw_hash, pending, source FROM tenants WHERE email = 'old@example.com'")[0]
     check(row == {"name": "Old Timer", "pw_hash": None, "pending": 0, "source": "staff"}, "existing residents are kept and given the new fields", row)
@@ -150,6 +164,33 @@ def run():
     check(old.get("/me")[1]["resident"]["has_password"] is False, "…and is shown as not having chosen a password yet")
     dev("sql", {"sql": "DELETE FROM tenants"}); dev("sql", {"sql": "DELETE FROM sessions"})
     dev("sql", {"sql": "DELETE FROM activity_log"}); dev("sql", {"sql": "DELETE FROM login_attempts"})
+
+    # ------------------------------------------------- one secure address only
+    print("https")
+    def visit(method, path, host, proto="http", body=None):
+        h = {"Host": host}
+        if proto == "https":
+            h["X-Test-Proto"] = "https"
+        if body is not None:
+            h.update({"Content-Type": "application/json", "X-RW-Portal": "1"})
+        return raw(method, path, body, h)
+    s, hd, _ = visit("GET", "/api/portal/health?x=1", "ridgewoodapartments.org")
+    check(s == 301 and hd.get("Location") == "https://ridgewoodapartments.org/api/portal/health?x=1",
+          "a plain-http visit is sent to the same address over https", (s, hd.get("Location")))
+    s, hd, _ = visit("GET", "/api/portal/me", "www.ridgewoodapartments.org", "https")
+    check(s == 301 and hd.get("Location") == "https://ridgewoodapartments.org/api/portal/me", "the www. address is sent to the main one", hd.get("Location"))
+    s, hd, _ = visit("GET", "/api/portal/me", "www.ridgewoodapartments.org")
+    check(s == 301 and hd.get("Location") == "https://ridgewoodapartments.org/api/portal/me", "…in one step from plain http too", hd.get("Location"))
+    s, hd, _ = visit("POST", "/api/portal/login", "ridgewoodapartments.org", body={})
+    check(s == 308 and hd.get("Location") == "https://ridgewoodapartments.org/api/portal/login",
+          "a sign-in sent over plain http is redirected, not processed", (s, hd.get("Location")))
+    check(len(sql("SELECT id FROM login_attempts")) == 0, "…so nothing was checked or recorded")
+    s, hd, body = visit("GET", "/api/portal/health", "ridgewoodapartments.org", "https")
+    check(s == 200 and hd.get("Strict-Transport-Security") == "max-age=31536000", "over https it is served, telling browsers to stay on https", hd.get("Strict-Transport-Security"))
+    s, hd, _ = visit("GET", "/portal/", "ridgewoodapartments.org")
+    check(s == 301 and hd.get("Location") == "https://ridgewoodapartments.org/portal/", "pages are redirected too", (s, hd.get("Location")))
+    s, hd, _ = visit("GET", "/api/portal/health", "ridgewood-apartments.akeacher.workers.dev", "https")
+    check(s == 200, "Cloudflare's own preview address is left alone")
 
     # ------------------------------------------------------------ before setup
     print("before setup")

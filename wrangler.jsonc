@@ -2,11 +2,20 @@
   // Cloudflare reads this on every deploy (each push to main).
   // The site is still the static files in dist/. The one addition is the
   // Worker in portal/worker.js, which answers /api/portal/* for the resident
-  // and staff portal and passes every other request to those static files.
+  // and staff portal, sends insecure (http) and www. visits to the https
+  // address, and passes every other request to those static files.
   "name": "ridgewood-apartments",
   "compatibility_date": "2026-05-01",
   "main": "portal/worker.js",
-  "assets": { "directory": "./dist", "binding": "ASSETS" },
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Pages normally go straight from storage without passing through the
+    // Worker. Running the Worker first for them lets it send plain-http and
+    // www. visits to https://ridgewoodapartments.org. Photos skip it: they are
+    // the bulk of requests, and the pages that load them are already secure.
+    "run_worker_first": ["/*", "!/assets/*"]
+  },
   // The portal's database. No id is given on purpose: Cloudflare creates a
   // database with this name on the first deploy and reuses it on every one after.
   "d1_databases": [
