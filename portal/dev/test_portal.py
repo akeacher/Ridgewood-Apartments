@@ -494,6 +494,35 @@ def run():
     check([n["body"] for n in d["notes"]] == ["It is getting worse."] and d["unit"]["handoff"] == [], "detail shows the resident's note", d["notes"])
     check(m.get("/staff/workorders/99999")[0] == 404, "missing work order is 404")
 
+    # correcting the problem
+    before = sql("SELECT category, location, description, permission_to_enter, entry_notes FROM work_orders WHERE id = ?", r_nasty)[0]
+    check(Client().post("/staff/workorders/%d/problem" % r_nasty, {"description": "Something else"})[0] == 401, "editing the problem needs a staff session")
+    check(m.post("/staff/workorders/%d/problem" % r_nasty, {"category": "Nonsense"})[0] == 400, "the category must be a real one")
+    check(m.post("/staff/workorders/%d/problem" % r_nasty, {"description": "no"})[0] == 400, "the description still needs a sentence")
+    check(sql("SELECT category, location, description, permission_to_enter, entry_notes FROM work_orders WHERE id = ?", r_nasty)[0] == before,
+          "a refused edit changes nothing")
+    fixed = {"category": "Electrical", "location": "Living room", "description": "Outlet by the window sparks when a plug goes in.",
+             "permission_to_enter": False, "entry_notes": "Call before coming over"}
+    s, j = m.post("/staff/workorders/%d/problem" % r_nasty, fixed)
+    check(s == 200 and j == {"ok": True, "changed": 5}, "staff correct the problem", j)
+    o = m.get("/staff/workorders/%d" % r_nasty)[1]
+    check((o["order"]["category"], o["order"]["location"], o["order"]["description"], o["order"]["permission_to_enter"], o["order"]["entry_notes"])
+          == ("Electrical", "Living room", fixed["description"], False, "Call before coming over"), "the work order shows the corrected problem", o["order"])
+    edit_note = [n for n in o["notes"] if n["body"].startswith("Problem details edited.")]
+    check(len(edit_note) == 1 and edit_note[0]["author_name"] == "Andrew Manager" and not edit_note[0]["visible_to_tenant"]
+          and "Category: Plumbing → Electrical" in edit_note[0]["body"] and before["description"] in edit_note[0]["body"],
+          "the timeline keeps who changed it and the original wording", edit_note)
+    mine = [x for x in j2.get("/me")[1]["requests"] if x["id"] == r_nasty][0]
+    check(mine["description"] == fixed["description"] and mine["category"] == "Electrical"
+          and not any("Problem details edited" in u["body"] for u in mine["updates"]), "the resident sees the corrected problem, not the edit note", mine)
+    s, j = m.post("/staff/workorders/%d/problem" % r_nasty, {"location": "Living room, under the window"})
+    o = m.get("/staff/workorders/%d" % r_nasty)[1]["order"]
+    check(j["changed"] == 1 and o["location"] == "Living room, under the window" and o["description"] == fixed["description"],
+          "only what is sent changes", j)
+    check(m.post("/staff/workorders/%d/problem" % r_nasty, {"location": "Living room, under the window"})[1]["changed"] == 0,
+          "saving the same details is not a change")
+    check("order_problem_edited" in [e["event"] for e in m.get("/staff/activity")[1]["activity"]], "the edit is in the activity log")
+
     check(m.post("/staff/workorders/%d" % r1, {"status": "bogus"})[0] == 400, "unknown status refused")
     check(m.post("/staff/workorders/%d" % r1, {"status": "completed"})[0] == 400, "completing must go through the write-up")
     check(m.post("/staff/workorders/%d" % r1, {"urgency": "bogus"})[0] == 400, "unknown urgency refused")
@@ -985,6 +1014,8 @@ def run():
         check(k.post("/staff/residents/%d/%s" % (wid, action))[0] == 403, "technician cannot " + action + " a resident account")
     check(m.post("/staff/residents/%d/decline" % wid)[0] == 200, "(manager declines it)")
     check(k.get("/staff/residents")[0] == 200 and k.get("/staff/emails")[0] == 200, "technician can read the roster and email log")
+    check(k.post("/staff/workorders/%d/problem" % r2, {"location": "Hall, by the bathroom"})[1].get("changed") == 1,
+          "a technician can correct the problem too")
     check(k.post("/staff/workorders/%d/complete" % r2, {"work_done": "Replaced the hall light ballast."})[0] == 200, "technician completes a job")
     check(m.get("/staff/workorders/%d" % r2)[1]["order"]["completed_by_name"] == "Sam Tech", "…and it is recorded under their name")
     check(m.post("/staff/workorders/%d" % r3, {"assigned_to": tech_id})[0] == 200, "manager assigns work to the technician")

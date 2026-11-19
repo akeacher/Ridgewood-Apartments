@@ -8,7 +8,7 @@
 
   const S = { me: null, team: [], categories: [], buildings: [], labels: {},
     view: 'open', q: '', recordsQ: '', unit: '', unitBuilding: 'any', editResident: null, editReturn: null, resetMember: null, editSpecial: null, pending: 0, myTurnTasks: 0,
-    turnView: 'open', turnFilter: 'all', newTurnover: false, editTurnover: false,
+    turnView: 'open', turnFilter: 'all', newTurnover: false, editTurnover: false, editProblem: 0,
     sheet: { q: '', building: 'all', removed: false, sort: 'unit', dir: 1 } };
   const OPEN = ['new', 'scheduled', 'in_progress', 'on_hold'];
   const URGENCY = [['routine', 'Routine'], ['soon', 'Soon'], ['urgent', 'Urgent']];
@@ -292,6 +292,44 @@
       p.work_done ? h('div', { class: 'muted pre' }, p.work_done) : h('div', { class: 'muted' }, p.description)));
   }
 
+  // "The problem", with an Edit button that turns the card into a form
+  function problemCard(o) {
+    if (S.editProblem !== o.id) {
+      return h('div', { class: 'card stack' },
+        h('div', { class: 'card-head flush-head' }, h('h3', {}, 'The problem'),
+          h('button', { class: 'link-btn', type: 'button', onclick: () => { S.editProblem = o.id; route(); } }, 'Edit')),
+        h('p', { class: 'pre' }, o.description),
+        h('dl', { class: 'kv' },
+          h('dt', {}, 'Category'), h('dd', {}, o.category),
+          h('dt', {}, 'Where'), h('dd', {}, o.location || '—'),
+          h('dt', {}, 'Entry'), h('dd', {}, o.permission_to_enter ? 'May enter if the resident is out' : 'Arrange a time first'),
+          o.entry_notes ? [h('dt', {}, 'Entry notes'), h('dd', {}, o.entry_notes)] : null));
+    }
+    const description = textarea('description', { maxlength: 4000, required: true });
+    description.value = o.description;
+    const form = h('form', { class: 'card card-accent stack', novalidate: true },
+      h('h3', {}, 'Edit the problem'),
+      h('div', { class: 'cols' },
+        field('Category', select('category', S.categories.map((c) => [c, c]), o.category)),
+        field('Where', input('location', { maxlength: 120, value: o.location || '', placeholder: 'Kitchen, bathroom, hallway…' }))),
+      field('What is happening', description),
+      check('permission_to_enter', 'Maintenance may enter if the resident is out', o.permission_to_enter),
+      field('Entry notes', input('entry_notes', { maxlength: 500, value: o.entry_notes || '' })),
+      h('p', { class: 'fine' }, 'The resident sees the corrected problem in their portal. The original wording is kept on the timeline.'),
+      h('div', { class: 'actions' },
+        h('button', { class: 'btn btn-sm', type: 'submit' }, 'Save'),
+        h('button', { class: 'link-btn', type: 'button', onclick: () => { S.editProblem = 0; route(); } }, 'Cancel')),
+      h('p', { class: 'msg', role: 'alert', hidden: true }));
+    onSubmit(form, async (v) => {
+      const out = await api('/staff/workorders/' + o.id + '/problem', { category: v.category, location: v.location,
+        description: v.description, permission_to_enter: v.permission_to_enter === 'on', entry_notes: v.entry_notes });
+      S.editProblem = 0;
+      flash = out.changed ? 'The problem is updated.' : 'Nothing was changed.';
+      route();
+    });
+    return form;
+  }
+
   async function detailView(id) {
     const d = await api('/staff/workorders/' + id);
     const o = d.order;
@@ -357,12 +395,7 @@
           h('div', { class: 'card card-accent' }, h('div', { class: 'card-head' }, h('h3', {}, 'Notes for the next technician'),
             h('span', { class: 'fine' }, 'Apartment ' + o.unit)),
             handoffList(d.unit.handoff, 'Nobody has left notes for this apartment yet.')),
-          h('div', { class: 'card stack' }, h('h3', {}, 'The problem'),
-            h('p', { class: 'pre' }, o.description),
-            h('dl', { class: 'kv' },
-              h('dt', {}, 'Where'), h('dd', {}, o.location || '—'),
-              h('dt', {}, 'Entry'), h('dd', {}, o.permission_to_enter ? 'May enter if the resident is out' : 'Arrange a time first'),
-              o.entry_notes ? [h('dt', {}, 'Entry notes'), h('dd', {}, o.entry_notes)] : null)),
+          problemCard(o),
           o.status === 'completed' ? h('div', { class: 'card stack' }, h('h3', {}, 'Work completed'),
             h('p', { class: 'pre' }, o.work_done),
             h('p', { class: 'fine' }, (o.completed_by_name || 'Staff') + ' · ' + when(o.completed_at)),
@@ -704,7 +737,7 @@
 
   const EVENT = { sign_in: 'Signed in', sign_in_failed: 'Failed sign-in', request_created: 'Sent a request',
     request_cancelled: 'Cancelled a request', order_created: 'Created a work order', order_updated: 'Updated a work order',
-    order_completed: 'Completed a work order', resident_added: 'Added a resident', residents_imported: 'Added residents',
+    order_completed: 'Completed a work order', order_problem_edited: 'Edited a work order problem', resident_added: 'Added a resident', residents_imported: 'Added residents',
     resident_removed: 'Removed a resident', resident_restored: 'Restored a resident', resident_edited: 'Edited a resident',
     resident_unlocked: 'Unlocked a resident', team_member_added: 'Added a team member', team_member_changed: 'Changed a team member',
     team_password_reset: 'Reset a password', password_changed: 'Changed their password', settings_changed: 'Changed settings',

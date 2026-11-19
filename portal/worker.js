@@ -905,6 +905,40 @@ async function staffUpdateOrder(c, m) {
   return json({ ok: true });
 }
 
+// Correcting what the problem is: the category, where it is, the description
+// and how to get in. Anyone on staff, since whoever goes out often learns more
+// than the first report said. The original wording stays on the timeline.
+async function staffEditProblem(c, m) {
+  const o = await getOrder(c, m[1]);
+  const b = await readBody(c);
+  const pick = (k, max) => (b[k] === undefined ? o[k] : str(b[k], max));
+  const next = {
+    category: pick('category', 60), location: pick('location', 120), description: pick('description', 4000),
+    permission_to_enter: b.permission_to_enter === undefined ? o.permission_to_enter : (b.permission_to_enter ? 1 : 0),
+    entry_notes: pick('entry_notes', 500),
+  };
+  if (!CATEGORIES.includes(next.category)) throw new HttpError(400, 'Choose what kind of problem it is.');
+  if (next.description.length < 5) throw new HttpError(400, 'Describe the problem in a sentence or two.');
+  const said = (v) => (v === '' || v === null || v === undefined ? '(none)' : `"${v}"`);
+  const changes = [];
+  if (next.category !== o.category) changes.push(`Category: ${o.category} → ${next.category}`);
+  if (next.location !== o.location) changes.push(`Where: ${said(o.location)} → ${said(next.location)}`);
+  if (next.permission_to_enter !== o.permission_to_enter) {
+    changes.push(`Entry: ${next.permission_to_enter ? 'may enter if the resident is out' : 'arrange a time first'}`);
+  }
+  if (next.entry_notes !== o.entry_notes) changes.push(`Entry notes: ${said(o.entry_notes)} → ${said(next.entry_notes)}`);
+  if (next.description !== o.description) changes.push(`Description changed. It was:\n${o.description}`);
+  if (!changes.length) return json({ ok: true, changed: 0 });
+  await run(c.env,
+    `UPDATE work_orders SET category = ?, location = ?, description = ?, permission_to_enter = ?, entry_notes = ?, updated_at = ?
+      WHERE id = ?`,
+    next.category, next.location, next.description, next.permission_to_enter, next.entry_notes, nowIso(), o.id);
+  // an internal note: the resident sees the corrected problem, not the editing
+  await addNote(c, o, 'status', { kind: 'staff', id: c.user.id, name: c.user.name }, `Problem details edited.\n${changes.join('\n')}`, 0);
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'order_problem_edited', `${fmtRef(o.id)} · Apt ${o.unit}`);
+  return json({ ok: true, changed: changes.length });
+}
+
 async function staffAddNote(c, m) {
   const o = await getOrder(c, m[1]);
   const b = await readBody(c);
@@ -1727,6 +1761,7 @@ const ROUTES = [
   ['GET', /^\/staff\/workorders\/(\d+)$/, staffOrderDetail, 'staff'],
   ['POST', /^\/staff\/workorders\/(\d+)$/, staffUpdateOrder, 'staff'],
   ['POST', /^\/staff\/workorders\/(\d+)\/notes$/, staffAddNote, 'staff'],
+  ['POST', /^\/staff\/workorders\/(\d+)\/problem$/, staffEditProblem, 'staff'],
   ['POST', /^\/staff\/workorders\/(\d+)\/complete$/, staffComplete, 'staff'],
   ['GET', /^\/staff\/unit$/, staffUnit, 'staff'],
   ['GET', /^\/staff\/export\.csv$/, staffExport, 'staff'],
