@@ -156,6 +156,9 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--g
   .task-side select { width: auto; max-width: 230px; }
   .turn-section-head { padding: 14px 16px; }
 }
+/* a destructive action, set apart at the bottom of a card */
+.danger-zone { margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--line); }
+
 /* the Specials page */
 .checks { display: flex; flex-wrap: wrap; gap: 10px 26px; }
 .special-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px 24px; flex-wrap: wrap; }

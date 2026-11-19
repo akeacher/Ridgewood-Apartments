@@ -829,7 +829,8 @@ async function unitHistory(c, unitKey, building, exceptId) {
     unitKey, any, building || '');
   return {
     previous: previous.map((p) => Object.assign(p, { ref: fmtRef(p.id), status_label: STATUS_LABEL[p.status] || p.status })),
-    handoff: handoff.map((n) => Object.assign(n, { ref: fmtRef(n.work_order_id) })),
+    // a note kept from a work order that was later deleted has no work order to point at
+    handoff: handoff.map((n) => Object.assign(n, { ref: n.work_order_id ? fmtRef(n.work_order_id) : '' })),
   };
 }
 
@@ -937,6 +938,21 @@ async function staffEditProblem(c, m) {
   await addNote(c, o, 'status', { kind: 'staff', id: c.user.id, name: c.user.name }, `Problem details edited.\n${changes.join('\n')}`, 0);
   await logActivity(c, 'staff', c.user.id, c.user.name, 'order_problem_edited', `${fmtRef(o.id)} · Apt ${o.unit}`);
   return json({ ok: true, changed: changes.length });
+}
+
+// Deleting a work order, for duplicates and requests made by mistake. The
+// "notes for the next technician" written on it belong to the apartment, so
+// they are kept; the rest of its timeline goes with it.
+async function staffDeleteOrder(c, m) {
+  const o = await getOrder(c, m[1]);
+  await c.env.DB.batch([
+    c.env.DB.prepare("UPDATE notes SET work_order_id = 0 WHERE work_order_id = ? AND kind = 'handoff'").bind(o.id),
+    c.env.DB.prepare('DELETE FROM notes WHERE work_order_id = ?').bind(o.id),
+    c.env.DB.prepare('DELETE FROM work_orders WHERE id = ?').bind(o.id),
+  ]);
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'order_deleted',
+    `${fmtRef(o.id)} · Apt ${o.unit} · ${o.category} · ${o.contact_name} · was ${STATUS_LABEL[o.status] || o.status}`);
+  return json({ ok: true });
 }
 
 async function staffAddNote(c, m) {
@@ -1762,6 +1778,7 @@ const ROUTES = [
   ['POST', /^\/staff\/workorders\/(\d+)$/, staffUpdateOrder, 'staff'],
   ['POST', /^\/staff\/workorders\/(\d+)\/notes$/, staffAddNote, 'staff'],
   ['POST', /^\/staff\/workorders\/(\d+)\/problem$/, staffEditProblem, 'staff'],
+  ['POST', /^\/staff\/workorders\/(\d+)\/delete$/, staffDeleteOrder, 'manager'],
   ['POST', /^\/staff\/workorders\/(\d+)\/complete$/, staffComplete, 'staff'],
   ['GET', /^\/staff\/unit$/, staffUnit, 'staff'],
   ['GET', /^\/staff\/export\.csv$/, staffExport, 'staff'],

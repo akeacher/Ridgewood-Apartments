@@ -282,7 +282,8 @@
     if (!items.length) return h('p', { class: 'muted' }, emptyText);
     return items.map((n) => h('div', { class: 'handoff-item' }, h('p', { class: 'pre' }, n.body),
       h('p', { class: 'by' }, n.author_name + ' · ' + day(n.created_at) + ' · ',
-        h('a', { href: '#/orders/' + n.work_order_id }, n.ref), n.building ? ' · ' + n.building : '')));
+        n.work_order_id ? h('a', { href: '#/orders/' + n.work_order_id }, n.ref) : 'from a deleted work order',
+        n.building ? ' · ' + n.building : '')));
   }
   function previousList(items, emptyText) {
     if (!items.length) return h('p', { class: 'muted' }, emptyText);
@@ -341,7 +342,22 @@
       field('Urgency', select('urgency', URGENCY, o.urgency)),
       field('Assigned to', select('assigned_to', [['', 'Nobody yet']].concat(S.team.map((t) => [String(t.id), t.name])),
         o.assigned_to ? String(o.assigned_to) : '')),
-      h('button', { class: 'btn btn-sm', type: 'submit' }, 'Save changes'));
+      h('button', { class: 'btn btn-sm', type: 'submit' }, 'Save changes'),
+      isManager() ? h('div', { class: 'danger-zone' },
+        h('button', { class: 'link-btn', type: 'button', onclick: async () => {
+          const ok = window.confirm('Are you sure you want to delete this work order?\n\n'
+            + o.ref + ' · ' + apt(o) + ' — ' + o.category + ' (' + o.contact_name + ')\n\n'
+            + 'It will be removed for good, along with its timeline, and the resident will no longer see it. '
+            + 'This cannot be undone.\n\nTo keep a record instead, set its status to Cancelled.');
+          if (!ok) return;
+          try {
+            await api('/staff/workorders/' + o.id + '/delete', {});
+            flash = 'Deleted ' + o.ref + ' (' + apt(o) + ').';
+            location.hash = S.from === 'records' ? '#/records' : '#/orders';
+          } catch (e) {
+            window.alert(e.message);
+          }
+        } }, 'Delete this work order')) : null);
     onSubmit(manage, async (v) => {
       const body = { urgency: v.urgency, assigned_to: v.assigned_to ? Number(v.assigned_to) : null };
       if (v.status !== o.status) body.status = v.status;
@@ -737,7 +753,7 @@
 
   const EVENT = { sign_in: 'Signed in', sign_in_failed: 'Failed sign-in', request_created: 'Sent a request',
     request_cancelled: 'Cancelled a request', order_created: 'Created a work order', order_updated: 'Updated a work order',
-    order_completed: 'Completed a work order', order_problem_edited: 'Edited a work order problem', resident_added: 'Added a resident', residents_imported: 'Added residents',
+    order_completed: 'Completed a work order', order_problem_edited: 'Edited a work order problem', order_deleted: 'Deleted a work order', resident_added: 'Added a resident', residents_imported: 'Added residents',
     resident_removed: 'Removed a resident', resident_restored: 'Restored a resident', resident_edited: 'Edited a resident',
     resident_unlocked: 'Unlocked a resident', team_member_added: 'Added a team member', team_member_changed: 'Changed a team member',
     team_password_reset: 'Reset a password', password_changed: 'Changed their password', settings_changed: 'Changed settings',
@@ -1295,7 +1311,8 @@
         h('div', { class: 'card card-accent' }, h('div', { class: 'card-head' }, h('h3', {}, 'Notes for the next technician'),
           h('span', { class: 'fine' }, 'Apartment ' + t.unit)),
           d.handoff.length ? d.handoff.map((n) => h('div', { class: 'handoff-item' }, h('p', { class: 'pre' }, n.body),
-            h('p', { class: 'by' }, n.author_name + ' · ' + day(n.created_at) + ' · ', h('a', { href: '#/orders/' + n.work_order_id }, n.ref))))
+            h('p', { class: 'by' }, n.author_name + ' · ' + day(n.created_at) + ' · ',
+              n.work_order_id ? h('a', { href: '#/orders/' + n.work_order_id }, n.ref) : 'from a deleted work order')))
             : h('p', { class: 'muted' }, 'Nobody has left notes for this apartment yet.')),
         h('div', { class: 'card stack' }, h('h3', {}, 'About this turnover'),
           t.notes ? h('p', { class: 'pre' }, t.notes) : null,

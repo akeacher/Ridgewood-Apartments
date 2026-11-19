@@ -523,6 +523,25 @@ def run():
           "saving the same details is not a change")
     check("order_problem_edited" in [e["event"] for e in m.get("/staff/activity")[1]["activity"]], "the edit is in the activity log")
 
+    # deleting a work order
+    s, j = m.post("/staff/workorders", {"unit": "999", "building": "1885", "contact_name": "Mistaken Entry", "category": "Other",
+                                        "description": "Entered by mistake — duplicate of a phone call."})
+    gone = j["id"]
+    m.post("/staff/workorders/%d/notes" % gone, {"body": "Internal: duplicate."})
+    m.post("/staff/workorders/%d/notes" % gone, {"body": "HANDOFF: the hall closet ceiling hatch sticks.", "kind": "handoff"})
+    check(Client().post("/staff/workorders/%d/delete" % gone)[0] == 401, "deleting a work order needs a staff session")
+    check(m.post("/staff/workorders/%d/delete" % gone, portal_header=False)[0] == 403, "…and the portal's own page")
+    check(m.post("/staff/workorders/%d/delete" % gone)[0] == 200, "a manager deletes a work order")
+    check(m.get("/staff/workorders/%d" % gone)[0] == 404 and all(o["id"] != gone for o in m.get("/staff/workorders?view=all")[1]["orders"]),
+          "it is gone from the work orders")
+    check(sql("SELECT COUNT(*) AS n FROM notes WHERE work_order_id = ?", gone)[0]["n"] == 0, "…along with its timeline")
+    kept = m.get("/staff/unit?unit=999&building=1885")[1]["handoff"]
+    check(len(kept) == 1 and "hatch sticks" in kept[0]["body"] and kept[0]["work_order_id"] == 0 and kept[0]["ref"] == "",
+          "the note left for the next technician stays with the apartment", kept)
+    check(m.post("/staff/workorders/%d/delete" % gone)[0] == 404, "a deleted work order cannot be deleted again")
+    act = [e for e in m.get("/staff/activity")[1]["activity"] if e["event"] == "order_deleted"]
+    check(len(act) == 1 and "Apt 999" in act[0]["detail"] and "Mistaken Entry" in act[0]["detail"], "the deletion is in the activity log", act)
+
     check(m.post("/staff/workorders/%d" % r1, {"status": "bogus"})[0] == 400, "unknown status refused")
     check(m.post("/staff/workorders/%d" % r1, {"status": "completed"})[0] == 400, "completing must go through the write-up")
     check(m.post("/staff/workorders/%d" % r1, {"urgency": "bogus"})[0] == 400, "unknown urgency refused")
@@ -1016,6 +1035,8 @@ def run():
     check(k.get("/staff/residents")[0] == 200 and k.get("/staff/emails")[0] == 200, "technician can read the roster and email log")
     check(k.post("/staff/workorders/%d/problem" % r2, {"location": "Hall, by the bathroom"})[1].get("changed") == 1,
           "a technician can correct the problem too")
+    check(k.post("/staff/workorders/%d/delete" % r2)[0] == 403 and k.get("/staff/workorders/%d" % r2)[0] == 200,
+          "…but only a manager can delete a work order")
     check(k.post("/staff/workorders/%d/complete" % r2, {"work_done": "Replaced the hall light ballast."})[0] == 200, "technician completes a job")
     check(m.get("/staff/workorders/%d" % r2)[1]["order"]["completed_by_name"] == "Sam Tech", "…and it is recorded under their name")
     check(m.post("/staff/workorders/%d" % r3, {"assigned_to": tech_id})[0] == 200, "manager assigns work to the technician")
