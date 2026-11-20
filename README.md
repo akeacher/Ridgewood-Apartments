@@ -78,6 +78,16 @@ locks until staff unlock it after 30 in a day, and every attempt is in the staff
 *Activity log*. Passwords, resident and staff alike, are stored only as salted
 PBKDF2 hashes.
 
+**Resident portal tabs.** Residents land on *Community*, with *Maintenance*
+(requests) and *My account* (contact details, password) beside it. Community
+shows the board a manager keeps under *Community board* in the staff portal:
+building notices, water shutoffs, planned work, trash and recycling, snow and
+parking, community and news posts, each for both buildings or one, optionally
+with a time window (it comes off the board once that has passed) or a "show
+until" date, and optionally pinned. A "Coming up" strip lists anything with a
+time and the next trash and recycling pickups, worked out from the pickup
+schedule on the same staff page. Never invent posts or pickup days.
+
 **Turnovers.** Under *Turnovers*, a manager starts a turnover for an apartment
 (move-out and ready-by dates) and it comes with the full make-ready checklist,
 86 tasks in 15 sections from the move-out walk-through to the final inspection

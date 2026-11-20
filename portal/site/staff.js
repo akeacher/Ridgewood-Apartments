@@ -8,7 +8,7 @@
 
   const S = { me: null, team: [], categories: [], buildings: [], labels: {},
     view: 'open', q: '', recordsQ: '', unit: '', unitBuilding: 'any', editResident: null, editReturn: null, resetMember: null, editSpecial: null, pending: 0, myTurnTasks: 0,
-    turnView: 'open', turnFilter: 'all', newTurnover: false, editTurnover: false, editProblem: 0,
+    turnView: 'open', turnFilter: 'all', newTurnover: false, editTurnover: false, editProblem: 0, newPost: false, editPost: 0,
     sheet: { q: '', building: 'all', removed: false, sort: 'unit', dir: 1 } };
   const OPEN = ['new', 'scheduled', 'in_progress', 'on_hold'];
   const URGENCY = [['routine', 'Routine'], ['soon', 'Soon'], ['urgent', 'Urgent']];
@@ -132,7 +132,7 @@
       h('span', { class: 'who' }, S.me.name, h('small', {}, isManager() ? 'Manager' : 'Maintenance')),
       h('button', { class: 'btn btn-sm btn-ghost', type: 'button', onclick: signOut }, 'Sign out'));
     const links = [['orders', 'Work orders'], ['records', 'Completed records'], ['turnovers', 'Turnovers'], ['unit', 'Apartment history'],
-      ['residents', 'Residents'], ['contacts', 'Contact sheet'], ['emails', 'Email log']];
+      ['residents', 'Residents'], ['contacts', 'Contact sheet'], ['community', 'Community board'], ['emails', 'Email log']];
     if (isManager()) links.push(null, ['pricing', 'Pricing & availability'], ['specials', 'Specials'], ['activity', 'Activity log'], ['team', 'Team'], ['settings', 'Settings']);
     links.push(null, ['account', 'My account']);
     main = h('section', { id: 'main' });
@@ -159,7 +159,7 @@
     navCount('turnovers', 'Turnovers', S.myTurnTasks, 'Turnover tasks assigned to you');
   }
 
-  const VIEWS = { orders: ordersView, new: newOrderView, records: recordsView, unit: unitView, residents: residentsView, contacts: contactsView, turnovers: turnoversView,
+  const VIEWS = { orders: ordersView, new: newOrderView, records: recordsView, unit: unitView, residents: residentsView, contacts: contactsView, turnovers: turnoversView, community: boardView,
     emails: emailsView, pricing: pricingView, specials: specialsView, activity: activityView, team: teamView, settings: settingsView, account: accountView };
   const MANAGER_ONLY = ['pricing', 'specials', 'activity', 'team', 'settings'];
 
@@ -763,6 +763,8 @@
     special_turned_off: 'Turned a special off', special_deleted: 'Deleted a special',
     turnover_started: 'Started a turnover', turnover_changed: 'Changed a turnover', turnover_ready: 'Marked a turnover ready',
     turnover_reopened: 'Reopened a turnover', turnover_deleted: 'Deleted a turnover', turnover_assigned: 'Assigned turnover tasks',
+    post_created: 'Posted to the community board', post_changed: 'Changed a community post', post_deleted: 'Deleted a community post',
+    collection_changed: 'Changed the pickup schedule',
     account_created: 'Created an account', resident_approved: 'Approved an account', resident_declined: 'Declined a sign-up',
     resident_password_changed: 'Changed their password', resident_password_reset: 'Reset a resident password' };
   async function activityView() {
@@ -942,6 +944,178 @@
       h('h2', { class: 'section-title' }, 'Rents'),
       h('p', { class: 'fine section-lede' }, 'Changes to rents go live when you press “Save and publish”.'),
       form];
+  }
+
+  /* -------------------------------------------------------- community board */
+  // What residents see first in their portal. Managers post; everyone on staff can read it.
+  const POST_HINTS = {
+    notice: ['Hallway carpet cleaning this Friday', 'What is happening, when, and anything residents need to do.'],
+    water: ['Water shutoff — 1871 building', 'Water will be off while we replace a valve. Fill a pitcher beforehand, and keep taps closed.'],
+    work: ['Boiler service on Tuesday', 'What the work is, where, and whether anyone needs to be home or move anything.'],
+    trash: ['Please put trash inside the dumpster', 'Bag it, tie it, and put it inside the dumpster rather than beside it. Break down boxes for recycling.'],
+    snow: ['Snow emergency: move cars from the lot by 9 pm', 'Which part of the lot is being plowed, and when cars can come back.'],
+    community: ['A note from the office', 'Community reminders, events, and anything that makes Ridgewood a better place to live.'],
+    news: ['New on-site laundry is open', 'News and updates residents will want to know.'],
+  };
+  const STATUS_CHIP = { showing: ['chip chip-solid', 'On the board'], ended: ['chip chip-off', 'Ended'],
+    expired: ['chip chip-off', 'Past its show-until date'] };
+  // "2026-11-25T09:00" (Saint Paul time) shown as "Tue, Nov 25, 9:00 AM"
+  const wallClock = (v) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(v || '');
+    if (!m) return '';
+    const d = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]);
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ', '
+      + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  };
+  const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  async function boardView() {
+    const d = await api('/staff/community');
+    const cats = d.categories;
+    const editing = d.posts.find((x) => x.id === S.editPost);
+    const nodes = [pageHead('Community board', 'The landing page of the resident portal: building notices, water shutoffs, planned work, '
+      + 'trash pickup, snow and parking, and community reminders. Residents see posts for their own building.',
+      isManager() && !editing ? h('button', { class: 'btn btn-sm', type: 'button', onclick: () => { S.newPost = !S.newPost; route(); } },
+        S.newPost ? 'Cancel' : 'New post') : null)];
+    if (isManager() && (S.newPost || editing)) nodes.push(postForm(editing, cats));
+
+    const showing = d.posts.filter((x) => x.status === 'showing');
+    const past = d.posts.filter((x) => x.status !== 'showing');
+    nodes.push(h('div', { class: 'card-head section-gap' }, h('h2', {}, 'On the board'),
+      h('span', { class: 'fine' }, showing.length + (showing.length === 1 ? ' post' : ' posts') + ' showing to residents')));
+    nodes.push(showing.length ? h('div', {}, showing.map((x) => staffPostCard(x, cats)))
+      : h('div', { class: 'empty' }, 'Nothing is on the board.' + (isManager() ? ' Post a notice and it appears for residents straight away.' : '')));
+    if (past.length) {
+      nodes.push(h('details', { class: 'more section-gap' }, h('summary', {}, past.length + (past.length === 1 ? ' past post' : ' past posts')
+        + ' (no longer showing)'), h('div', {}, past.map((x) => staffPostCard(x, cats)))));
+    }
+    nodes.push(scheduleCard(d.collection));
+    return nodes;
+  }
+
+  function staffPostCard(x, cats) {
+    const st = STATUS_CHIP[x.status] || STATUS_CHIP.showing;
+    return h('article', { class: 'post' + (x.pinned ? ' post-pinned' : '') },
+      h('div', { class: 'post-top' }, h('span', { class: 'post-cat' }, cats[x.category] || x.category),
+        h('span', { class: st[0] }, st[1]), x.pinned ? h('span', { class: 'chip chip-goldline' }, 'Pinned') : null,
+        h('span', { class: 'fine' }, x.building ? x.building + ' Wilson only' : 'Both buildings')),
+      h('h3', {}, x.title),
+      x.starts_at ? h('p', { class: 'post-when' }, wallClock(x.starts_at) + (x.ends_at ? ' – ' + wallClock(x.ends_at) : '')) : null,
+      x.body ? h('p', { class: 'pre post-body' }, x.body) : null,
+      h('p', { class: 'fine post-date' }, 'Posted ' + when(x.created_at) + (x.created_by ? ' by ' + x.created_by : '')
+        + (x.show_until ? ' · showing until ' + longDate(x.show_until) : '')),
+      isManager() ? h('div', { class: 'actions' },
+        h('button', { class: 'link-btn', type: 'button', onclick: () => { S.editPost = x.id; S.newPost = false; route(); } }, 'Edit'),
+        h('button', { class: 'link-btn', type: 'button', onclick: async () => {
+          if (!window.confirm('Delete “' + x.title + '” from the community board? Residents will no longer see it.')) return;
+          try { await api('/staff/posts/' + x.id + '/delete', {}); flash = 'Deleted “' + x.title + '”.'; } catch (e) { flash = e.message; }
+          if (S.editPost === x.id) S.editPost = 0;
+          route();
+        } }, 'Delete')) : null);
+  }
+
+  function postForm(x, cats) {
+    const editing = !!x;
+    x = x || { category: 'notice', title: '', body: '', building: '', starts_at: '', ends_at: '', show_until: '', pinned: false };
+    const body = textarea('body', { maxlength: 4000, rows: 5 });
+    body.value = x.body;
+    const title = input('title', { maxlength: 120, required: true, value: x.title, autocomplete: 'off' });
+    const kind = select('category', Object.keys(cats).map((k) => [k, cats[k]]), x.category);
+    const hint = () => { const t = POST_HINTS[kind.value] || POST_HINTS.notice; title.placeholder = t[0]; body.placeholder = t[1]; };
+    kind.addEventListener('change', hint);
+    hint();
+    const form = h('form', { class: 'card card-accent stack', novalidate: true },
+      h('h3', {}, editing ? 'Edit “' + x.title + '”' : 'New post'),
+      h('div', { class: 'cols' }, field('Kind of post', kind),
+        field('For', select('building', [['', 'Both buildings'], ['1871', '1871 Wilson only'], ['1885', '1885 Wilson only']], x.building))),
+      field('Headline', title),
+      field('Message', body),
+      h('div', { class: 'cols' },
+        field('Starts (optional)', input('starts_at', { type: 'datetime-local', value: x.starts_at })),
+        field('Ends (optional)', input('ends_at', { type: 'datetime-local', value: x.ends_at }))),
+      h('p', { class: 'fine' }, 'For a water shutoff or planned work, give the time it starts and ends. '
+        + 'Residents see it under “Coming up”, and it comes off the board once it is over.'),
+      h('div', { class: 'cols' },
+        field('Show until (optional)', input('show_until', { type: 'date', value: x.show_until }), 'It comes off the board after this day.')),
+      check('pinned', 'Pin it to the top of the board', x.pinned),
+      h('div', { class: 'actions' },
+        h('button', { class: 'btn btn-sm', type: 'submit' }, editing ? 'Save changes' : 'Post to the board'),
+        h('button', { class: 'link-btn', type: 'button', onclick: () => { S.newPost = false; S.editPost = 0; route(); } }, 'Cancel')),
+      h('p', { class: 'msg', role: 'alert', hidden: true }));
+    onSubmit(form, async (v) => {
+      const out = await api(editing ? '/staff/posts/' + x.id : '/staff/posts', { category: v.category, building: v.building,
+        title: v.title, body: v.body, starts_at: v.starts_at, ends_at: v.ends_at, show_until: v.show_until, pinned: v.pinned === 'on' });
+      S.newPost = false; S.editPost = 0;
+      flash = out.status === 'showing' ? (editing ? 'Saved. Residents see the change now.' : 'Posted. Residents see it now.')
+        : 'Saved, but it is not showing: its time or show-until date has already passed.';
+      route();
+    });
+    return form;
+  }
+
+  // the trash and recycling pickups residents see beside the board
+  function scheduleCard(col) {
+    const rows = col.items.map((x) => Object.assign({}, x));
+    const list = h('div', { class: 'pickups-edit' });
+    const reminder = textarea('reminder', { maxlength: 600, rows: 3,
+      placeholder: 'Please bag trash and put it inside the dumpster, not beside it. Break down boxes for recycling.' });
+    reminder.value = col.reminder || '';
+    const editable = isManager();
+    const paint = () => {
+      list.replaceChildren(...(rows.length ? rows.map((x, i) => {
+        if (!editable) {
+          return h('div', { class: 'pickup' }, h('p', {}, h('strong', {}, x.what), ' — ' + (x.every === 2 ? 'every other ' : 'every ') + WEEKDAY_NAMES[x.weekday]
+            + (x.put_out ? ' · ' + x.put_out : '')), x.next && x.next.length ? h('p', { class: 'fine' }, 'Next: ' + x.next.map(longDate).join(', ')) : null);
+        }
+        const what = input('what', { value: x.what || '', maxlength: 40, placeholder: 'Trash', 'aria-label': 'What is collected' });
+        const wd = select('weekday', WEEKDAY_NAMES.map((n, k) => [String(k), n]), String(x.weekday === undefined ? 2 : x.weekday));
+        const every = select('every', [['1', 'Every week'], ['2', 'Every other week']], String(x.every || 1));
+        const anchor = input('anchor', { type: 'date', value: x.anchor || '', 'aria-label': 'Date of a recent or upcoming pickup' });
+        const anchorField = field('A recent pickup date', anchor, 'Any one pickup, so the alternating weeks line up.');
+        const putOut = input('put_out', { value: x.put_out || '', maxlength: 60, placeholder: 'Out by 7 am' });
+        const notes = input('notes', { value: x.notes || '', maxlength: 200, placeholder: 'Bags tied, inside the dumpster' });
+        const sync = () => { anchorField.hidden = every.value !== '2'; };
+        every.addEventListener('change', sync);
+        sync();
+        x.read = () => ({ id: x.id, what: what.value, weekday: Number(wd.value), every: Number(every.value), anchor: anchor.value,
+          put_out: putOut.value, notes: notes.value });
+        return h('div', { class: 'pickup-edit' },
+          h('div', { class: 'cols-3' }, field('Pickup', what), field('Day', wd), field('How often', every)),
+          h('div', { class: 'cols-3' }, anchorField, field('Put out by', putOut), field('Notes', notes)),
+          h('div', { class: 'actions' },
+            x.next && x.next.length ? h('span', { class: 'fine' }, 'Next: ' + x.next.map(longDate).join(', ')) : null,
+            h('button', { class: 'link-btn', type: 'button', onclick: () => {
+              for (const y of rows) if (y.read) Object.assign(y, y.read());   // keep what was typed in the others
+              rows.splice(i, 1);
+              paint();
+            } }, 'Remove')));
+      }) : [h('p', { class: 'muted' }, 'No pickups listed yet.' + (editable ? ' Add the days trash and recycling are collected.' : ''))]));
+    };
+    paint();
+    const card = h('form', { class: 'card stack section-gap', novalidate: true },
+      h('div', { class: 'card-head flush-head' }, h('h2', {}, 'Trash & recycling schedule'),
+        col.updated_at ? h('span', { class: 'fine' }, 'Updated ' + day(col.updated_at) + (col.updated_by ? ' by ' + col.updated_by : '')) : null),
+      h('p', { class: 'fine' }, 'Residents see the next pickup dates beside the board, worked out from this schedule. '
+        + 'If a holiday moves a pickup, post a Trash & recycling notice.'),
+      list,
+      editable ? h('button', { class: 'link-btn', type: 'button', onclick: () => {
+        for (const x of rows) if (x.read) Object.assign(x, x.read());
+        rows.push({ what: '', weekday: 2, every: 1 });
+        paint();
+      } }, '+ Add a pickup') : null,
+      editable ? field('Reminder shown with the schedule (optional)', reminder) : (col.reminder ? h('p', { class: 'reminder pre' }, col.reminder) : null),
+      editable ? h('button', { class: 'btn btn-sm', type: 'submit' }, 'Save schedule') : null,
+      h('p', { class: 'msg', role: 'alert', hidden: true }));
+    if (editable) {
+      onSubmit(card, async () => {
+        const items = rows.map((x) => (x.read ? x.read() : x)).map((x) => ({ id: x.id, what: x.what, weekday: x.weekday, every: x.every,
+          anchor: x.anchor || '', put_out: x.put_out || '', notes: x.notes || '' }));
+        await api('/staff/collection', { items, reminder: reminder.value });
+        flash = 'Pickup schedule saved. Residents see it now.';
+        route();
+      });
+    }
+    return card;
   }
 
   /* -------------------------------------------------------------- turnovers */

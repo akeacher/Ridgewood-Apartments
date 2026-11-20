@@ -175,6 +175,16 @@ const MIGRATIONS = [
     'CREATE INDEX IF NOT EXISTS idx_tt_turnover ON turnover_tasks (turnover_id, position)',
     'CREATE INDEX IF NOT EXISTS idx_tt_assignee ON turnover_tasks (assigned_to, status)',
   ]],
+  // the community board residents see when they sign in
+  [5, [
+    `CREATE TABLE IF NOT EXISTS posts (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       category TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL DEFAULT '', building TEXT NOT NULL DEFAULT '',
+       starts_at TEXT NOT NULL DEFAULT '', ends_at TEXT NOT NULL DEFAULT '', show_until TEXT NOT NULL DEFAULT '',
+       pinned INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, created_by TEXT NOT NULL DEFAULT '',
+       updated_at TEXT NOT NULL, updated_by TEXT NOT NULL DEFAULT '')`,
+    'CREATE INDEX IF NOT EXISTS idx_posts_created ON posts (created_at)',
+  ]],
 ];
 
 let schemaReady = false;
@@ -1736,6 +1746,167 @@ async function staffDeleteTurnoverTask(c, m) {
   return json({ ok: true });
 }
 
+/* -------------------------------------------------------- community board */
+
+// What residents see first when they sign in. Managers post; a post can be for
+// both buildings or one, can carry a time window (a water shutoff from 9 to 1),
+// and comes off the board by itself once that window has passed or after its
+// "show until" date.
+const POST_CATEGORIES = {
+  notice: 'Building notice', water: 'Water shutoff', work: 'Planned work', trash: 'Trash & recycling',
+  snow: 'Snow & parking', community: 'Community', news: 'News & updates',
+};
+const MAX_PICKUPS = 8;
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+// the date and time in Saint Paul, as "YYYY-MM-DDTHH:MM" (how times are entered and kept)
+function nowHere() {
+  const parts = {};
+  for (const x of new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Chicago', year: 'numeric', month: '2-digit',
+    day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date())) parts[x.type] = x.value;
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour === '24' ? '00' : parts.hour}:${parts.minute}`;
+}
+const validDateTime = (v) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v) && validDate(v.slice(0, 10))
+  && Number(v.slice(11, 13)) < 24 && Number(v.slice(14, 16)) < 60;
+// When a post leaves the board: the end of its window (or the end of its day,
+// if it only has a start), and in any case after its "show until" date.
+const postEnds = (x) => x.ends_at || (x.starts_at ? x.starts_at.slice(0, 10) + 'T23:59' : '');
+function postStatus(x, now) {
+  if (x.show_until && x.show_until < now.slice(0, 10)) return 'expired';
+  const end = postEnds(x);
+  if (end && end < now) return 'ended';
+  return 'showing';
+}
+
+function postFields(b, before) {
+  const pick = (k, max) => (b[k] === undefined ? (before ? before[k] : '') : str(b[k], max));
+  const f = {
+    category: pick('category', 20), title: pick('title', 120), body: pick('body', 4000), building: pick('building', 10),
+    starts_at: pick('starts_at', 16), ends_at: pick('ends_at', 16), show_until: pick('show_until', 10),
+    pinned: b.pinned === undefined ? (before ? before.pinned : 0) : (b.pinned ? 1 : 0),
+  };
+  if (!POST_CATEGORIES[f.category]) throw new HttpError(400, 'Choose what kind of post it is.');
+  if (f.title.length < 3) throw new HttpError(400, 'Give the post a headline.');
+  if (!BUILDINGS.includes(f.building)) throw new HttpError(400, 'Choose who it is for: both buildings, 1871 or 1885.');
+  if (f.starts_at && !validDateTime(f.starts_at)) throw new HttpError(400, 'Enter the start as a date and time.');
+  if (f.ends_at && !validDateTime(f.ends_at)) throw new HttpError(400, 'Enter the end as a date and time.');
+  if (f.ends_at && !f.starts_at) throw new HttpError(400, 'Add a start time to go with the end time.');
+  if (f.starts_at && f.ends_at && f.ends_at < f.starts_at) throw new HttpError(400, 'The end time is before the start time.');
+  if (f.show_until && !validDate(f.show_until)) throw new HttpError(400, 'Enter the "show until" date as a date, or leave it blank.');
+  return f;
+}
+
+// The pickup schedule, kept as one small JSON value in settings.
+function readCollection(settings) {
+  let saved = {};
+  try { saved = JSON.parse(settings.collection || '{}') || {}; } catch (e) { saved = {}; }
+  return { items: Array.isArray(saved.items) ? saved.items : [], reminder: str(saved.reminder, 600),
+    updated_at: saved.updated_at || null, updated_by: saved.updated_by || '' };
+}
+// the next pickups on or after today, for a weekly or every-other-week schedule
+function nextPickups(x, today, count) {
+  const [y, m, d] = today.split('-').map(Number);
+  let anchor = 0;
+  if (x.every === 2 && x.anchor) {
+    const [ay, am, ad] = x.anchor.split('-').map(Number);
+    anchor = Date.UTC(ay, am - 1, ad);
+  }
+  const out = [];
+  for (let i = 0, t = Date.UTC(y, m - 1, d); i < 60 && out.length < count; i++, t += 86400e3) {
+    const day = new Date(t);
+    if (day.getUTCDay() !== x.weekday) continue;
+    if (x.every === 2 && ((Math.round((t - anchor) / (7 * 86400e3)) % 2) + 2) % 2 !== 0) continue;
+    out.push(day.toISOString().slice(0, 10));
+  }
+  return out;
+}
+const collectionView = (col, today) => ({
+  reminder: col.reminder, updated_at: col.updated_at, updated_by: col.updated_by,
+  items: col.items.map((x) => Object.assign({}, x, { next: nextPickups(x, today, 2) })),
+});
+
+// Residents: the posts for their building that are still current, and the schedule.
+async function tenantCommunity(c) {
+  const t = c.user;
+  const now = nowHere();
+  const rows = await all(c.env,
+    `SELECT id, category, title, body, building, starts_at, ends_at, show_until, pinned, created_at, updated_at FROM posts
+      WHERE (building = '' OR ? = '' OR building = ?) ORDER BY pinned DESC, created_at DESC LIMIT 200`, t.building, t.building);
+  const posts = rows.filter((x) => postStatus(x, now) === 'showing').slice(0, 60)
+    .map((x) => Object.assign(x, { pinned: !!x.pinned }));
+  return json({ now, today: now.slice(0, 10), categories: POST_CATEGORIES, posts,
+    collection: collectionView(readCollection(await getSettings(c.env)), now.slice(0, 10)) });
+}
+
+// Staff: every post with whether it is showing, and the schedule to edit.
+async function staffCommunity(c) {
+  const now = nowHere();
+  const rows = await all(c.env, 'SELECT * FROM posts ORDER BY pinned DESC, created_at DESC LIMIT 300');
+  return json({ now, today: now.slice(0, 10), categories: POST_CATEGORIES, weekdays: WEEKDAYS,
+    posts: rows.map((x) => Object.assign(x, { pinned: !!x.pinned, status: postStatus(x, now) })),
+    collection: collectionView(readCollection(await getSettings(c.env)), now.slice(0, 10)) });
+}
+async function staffCreatePost(c) {
+  const f = postFields(await readBody(c), null);
+  const now = nowIso();
+  const meta = await run(c.env,
+    `INSERT INTO posts (category, title, body, building, starts_at, ends_at, show_until, pinned, created_at, created_by, updated_at, updated_by)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+    f.category, f.title, f.body, f.building, f.starts_at, f.ends_at, f.show_until, f.pinned, now, c.user.name, now, c.user.name);
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'post_created',
+    `${POST_CATEGORIES[f.category]}: ${f.title}${f.building ? ` · ${f.building} only` : ''}`);
+  return json({ ok: true, id: meta.last_row_id, status: postStatus(f, nowHere()) });
+}
+async function getPost(c, id) {
+  const x = await one(c.env, 'SELECT * FROM posts WHERE id = ?', id);
+  if (!x) throw new HttpError(404, 'That post does not exist.');
+  return x;
+}
+async function staffUpdatePost(c, m) {
+  const before = await getPost(c, m[1]);
+  const f = postFields(await readBody(c), before);
+  const changed = Object.keys(f).filter((k) => f[k] !== before[k]);
+  if (!changed.length) return json({ ok: true, changed: 0, status: postStatus(before, nowHere()) });
+  await run(c.env,
+    `UPDATE posts SET category = ?, title = ?, body = ?, building = ?, starts_at = ?, ends_at = ?, show_until = ?, pinned = ?,
+            updated_at = ?, updated_by = ? WHERE id = ?`,
+    f.category, f.title, f.body, f.building, f.starts_at, f.ends_at, f.show_until, f.pinned, nowIso(), c.user.name, before.id);
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'post_changed', `${POST_CATEGORIES[f.category]}: ${f.title}`);
+  return json({ ok: true, changed: changed.length, status: postStatus(f, nowHere()) });
+}
+async function staffDeletePost(c, m) {
+  const x = await getPost(c, m[1]);
+  await run(c.env, 'DELETE FROM posts WHERE id = ?', x.id);
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'post_deleted', `${POST_CATEGORIES[x.category] || x.category}: ${x.title}`);
+  return json({ ok: true });
+}
+async function staffSaveCollection(c) {
+  const b = await readBody(c);
+  const sent = Array.isArray(b.items) ? b.items : [];
+  if (sent.length > MAX_PICKUPS) throw new HttpError(400, `List up to ${MAX_PICKUPS} pickups.`);
+  const items = sent.map((x, i) => {
+    x = x && typeof x === 'object' ? x : {};
+    const what = str(x.what, 40);
+    const weekday = Number(x.weekday);
+    const every = Number(x.every) === 2 ? 2 : 1;
+    const anchor = str(x.anchor, 10);
+    if (what.length < 2) throw new HttpError(400, `Pickup ${i + 1}: say what is collected, like Trash or Recycling.`);
+    if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) throw new HttpError(400, `${what}: choose the pickup day.`);
+    if (every === 2) {
+      if (!validDate(anchor)) throw new HttpError(400, `${what}: for every other week, enter the date of a recent or upcoming pickup.`);
+      if (new Date(anchor + 'T12:00:00Z').getUTCDay() !== weekday) {
+        throw new HttpError(400, `${what}: ${anchor} is not a ${WEEKDAYS[weekday]}.`);
+      }
+    }
+    return { id: /^[0-9a-f]{8}$/.test(x.id || '') ? x.id : randomHex(4), what, weekday, every,
+      anchor: every === 2 ? anchor : '', put_out: str(x.put_out, 60), notes: str(x.notes, 200) };
+  });
+  const saved = { items, reminder: str(b.reminder, 600), updated_at: nowIso(), updated_by: c.user.name };
+  await run(c.env, 'INSERT INTO settings (name, value) VALUES (?, ?) ON CONFLICT(name) DO UPDATE SET value = excluded.value',
+    'collection', JSON.stringify(saved));
+  await logActivity(c, 'staff', c.user.id, c.user.name, 'collection_changed', items.map((x) => `${x.what} ${WEEKDAYS[x.weekday]}`).join(', ') || 'cleared');
+  return json({ ok: true, collection: collectionView(saved, nowHere().slice(0, 10)) });
+}
+
 async function staffEmails(c) {
   return json({ emails: await all(c.env,
     'SELECT id, created_at, to_addr, subject, body, kind, work_order_id, status, detail FROM email_log ORDER BY id DESC LIMIT 300') });
@@ -1762,6 +1933,7 @@ const ROUTES = [
   ['POST', /^\/password$/, tenantChangePassword, 'tenant'],
   ['POST', /^\/me\/contact$/, tenantUpdateContact, 'tenant'],
   ['GET', /^\/me$/, tenantMe, 'tenant'],
+  ['GET', /^\/community$/, tenantCommunity, 'tenant'],
   ['POST', /^\/requests$/, tenantCreate, 'tenant'],
   ['POST', /^\/requests\/(\d+)\/note$/, tenantAddNote, 'tenant'],
   ['POST', /^\/requests\/(\d+)\/cancel$/, tenantCancel, 'tenant'],
@@ -1798,6 +1970,11 @@ const ROUTES = [
   ['POST', /^\/staff\/team\/(\d+)$/, staffEditMember, 'manager'],
   ['GET', /^\/staff\/pricing$/, staffGetPricing, 'staff'],
   ['POST', /^\/staff\/pricing$/, staffSavePricing, 'manager'],
+  ['GET', /^\/staff\/community$/, staffCommunity, 'staff'],
+  ['POST', /^\/staff\/posts$/, staffCreatePost, 'manager'],
+  ['POST', /^\/staff\/posts\/(\d+)$/, staffUpdatePost, 'manager'],
+  ['POST', /^\/staff\/posts\/(\d+)\/delete$/, staffDeletePost, 'manager'],
+  ['POST', /^\/staff\/collection$/, staffSaveCollection, 'manager'],
   ['GET', /^\/staff\/turnovers$/, staffTurnovers, 'staff'],
   ['GET', /^\/staff\/turnovers\/mine$/, staffMyTurnoverTasks, 'staff'],
   ['POST', /^\/staff\/turnovers$/, staffCreateTurnover, 'manager'],

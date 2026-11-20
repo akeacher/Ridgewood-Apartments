@@ -154,7 +154,7 @@ def run():
     check(Client().get("/health")[0] == 200, "the Worker starts against the older database")
     row = sql("SELECT name, pw_hash, pending, source FROM tenants WHERE email = 'old@example.com'")[0]
     check(row == {"name": "Old Timer", "pw_hash": None, "pending": 0, "source": "staff"}, "existing residents are kept and given the new fields", row)
-    check(sql("SELECT value FROM settings WHERE name = 'schema_version'")[0]["value"] == "4", "the upgrades are recorded")
+    check(sql("SELECT value FROM settings WHERE name = 'schema_version'")[0]["value"] == "5", "the upgrades are recorded")
     row = sql("SELECT alt_phone, emergency_name, emergency_phone, contact_updated_at, contact_updated_by FROM tenants WHERE email = 'old@example.com'")[0]
     check(row == {"alt_phone": "", "emergency_name": "", "emergency_phone": "", "contact_updated_at": None, "contact_updated_by": ""},
           "existing residents get the new contact fields, empty", row)
@@ -884,6 +884,82 @@ def run():
     changed = [e["detail"] for e in m.get("/staff/activity")[1]["activity"] if e["event"] == "special_changed"]
     check(any('changed headline, floor plans (was "First month free")' in x for x in changed), "edits say what changed", changed[:3])
 
+    # -------------------------------------------------------- community board
+    print("community board")
+    from datetime import datetime, timedelta
+    from zoneinfo import ZoneInfo
+    here = datetime.now(ZoneInfo("America/Chicago"))
+    fmt = lambda d: d.strftime("%Y-%m-%dT%H:%M")
+    check(Client().get("/community")[0] == 401 and Client().get("/staff/community")[0] == 401, "the community board needs a session")
+    s, j = t.get("/community")
+    check(s == 200 and j["posts"] == [] and j["collection"]["items"] == [] and j["categories"]["water"] == "Water shutoff"
+          and j["today"] == here.date().isoformat(), "the board starts empty, on Saint Paul time", j)
+    base = {"category": "notice", "title": "Hallway carpet cleaning", "body": "Carpets in both buildings will be cleaned Friday.", "building": ""}
+    for bad, why in ((dict(category="nope"), "a kind"), (dict(title="x"), "a headline"), (dict(building="1999"), "a real building"),
+                     (dict(starts_at="tomorrow"), "a real start time"),
+                     (dict(starts_at=fmt(here), ends_at=fmt(here - timedelta(hours=1))), "an end after the start"),
+                     (dict(ends_at=fmt(here)), "a start to go with an end"), (dict(show_until="soon"), "a real show-until date")):
+        check(m.post("/staff/posts", dict(base, **bad))[0] == 400, "a post needs " + why)
+    s, j = m.post("/staff/posts", base)
+    check(s == 200 and j["status"] == "showing", "a manager posts a notice for everyone", j)
+    p_all = j["id"]
+    water = {"category": "water", "title": "Water shutoff — 1885", "body": "Water off while a valve is replaced.", "building": "1885",
+             "starts_at": fmt(here + timedelta(days=2)), "ends_at": fmt(here + timedelta(days=2, hours=4))}
+    p_water = m.post("/staff/posts", water)[1]["id"]
+    p_pin = m.post("/staff/posts", {"category": "trash", "title": "<b>Please</b> bag trash and put it inside the dumpster",
+                                    "body": "Not beside it, please.", "pinned": True})[1]["id"]
+    s, j = m.post("/staff/posts", {"category": "work", "title": "Boiler service",
+                                   "starts_at": fmt(here - timedelta(days=2)), "ends_at": fmt(here - timedelta(days=2) + timedelta(hours=2))})
+    check(j["status"] == "ended", "a post whose time has passed is marked ended", j)
+    p_past = j["id"]
+    s, j = m.post("/staff/posts", {"category": "news", "title": "Old news", "show_until": (here.date() - timedelta(days=1)).isoformat()})
+    check(j["status"] == "expired", "a post past its show-until date is marked expired", j)
+    p_old = j["id"]
+    p_today = m.post("/staff/posts", {"category": "community", "title": "Pest control visit today",
+                                      "starts_at": here.strftime("%Y-%m-%dT00:01")})[1]["id"]
+    maria = [x["id"] for x in t.get("/community")[1]["posts"]]
+    check(maria == [p_pin, p_today, p_all], "a resident sees the current posts for their building, pinned first", maria)
+    dee_ids = [x["id"] for x in dee.get("/community")[1]["posts"]]
+    check(dee_ids == [p_pin, p_today, p_water, p_all], "…and the other building also sees its own water shutoff", dee_ids)
+    pin = [x for x in dee.get("/community")[1]["posts"] if x["id"] == p_pin][0]
+    check(pin["title"].startswith("<b>Please</b>") and pin["pinned"] is True and "created_by" not in pin, "posts are text, and do not say who wrote them", pin)
+    status = {x["id"]: x["status"] for x in m.get("/staff/community")[1]["posts"]}
+    check(status == {p_all: "showing", p_water: "showing", p_pin: "showing", p_past: "ended", p_old: "expired", p_today: "showing"},
+          "staff see every post and whether it is showing", status)
+    check(m.post("/staff/posts/%d" % p_water, {"building": ""})[1]["changed"] == 1 and p_water in [x["id"] for x in t.get("/community")[1]["posts"]],
+          "a post can be widened to both buildings")
+    check(m.post("/staff/posts/%d" % p_water, {"building": ""})[1]["changed"] == 0, "saving it unchanged is not a change")
+    check(m.post("/staff/posts/%d" % p_water, {"ends_at": fmt(here + timedelta(days=1))})[0] == 400, "an edit still needs the end after the start")
+    check(m.post("/staff/posts/%d/delete" % p_old)[0] == 200 and m.post("/staff/posts/%d/delete" % p_old)[0] == 404, "a manager deletes a post, once")
+    check(t.post("/staff/posts", base)[0] == 401, "a resident cannot post to the board")
+
+    # the trash and recycling schedule
+    js_day = lambda d: (d.weekday() + 1) % 7          # Python counts from Monday, the portal from Sunday
+    today = here.date()
+    trash_day, recycle_day, bulk_day = today + timedelta(days=3), today + timedelta(days=1), today + timedelta(days=2)
+    items = [{"what": "Trash", "weekday": js_day(trash_day), "every": 1, "put_out": "By 7 am", "notes": "Bags tied, inside the dumpster"},
+             {"what": "Recycling", "weekday": js_day(recycle_day), "every": 2, "anchor": (recycle_day - timedelta(days=14)).isoformat()},
+             {"what": "Bulk items", "weekday": js_day(bulk_day), "every": 2, "anchor": (bulk_day - timedelta(days=7)).isoformat()}]
+    for bad, why in (([dict(items[0], weekday=9)], "a real day"), ([dict(items[1], anchor="")], "a date for every other week"),
+                     ([dict(items[1], anchor=(recycle_day + timedelta(days=1)).isoformat())], "that date to fall on the pickup day"),
+                     ([dict(items[0], what="")], "what is collected"), ([items[0]] * 9, "a short list")):
+        check(m.post("/staff/collection", {"items": bad})[0] == 400, "the schedule needs " + why)
+    s, j = m.post("/staff/collection", {"items": items, "reminder": "Break down boxes before they go in recycling."})
+    nxt = {x["what"]: x["next"] for x in j["collection"]["items"]}
+    check(s == 200 and nxt == {"Trash": [trash_day.isoformat(), (trash_day + timedelta(days=7)).isoformat()],
+                               "Recycling": [recycle_day.isoformat(), (recycle_day + timedelta(days=14)).isoformat()],
+                               "Bulk items": [(bulk_day + timedelta(days=7)).isoformat(), (bulk_day + timedelta(days=21)).isoformat()]},
+          "the next pickups are worked out, weekly and every other week", nxt)
+    col = t.get("/community")[1]["collection"]
+    check([x["what"] for x in col["items"]] == ["Trash", "Recycling", "Bulk items"] and col["reminder"].startswith("Break down")
+          and col["items"][0]["put_out"] == "By 7 am", "residents see the schedule and the reminder", col)
+    ids_before = [x["id"] for x in col["items"]]
+    m.post("/staff/collection", {"items": col["items"], "reminder": col["reminder"]})
+    check([x["id"] for x in t.get("/community")[1]["collection"]["items"]] == ids_before, "re-saving keeps each pickup the same")
+    events = [e["event"] for e in m.get("/staff/activity")[1]["activity"]]
+    for ev in ("post_created", "post_changed", "post_deleted", "collection_changed"):
+        check(ev in events, "the activity log records " + ev)
+
     # ------------------------------------------------------------- turnovers
     print("turnovers")
     check(Client().get("/staff/turnovers")[0] == 401 and Client().post("/staff/turnovers", {"unit": "1"})[0] == 401,
@@ -1027,6 +1103,8 @@ def run():
           and k.post("/staff/turnovers/%d/tasks" % tid, {"category": "Garage", "title": "Something"})[0] == 403
           and k.post("/staff/turnover-tasks/%d/delete" % tk)[0] == 403 and k.post("/staff/turnovers/%d/delete" % tid)[0] == 403,
           "a technician cannot start, finish, assign, add to or delete from a turnover")
+    check(k.get("/staff/community")[0] == 200 and k.post("/staff/posts", {"category": "notice", "title": "Tech post"})[0] == 403
+          and k.post("/staff/collection", {"items": []})[0] == 403, "a technician can read the community board but not post to it")
     Client().post("/signup", dict(new, email="wait@example.com", name="Wendy Waits", unit="130"))
     wid = sql("SELECT id FROM tenants WHERE email = 'wait@example.com'")[0]["id"]
     for action in ("approve", "decline", "reset-password"):

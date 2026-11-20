@@ -1,10 +1,16 @@
-/* The resident side of the portal: sign in, ask for maintenance, follow it. */
+/* The resident side of the portal: sign in, then three tabs — the community
+   board (the landing page), maintenance requests, and the resident's account. */
 (function () {
   'use strict';
   const { api, h, when, day, field, input, password, textarea, select, check, choices, onSubmit, chip, urgencyChip, tel, OFFICE } = window.RW;
   const app = document.getElementById('app');
   const who = document.getElementById('who');
   let flash = '';
+  let me = null;          // the signed-in resident and their requests (/me)
+  let board = null;       // the community board, fetched alongside /me
+  let main = null;        // the area beside the menu that each tab fills
+  let painted = '';
+  let wantContact = false;
 
   const URGENCY = [
     ['routine', 'Routine', 'It can wait for the next regular visit.'],
@@ -12,15 +18,21 @@
     ['urgent', 'Urgent', 'It could cause damage or cannot be lived with.'],
   ];
 
-  RW.onAuthError = function () { signIn('Your session has ended. Please sign in again.'); };
+  RW.onAuthError = function () { me = null; main = null; signIn('Your session has ended. Please sign in again.'); };
 
+  // load (or reload, after a change) everything the tabs show, then draw the current tab
   async function boot() {
     try {
-      dashboard(await api('/me'));
+      [me, board] = await Promise.all([api('/me'), api('/community')]);
     } catch (e) {
+      me = null; main = null;
       if (e.status === 401) signIn();
       else problem(e);
+      return;
     }
+    if (!main || !main.isConnected) shell();
+    paintWho();
+    route();
   }
 
   function problem(e) {
@@ -112,31 +124,206 @@
   }
 
   /* ----------------------------------------------------------- dashboard */
-  function dashboard(data) {
-    const r = data.resident;
+  /* --------------------------------------------------- menu and the tabs */
+  const TABS = [['community', 'Community'], ['maintenance', 'Maintenance'], ['account', 'My account']];
+  function paintWho() {
+    const r = me.resident;
     who.replaceChildren(
       h('span', { class: 'who' }, r.name, h('small', {}, 'Apartment ' + r.unit)),
       h('button', { class: 'btn btn-sm btn-ghost', type: 'button', onclick: signOut }, 'Sign out'));
+  }
+  function shell() {
+    main = h('section', { id: 'main' });
+    app.replaceChildren(h('div', { class: 'staff-shell' },
+      h('nav', { class: 'side', 'aria-label': 'Resident portal' },
+        TABS.map((t) => h('a', { href: '#/' + t[0], 'data-nav': t[0] }, t[1]))),
+      main));
+  }
+  function navCount(tab, n, title) {
+    const link = app.querySelector('.side a[data-nav="' + tab + '"]');
+    const label = TABS.find((t) => t[0] === tab)[1];
+    if (link) link.replaceChildren(label, n ? h('span', { class: 'nav-count', title: title }, n) : '');
+  }
+  function route() {
+    if (!me || !main) return;
+    const asked = location.hash.replace(/^#\/?/, '').split('/')[0];
+    const tab = TABS.some((t) => t[0] === asked) ? asked : 'community';
+    for (const a of app.querySelectorAll('.side a')) a.classList.toggle('on', a.getAttribute('data-nav') === tab);
+    const nodes = tab === 'maintenance' ? maintenanceView() : tab === 'account' ? accountView() : communityView();
+    main.replaceChildren(...[flash ? h('p', { class: 'notice', role: 'status' }, flash) : null].concat(nodes).filter(Boolean));
+    if (tab !== painted || flash) window.scrollTo({ top: 0 });
+    flash = ''; painted = tab;
+    const open = me.requests.filter((q) => q.open).length;
+    navCount('maintenance', open, open === 1 ? '1 open request' : open + ' open requests');
+    navCount('community', tab === 'community' ? 0 : unseenPosts(), 'New on the board');
+    if (tab === 'account' && wantContact) {
+      wantContact = false;
+      setTimeout(() => {
+        const d = document.getElementById('contactDetails');
+        if (!d) return;
+        d.open = true;
+        d.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const first = d.querySelector('input');
+        if (first) first.focus({ preventScroll: true });
+      }, 50);
+    }
+  }
+  window.addEventListener('hashchange', route);
 
-    const open = data.requests.filter((q) => q.open);
-    const closed = data.requests.filter((q) => !q.open);
+  // which posts are new to this resident on this device (a convenience only:
+  // if the browser forgets, nothing is marked new)
+  const seenKey = () => 'rw_board_seen:' + me.resident.email;
+  function readSeen() {
+    try { const v = window.localStorage.getItem(seenKey()); return v === null ? null : Number(v); } catch (e) { return null; }
+  }
+  function writeSeen(id) {
+    try { window.localStorage.setItem(seenKey(), String(id)); } catch (e) { /* private browsing: fine */ }
+  }
+  function unseenPosts() {
+    const seen = readSeen();
+    return seen === null ? 0 : board.posts.filter((x) => x.id > seen).length;
+  }
 
-    app.replaceChildren(...[
+  // "2026-11-25T09:00" is a Saint Paul wall-clock time; read it as one
+  function localTime(v) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(v || '');
+    return m ? new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) : null;
+  }
+  function localDate(v) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v || '');
+    return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+  }
+  const clock = (d) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const longDay = (d) => d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  // "Today", "Tomorrow", or "Tuesday, November 25", against Saint Paul's today
+  function dayName(dateStr) {
+    const d = localDate(dateStr), t = localDate(board.today);
+    const diff = Math.round((d - t) / 86400000);
+    return diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : longDay(d);
+  }
+  function timeRange(start, end) {
+    const a = localTime(start), b = localTime(end);
+    if (!a) return '';
+    if (!b) return dayName(start) + ' at ' + clock(a);
+    if (start.slice(0, 10) === end.slice(0, 10)) return dayName(start) + ' · ' + clock(a) + ' – ' + clock(b);
+    return dayName(start) + ', ' + clock(a) + ' – ' + dayName(end) + ', ' + clock(b);
+  }
+  const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  /* ------------------------------------------------- community (landing) */
+  let boardFilter = 'all';
+  function communityView() {
+    const r = me.resident, d = board, cats = d.categories;
+    const seen = readSeen();
+    const isNew = (x) => seen !== null && x.id > seen;
+    const newest = d.posts.reduce((n, x) => Math.max(n, x.id), seen || 0);
+    writeSeen(newest);
+
+    // coming up: anything with a time on the board, and the next pickups
+    const coming = d.posts.filter((x) => x.starts_at).map((x) => ({ sort: x.starts_at, day: x.starts_at.slice(0, 10),
+      what: x.title, kind: cats[x.category], detail: timeRange(x.starts_at, x.ends_at), building: x.building }))
+      .concat(d.collection.items.filter((x) => x.next.length).map((x) => ({ sort: x.next[0] + 'T00:00', day: x.next[0],
+        what: x.what + ' pickup', kind: 'Trash & recycling', detail: dayName(x.next[0]) + (x.put_out ? ' · ' + x.put_out : ''), building: '' })))
+      .sort((a, b) => a.sort.localeCompare(b.sort)).slice(0, 6);
+
+    const posts = d.posts;
+    const present = Object.keys(cats).filter((k) => posts.some((x) => x.category === k));
+    if (boardFilter !== 'all' && !present.includes(boardFilter)) boardFilter = 'all';
+    const list = h('div', { class: 'board-list' });
+    const paintList = () => {
+      const shown = posts.filter((x) => !x.pinned && (boardFilter === 'all' || x.category === boardFilter));
+      list.replaceChildren(...(shown.length ? shown.map((x) => postCard(x, cats, isNew(x)))
+        : [h('div', { class: 'empty' }, posts.length ? 'Nothing else under this heading right now.'
+          : 'No notices right now. Building news, water shutoffs and community updates from the office will appear here.')]));
+    };
+    const filters = present.length > 1 ? h('div', { class: 'filter-chips', role: 'group', 'aria-label': 'Show' },
+      [['all', 'Everything']].concat(present.map((k) => [k, cats[k]])).map((f) => {
+        const b = h('button', { type: 'button', class: boardFilter === f[0] ? 'on' : '', 'aria-pressed': String(boardFilter === f[0]) }, f[1]);
+        b.addEventListener('click', () => {
+          boardFilter = f[0];
+          for (const x of b.parentNode.children) { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', String(x === b)); }
+          paintList();
+        });
+        return b;
+      })) : null;
+    paintList();
+
+    const pinned = posts.filter((x) => x.pinned);
+    return [
       h('div', { class: 'hello' },
         h('div', {},
-          h('p', { class: 'label label-gold' }, 'Resident Portal'),
+          h('p', { class: 'label label-gold' }, 'Ridgewood Community'),
           h('h1', {}, 'Welcome, ' + r.name.split(' ')[0]),
-          h('p', { class: 'lede' }, 'Apartment ' + r.unit + (r.building ? ' · ' + r.building + ' Wilson Ave' : '')))),
+          h('p', { class: 'lede' }, 'Apartment ' + r.unit + (r.building ? ' · ' + r.building + ' Wilson Ave' : ''))),
+        h('a', { class: 'btn btn-sm', href: '#/maintenance' }, 'Request maintenance')),
+      r.has_password ? null : h('p', { class: 'notice' }, h('strong', {}, 'Your password is still your apartment number. '),
+        'Choose one of your own under ', h('a', { href: '#/account' }, 'My account'), '.'),
+      h('div', { class: 'community' },
+        h('div', {},
+          coming.length ? h('section', { class: 'card coming-card', 'aria-label': 'Coming up' }, h('h2', {}, 'Coming up'),
+            h('ul', { class: 'coming' }, coming.map((c) => {
+              const dd = localDate(c.day);
+              return h('li', {},
+                h('span', { class: 'coming-date' }, h('strong', {}, dd.toLocaleDateString('en-US', { weekday: 'short' })),
+                  dd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+                h('span', {}, h('span', { class: 'post-cat' }, c.kind), h('span', { class: 'coming-what' }, c.what),
+                  h('span', { class: 'fine' }, c.detail + (c.building ? ' · ' + c.building + ' Wilson only' : ''))));
+            }))) : null,
+          pinned.map((x) => postCard(x, cats, isNew(x))),
+          h('div', { class: 'card-head board-head' }, h('h2', {}, 'Community board'),
+            h('span', { class: 'fine' }, posts.length ? posts.length + (posts.length === 1 ? ' post' : ' posts') : '')),
+          filters, list),
+        h('aside', {}, pickupCard(d.collection), officeCard())),
+    ];
+  }
+
+  function postCard(x, cats, fresh) {
+    return h('article', { class: 'post' + (x.pinned ? ' post-pinned' : '') },
+      h('div', { class: 'post-top' }, h('span', { class: 'post-cat' }, cats[x.category] || 'Notice'),
+        x.pinned ? h('span', { class: 'chip chip-goldline' }, 'Pinned') : null,
+        fresh ? h('span', { class: 'chip chip-gold' }, 'New') : null,
+        x.building ? h('span', { class: 'fine' }, x.building + ' Wilson only') : null),
+      h('h3', {}, x.title),
+      x.starts_at ? h('p', { class: 'post-when' }, timeRange(x.starts_at, x.ends_at)) : null,
+      x.body ? h('p', { class: 'pre post-body' }, x.body) : null,
+      h('p', { class: 'fine post-date' }, 'Posted ' + day(x.created_at)
+        + (x.updated_at && x.updated_at.slice(0, 10) !== x.created_at.slice(0, 10) ? ' · updated ' + day(x.updated_at) : '')));
+  }
+
+  function pickupCard(col) {
+    return h('section', { class: 'card stack' }, h('h3', {}, 'Trash & recycling'),
+      col.items.length ? h('div', {}, col.items.map((x) => h('div', { class: 'pickup' },
+        h('p', {}, h('strong', {}, x.what), ' — ' + (x.every === 2 ? 'every other ' : 'every ') + WEEKDAYS[x.weekday]),
+        x.next.length ? h('p', { class: 'fine' }, 'Next: ' + dayName(x.next[0]) + (x.put_out ? ' · ' + x.put_out : '')) : null,
+        x.notes ? h('p', { class: 'fine' }, x.notes) : null)))
+        : h('p', { class: 'muted' }, 'The pickup schedule has not been posted yet.'),
+      col.reminder ? h('p', { class: 'reminder pre' }, col.reminder) : null);
+  }
+
+  function officeCard() {
+    return h('section', { class: 'card stack' }, h('h3', {}, 'Leasing office'),
+      h('dl', { class: 'kv' },
+        h('dt', {}, 'Phone'), h('dd', {}, tel(OFFICE)),
+        h('dt', {}, 'Hours'), h('dd', {}, 'Monday – Friday, 1 – 5 pm'),
+        h('dt', {}, 'Address'), h('dd', {}, '1871 & 1885 Wilson Ave, Saint Paul')),
+      h('p', { class: 'fine' }, h('strong', {}, 'Fire, a gas smell or danger: call 911. '),
+        'For other urgent problems, call the office as well as sending a request.'));
+  }
+
+  /* ------------------------------------------------------- maintenance */
+  function maintenanceView() {
+    const data = me;
+    const open = data.requests.filter((q) => q.open);
+    const closed = data.requests.filter((q) => !q.open);
+    return [
+      h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Maintenance'),
+        h('p', {}, 'Send a request and follow it here until it is done.'))),
       h('p', { class: 'notice' },
         h('strong', {}, 'If it cannot wait: '),
         'for fire, a gas smell or immediate danger, call 911. For anything else urgent, call the leasing office at ', tel(OFFICE),
         ' as well as sending a request — this page is not watched around the clock.'),
-      flash ? h('p', { class: 'notice', role: 'status' }, flash) : null,
-      r.has_password ? null : h('p', { class: 'notice' },
-        h('strong', {}, 'Your password is still your apartment number. '),
-        'Choose one of your own under “Change your password” below.'),
       h('div', { class: 'two' },
-        h('div', {}, requestForm(data), contactCard(r), passwordCard(r)),
+        requestForm(data),
         h('section', { 'aria-label': 'Your requests' },
           h('div', { class: 'card-head' }, h('h2', {}, 'Your requests'),
             h('span', { class: 'fine' }, open.length ? open.length + ' open' : 'Nothing open')),
@@ -146,8 +333,20 @@
               closed.length ? h('details', { class: 'more', open: open.length === 0 },
                 h('summary', {}, closed.length + (closed.length === 1 ? ' closed request' : ' closed requests')),
                 closed.map(requestCard)) : null])),
-    ].filter(Boolean));
-    flash = '';
+    ];
+  }
+
+  /* ---------------------------------------------------------- my account */
+  function accountView() {
+    const r = me.resident;
+    return [
+      h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'My account'),
+        h('p', {}, r.name + ' · Apartment ' + r.unit + (r.building ? ' · ' + r.building + ' Wilson Ave' : '')))),
+      r.has_password ? null : h('p', { class: 'notice' },
+        h('strong', {}, 'Your password is still your apartment number. '),
+        'Choose one of your own under “Change your password” below.'),
+      h('div', { class: 'account-cols' }, contactCard(r), passwordCard(r)),
+    ];
   }
 
   function passwordCard(r) {
@@ -169,13 +368,10 @@
   }
 
   // jump to the contact details card and open its form
+  // the contact details live under My account; go there with the form open
   function openContact() {
-    const d = document.getElementById('contactDetails');
-    if (!d) return;
-    d.open = true;
-    d.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    const first = d.querySelector('input');
-    if (first) setTimeout(() => first.focus({ preventScroll: true }), 300);
+    wantContact = true;
+    if (location.hash === '#/account') route(); else location.hash = '#/account';
   }
 
   function contactCard(r) {
@@ -287,6 +483,7 @@
 
   async function signOut() {
     try { await api('/logout', {}); } catch (e) { /* signed out either way */ }
+    me = null; main = null; painted = '';
     signIn('You are signed out.');
   }
 
